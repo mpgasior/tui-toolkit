@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"sync"
 	"time"
 
@@ -61,8 +60,9 @@ func main() {
 		}
 	})
 
-	shutdown := time.After(5 * time.Second)
-	io.WriteString(tty.Out, "Stopping app in 5 seconds... (unless 'q' is pressed)\r\n")
+	timeout := 15 * time.Second
+	shutdown := time.After(timeout)
+	fmt.Fprintf(tty.Out, "Stopping app in %f seconds... (unless 'q' is pressed)\r\n", timeout.Seconds())
 
 MainLoop:
 	for {

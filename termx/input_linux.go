@@ -6,8 +6,10 @@ import (
 	"context"
 	"errors"
 	"os"
+	"sync"
 
 	"golang.org/x/sys/unix"
+	"golang.org/x/term"
 )
 
 type terminalInput struct {
@@ -98,8 +100,23 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err 
 
 func (ti *terminalInput) MakeRaw() (func() error, error) {
 	fd := int(ti.f.Fd())
+	state, err := term.MakeRaw(fd)
 
-	return makeRaw(fd)
+	if err != nil {
+		return nil, err
+	}
+
+	var once sync.Once
+	var restoreErr error
+
+	restore := func() error {
+		once.Do(func() {
+			restoreErr = term.Restore(fd, state)
+		})
+		return restoreErr
+	}
+
+	return restore, nil
 }
 
 func (ti *terminalInput) Close() error {
