@@ -31,9 +31,7 @@ func main() {
 		}
 
 		record := buffer[0]
-		if record.EventType == windowsx.KEY_EVENT {
-			keyEvent := record.KeyEvent()
-
+		if keyEvent, ok := record.KeyEvent(); ok {
 			if keyEvent.KeyDown == 0 {
 				continue
 			}

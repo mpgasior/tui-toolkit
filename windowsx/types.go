@@ -509,22 +509,42 @@ type WINDOW_BUFFER_SIZE_RECORD struct {
 	Size windows.Coord
 }
 
-func (r *INPUT_RECORD) KeyEvent() *KEY_EVENT_RECORD {
-	return (*KEY_EVENT_RECORD)(unsafe.Pointer(&r.Event[0]))
+func (r *INPUT_RECORD) KeyEvent() (*KEY_EVENT_RECORD, bool) {
+	if r.EventType == KEY_EVENT {
+		return (*KEY_EVENT_RECORD)(unsafe.Pointer(&r.Event[0])), true
+	}
+
+	return nil, false
 }
 
-func (r *INPUT_RECORD) MouseEvent() *MOUSE_EVENT_RECORD {
-	return (*MOUSE_EVENT_RECORD)(unsafe.Pointer(&r.Event[0]))
+func (r *INPUT_RECORD) MouseEvent() (*MOUSE_EVENT_RECORD, bool) {
+	if r.EventType == MOUSE_EVENT {
+		return (*MOUSE_EVENT_RECORD)(unsafe.Pointer(&r.Event[0])), true
+	}
+
+	return nil, false
 }
 
-func (r *INPUT_RECORD) WindowsBufferSizeEvent() *WINDOW_BUFFER_SIZE_RECORD {
-	return (*WINDOW_BUFFER_SIZE_RECORD)(unsafe.Pointer(&r.Event[0]))
+func (r *INPUT_RECORD) WindowsBufferSizeEvent() (*WINDOW_BUFFER_SIZE_RECORD, bool) {
+	if r.EventType == WINDOW_BUFFER_SIZE_EVENT {
+		return (*WINDOW_BUFFER_SIZE_RECORD)(unsafe.Pointer(&r.Event[0])), true
+	}
+
+	return nil, false
 }
 
-func (r *INPUT_RECORD) FocusEvent() *FOCUS_EVENT_RECORD {
-	return (*FOCUS_EVENT_RECORD)(unsafe.Pointer(&r.Event[0]))
+func (r *INPUT_RECORD) FocusEvent() (*FOCUS_EVENT_RECORD, bool) {
+	if r.EventType == FOCUS_EVENT {
+		return (*FOCUS_EVENT_RECORD)(unsafe.Pointer(&r.Event[0])), true
+	}
+
+	return nil, false
 }
 
-func (r *INPUT_RECORD) MenuEvent() *MENU_EVENT_RECORD {
-	return (*MENU_EVENT_RECORD)(unsafe.Pointer(&r.Event[0]))
+func (r *INPUT_RECORD) MenuEvent() (*MENU_EVENT_RECORD, bool) {
+	if r.EventType == MENU_EVENT {
+		return (*MENU_EVENT_RECORD)(unsafe.Pointer(&r.Event[0])), true
+	}
+
+	return nil, false
 }

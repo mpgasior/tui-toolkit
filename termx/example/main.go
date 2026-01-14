@@ -40,22 +40,43 @@ func main() {
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
-		a := make([]byte, 1)
 		for {
-			n, err := terminal.ReadContext(ctx, a)
+			peekContext, peekCancel := context.WithTimeout(ctx, 10*time.Second)
 
-			if err != nil {
+			ok, _ := terminal.PeekContext(peekContext)
+			peekCancel()
+
+			if peekContext.Err() != nil {
+				println("peek was cancelled")
+			}
+
+			if ctx.Err() != nil {
 				break
 			}
 
-			if n == 0 {
-				continue
+			if !ok {
+				fmt.Fprintf(tty.Out, "Nothing has been pressed...\r\n")
 			}
 
-			select {
-			case <-ctx.Done():
-				return
-			case ch <- a[0]:
+			if ok {
+				fmt.Fprintf(tty.Out, "Read to read ...\r\n")
+				buffer := make([]byte, 1024)
+				n, err := terminal.ReadContext(ctx, buffer)
+				if err != nil {
+					break
+				}
+
+				if n == 0 {
+					continue
+				}
+
+				for i := range n {
+					select {
+					case <-ctx.Done():
+						return
+					case ch <- buffer[i]:
+					}
+				}
 			}
 		}
 	})
@@ -77,7 +98,7 @@ MainLoop:
 			break MainLoop
 		case b := <-ch:
 			fmt.Fprintf(tty.Out, "You've clicked: %c (%v)\r\n", rune(b), b)
-			if b == 'q' {
+			if b == '\x1b' {
 				cancel()
 			}
 		}

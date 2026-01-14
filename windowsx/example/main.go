@@ -40,22 +40,23 @@ func main() {
 }
 
 func stringify(r windowsx.INPUT_RECORD) string {
-	switch r.EventType {
-	case windowsx.KEY_EVENT:
-		e := r.KeyEvent()
+	if e, ok := r.KeyEvent(); ok {
 		return stringifyKey(e)
-	case windowsx.FOCUS_EVENT:
-		e := r.FocusEvent()
-		return stringifyFocus(e)
-	case windowsx.MOUSE_EVENT:
-		m := r.MouseEvent()
-		return stringifyMouse(m)
-	case windowsx.WINDOW_BUFFER_SIZE_EVENT:
-		s := r.WindowsBufferSizeEvent()
-		return stringifyWindow(s)
-	default:
-		return fmt.Sprintf("EVENT_TYPE: %d", r.EventType)
 	}
+
+	if e, ok := r.FocusEvent(); ok {
+		stringifyFocus(e)
+	}
+
+	if e, ok := r.MouseEvent(); ok {
+		return stringifyMouse(e)
+	}
+
+	if e, ok := r.WindowsBufferSizeEvent(); ok {
+		return stringifyWindow(e)
+	}
+
+	return fmt.Sprintf("EVENT_TYPE: %d", r.EventType)
 }
 
 func stringifyKey(e *windowsx.KEY_EVENT_RECORD) string {
