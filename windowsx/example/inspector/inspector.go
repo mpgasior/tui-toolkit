@@ -29,9 +29,7 @@ func main() {
 		record := buffer[0]
 		fmt.Printf("%s\n", stringify(record))
 
-		if record.EventType == windowsx.KEY_EVENT {
-			keyEvent := record.KeyEvent()
-
+		if keyEvent, ok := record.KeyEvent(); ok {
 			if keyEvent.Char == 'q' {
 				break
 			}

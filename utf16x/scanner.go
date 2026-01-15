@@ -6,15 +6,15 @@ import (
 )
 
 type RuneScanner struct {
-	surrogate rune
+	lastSurrogate rune
 }
 
-func (rs *RuneScanner) Write(c uint16) (rune, bool) {
-	r := rune(c)
+func (rs *RuneScanner) Scan(unit uint16) (rune, bool) {
+	r := rune(unit)
 
-	if rs.surrogate != 0 {
-		high := rs.surrogate
-		rs.surrogate = 0
+	if rs.lastSurrogate != 0 {
+		high := rs.lastSurrogate
+		rs.lastSurrogate = 0
 
 		k := utf16.DecodeRune(high, r)
 		if k != utf8.RuneError {
@@ -23,7 +23,7 @@ func (rs *RuneScanner) Write(c uint16) (rune, bool) {
 	}
 
 	if utf16.IsSurrogate(r) {
-		rs.surrogate = r
+		rs.lastSurrogate = r
 
 		return 0, false
 	}
@@ -32,5 +32,5 @@ func (rs *RuneScanner) Write(c uint16) (rune, bool) {
 }
 
 func (rs *RuneScanner) Reset() {
-	rs.surrogate = 0
+	rs.lastSurrogate = 0
 }

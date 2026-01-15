@@ -44,7 +44,7 @@ func TestRuneScanner(t *testing.T) {
 			var ok bool
 
 			for _, val := range tt.input {
-				got, ok = rs.Write(val)
+				got, ok = rs.Scan(val)
 			}
 
 			if got != tt.want || ok != tt.wantOk {

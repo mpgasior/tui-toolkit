@@ -23,7 +23,7 @@ type terminalInput struct {
 	buffer    bytes.Buffer
 }
 
-func NewTerminalInput(f *os.File) (TerminalInput, error) {
+func NewTerminalInput(f *os.File) (*terminalInput, error) {
 	event, err := windows.CreateEvent(nil, 0, 0, nil)
 
 	if err != nil {
@@ -125,7 +125,7 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err 
 			continue
 		}
 
-		r, ok := ti.scanner.Write(keyEvent.Char)
+		r, ok := ti.scanner.Scan(keyEvent.Char)
 		if !ok {
 			continue
 		}

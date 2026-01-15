@@ -36,7 +36,7 @@ func main() {
 				continue
 			}
 
-			r, ok := rs.Write(keyEvent.Char)
+			r, ok := rs.Scan(keyEvent.Char)
 
 			if !ok {
 				continue
