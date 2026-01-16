@@ -125,7 +125,7 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err 
 			continue
 		}
 
-		r, ok := ti.scanner.Scan(keyEvent.Char)
+		r, ok := ti.scanner.Scan(keyEvent.UnicodeChar)
 		if !ok {
 			continue
 		}

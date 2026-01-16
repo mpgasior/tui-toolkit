@@ -36,7 +36,7 @@ func main() {
 				continue
 			}
 
-			r, ok := rs.Scan(keyEvent.Char)
+			r, ok := rs.Scan(keyEvent.UnicodeChar)
 
 			if !ok {
 				continue

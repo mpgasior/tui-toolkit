@@ -30,7 +30,7 @@ func main() {
 		fmt.Printf("%s\n", stringify(record))
 
 		if keyEvent, ok := record.KeyEvent(); ok {
-			if keyEvent.Char == 'q' {
+			if keyEvent.UnicodeChar == 'q' {
 				break
 			}
 		}
@@ -80,10 +80,10 @@ func stringifyKey(e *windowsx.KEY_EVENT_RECORD) string {
 	sb.WriteString(fmt.Sprintf("[%s] ", source))
 	sb.WriteString(fmt.Sprintf("VK: %s (0x%02X) ", vk, e.VirtualKeyCode))
 	sb.WriteString(fmt.Sprintf("ControlKey: %s ", stringifyControlKey(e.ControlKeyState)))
-	if e.Char >= 32 && e.Char <= 126 {
-		sb.WriteString(fmt.Sprintf("Char: '%c' (0x%02X) ", e.Char, e.Char))
+	if e.UnicodeChar >= 32 && e.UnicodeChar <= 126 {
+		sb.WriteString(fmt.Sprintf("UnicodeChar: '%c' (0x%02X) ", e.UnicodeChar, e.UnicodeChar))
 	} else {
-		sb.WriteString(fmt.Sprintf("Char: [CTRL](0x%02X) ", e.Char))
+		sb.WriteString(fmt.Sprintf("UnicodeChar: [CTRL](0x%02X) ", e.UnicodeChar))
 	}
 	sb.WriteString(fmt.Sprintf("Count: %d ", e.RepeatCount))
 
