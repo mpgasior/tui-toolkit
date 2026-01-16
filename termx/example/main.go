@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -41,27 +42,23 @@ func main() {
 
 	wg.Go(func() {
 		for {
-			peekContext, peekCancel := context.WithTimeout(ctx, 10*time.Second)
+			readyContext, readyCancel := context.WithTimeout(ctx, 3*time.Second)
 
-			ok, _ := terminal.PeekContext(peekContext)
-			peekCancel()
+			readyErr := terminal.Ready(readyContext)
+			readyCancel()
 
-			if peekContext.Err() != nil {
-				println("peek was cancelled")
+			if errors.Is(readyErr, context.DeadlineExceeded) || errors.Is(readyErr, context.Canceled) {
+				fmt.Fprintf(tty.Out, "Nothing has been pressed...\r\n")
 			}
 
 			if ctx.Err() != nil {
 				break
 			}
 
-			if !ok {
-				fmt.Fprintf(tty.Out, "Nothing has been pressed...\r\n")
-			}
-
-			if ok {
+			if readyErr == nil {
 				fmt.Fprintf(tty.Out, "Read to read ...\r\n")
 				buffer := make([]byte, 1024)
-				n, err := terminal.ReadContext(ctx, buffer)
+				n, err := terminal.Read(ctx, buffer)
 				if err != nil {
 					break
 				}

@@ -59,9 +59,9 @@ func (ti *terminalInput) MakeRaw() (func() error, error) {
 	return restore, nil
 }
 
-func (ti *terminalInput) PeekContext(ctx context.Context) (bool, error) {
+func (ti *terminalInput) Ready(ctx context.Context) error {
 	if ti.buffer.Len() > 0 {
-		return true, nil
+		return nil
 	}
 
 	handle := windows.Handle(ti.f.Fd())
@@ -69,17 +69,18 @@ func (ti *terminalInput) PeekContext(ctx context.Context) (bool, error) {
 
 	for {
 		if err := ctx.Err(); err != nil {
-			return false, err
+			return err
 		}
 
 		n, err := windowsx.PeekConsoleInput(handle, buffer)
 		if err != nil {
-			return false, err
+			return err
 		}
 
+		//TODO: what if read 1024 records? it should consume and try again..
 		if n == 0 {
 			if err := ti.waitEvent(ctx); err != nil {
-				return false, err
+				return err
 			}
 			continue
 		}
@@ -92,24 +93,19 @@ func (ti *terminalInput) PeekContext(ctx context.Context) (bool, error) {
 				continue
 			}
 
-			return true, nil
+			return nil
 		}
 	}
 }
 
-func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err error) {
+func (ti *terminalInput) Read(ctx context.Context, p []byte) (n int, err error) {
 	if ti.buffer.Len() > 0 {
 		return ti.buffer.Read(p)
 	}
 
 	for {
-		ok, err := ti.PeekContext(ctx)
-		if err != nil {
+		if err := ti.Ready(ctx); err != nil {
 			return 0, err
-		}
-
-		if !ok {
-			continue
 		}
 
 		buffer := make([]windowsx.INPUT_RECORD, 1)
