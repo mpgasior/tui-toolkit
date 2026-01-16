@@ -64,7 +64,7 @@ func (ti *terminalInput) Ready(ctx context.Context) error {
 		return nil
 	}
 
-	handle := windows.Handle(ti.f.Fd())
+	console := windows.Handle(ti.f.Fd())
 	buffer := make([]windowsx.INPUT_RECORD, 1024)
 
 	for {
@@ -72,12 +72,11 @@ func (ti *terminalInput) Ready(ctx context.Context) error {
 			return err
 		}
 
-		n, err := windowsx.PeekConsoleInput(handle, buffer)
+		n, err := windowsx.PeekConsoleInput(console, buffer)
 		if err != nil {
 			return err
 		}
 
-		//TODO: what if read 1024 records? it should consume and try again..
 		if n == 0 {
 			if err := ti.waitEvent(ctx); err != nil {
 				return err
@@ -95,6 +94,10 @@ func (ti *terminalInput) Ready(ctx context.Context) error {
 
 			return nil
 		}
+
+		if _, err := windowsx.ReadConsoleInput(console, buffer); err != nil {
+			return err
+		}
 	}
 }
 
@@ -109,8 +112,8 @@ func (ti *terminalInput) Read(ctx context.Context, p []byte) (n int, err error) 
 		}
 
 		buffer := make([]windowsx.INPUT_RECORD, 1)
-		handle := windows.Handle(ti.f.Fd())
-		if _, err = windowsx.ReadConsoleInput(handle, buffer); err != nil {
+		console := windows.Handle(ti.f.Fd())
+		if _, err = windowsx.ReadConsoleInput(console, buffer); err != nil {
 			return 0, nil
 		}
 
