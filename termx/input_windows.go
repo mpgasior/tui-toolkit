@@ -68,10 +68,6 @@ func (ti *terminalInput) Ready(ctx context.Context) error {
 	buffer := make([]windowsx.INPUT_RECORD, 1024)
 
 	for {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-
 		n, err := windowsx.PeekConsoleInput(console, buffer)
 		if err != nil {
 			return err
@@ -106,32 +102,36 @@ func (ti *terminalInput) Read(ctx context.Context, p []byte) (n int, err error) 
 		return ti.buffer.Read(p)
 	}
 
+	console := windows.Handle(ti.f.Fd())
+	buffer := make([]windowsx.INPUT_RECORD, 1024)
+
 	for {
 		if err := ti.Ready(ctx); err != nil {
 			return 0, err
 		}
 
-		buffer := make([]windowsx.INPUT_RECORD, 1)
-		console := windows.Handle(ti.f.Fd())
-		if _, err = windowsx.ReadConsoleInput(console, buffer); err != nil {
+		n, err := windowsx.ReadConsoleInput(console, buffer)
+		if err != nil {
 			return 0, nil
 		}
 
-		record := buffer[0]
+		for i := range n {
+			record := buffer[i]
 
-		keyEvent, ok := record.KeyEvent()
-		if !ok || keyEvent.KeyDown == 0 {
-			continue
+			keyEvent, ok := record.KeyEvent()
+			if !ok || keyEvent.KeyDown == 0 {
+				continue
+			}
+
+			r, ok := ti.scanner.Scan(keyEvent.UnicodeChar)
+			if !ok {
+				continue
+			}
+
+			var runeBytes [utf8.UTFMax]byte
+			runeLength := utf8.EncodeRune(runeBytes[:], r)
+			ti.buffer.Write(runeBytes[:runeLength])
 		}
-
-		r, ok := ti.scanner.Scan(keyEvent.UnicodeChar)
-		if !ok {
-			continue
-		}
-
-		var runeBytes [utf8.UTFMax]byte
-		runeLength := utf8.EncodeRune(runeBytes[:], r)
-		ti.buffer.Write(runeBytes[:runeLength])
 
 		return ti.buffer.Read(p)
 	}

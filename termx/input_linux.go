@@ -5,6 +5,7 @@ package termx
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"sync"
 
@@ -69,35 +70,6 @@ func NewTerminalInput(f *os.File) (TerminalInput, error) {
 	return inputReader, nil
 }
 
-func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err error) {
-	if err := ctx.Err(); err != nil {
-		return 0, err
-	}
-
-	stopFunc := context.AfterFunc(ctx, func() {
-		ti.pipeW.Write([]byte{0})
-	})
-	defer stopFunc()
-
-	events := make([]unix.EpollEvent, 1)
-	for {
-		_, err := unix.EpollWait(ti.epfd, events, -1)
-		if err != nil {
-			if err == unix.EINTR {
-				continue
-			}
-			return 0, err
-		}
-
-		if int(events[0].Fd) == int(ti.f.Fd()) {
-			return ti.f.Read(p)
-		}
-		if int(events[0].Fd) == int(ti.pipeR.Fd()) {
-			return 0, ctx.Err()
-		}
-	}
-}
-
 func (ti *terminalInput) MakeRaw() (func() error, error) {
 	fd := int(ti.f.Fd())
 	state, err := term.MakeRaw(fd)
@@ -117,6 +89,48 @@ func (ti *terminalInput) MakeRaw() (func() error, error) {
 	}
 
 	return restore, nil
+}
+
+func (ti *terminalInput) Ready(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	stop := context.AfterFunc(ctx, func() {
+		ti.pipeW.Write([]byte{0})
+	})
+	defer stop()
+
+	events := make([]unix.EpollEvent, 1)
+	for {
+		_, err := unix.EpollWait(ti.epfd, events, -1)
+		if err != nil {
+			if err == unix.EINTR {
+				continue
+			}
+
+			return err
+		}
+
+		if int(events[0].Fd) == int(ti.f.Fd()) {
+			return nil
+		}
+
+		if int(events[0].Fd) == int(ti.pipeR.Fd()) {
+			if _, err := io.CopyN(io.Discard, ti.pipeR, 1); err != nil {
+				return err
+			}
+			return ctx.Err()
+		}
+	}
+}
+
+func (ti *terminalInput) Read(ctx context.Context, p []byte) (n int, err error) {
+	if err := ti.Ready(ctx); err != nil {
+		return 0, err
+	}
+
+	return ti.f.Read(p)
 }
 
 func (ti *terminalInput) Close() error {
