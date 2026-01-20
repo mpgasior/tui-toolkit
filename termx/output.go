@@ -1,7 +1,6 @@
 package termx
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -12,36 +11,24 @@ import (
 
 type TerminalOutput interface {
 	io.Writer
-	Flush() error
-	Close() error
 	GetSize() (w int, h int, err error)
 	EnterAltScreen() (restore func() error, err error)
 }
 
 type terminalOutput struct {
-	f   *os.File
-	buf *bufio.Writer
+	f *os.File
 }
 
 func NewTerminalOutput(out *os.File) (*terminalOutput, error) {
 	to := &terminalOutput{
-		f:   out,
-		buf: bufio.NewWriter(out),
+		f: out,
 	}
 
 	return to, nil
 }
 
 func (to *terminalOutput) Write(p []byte) (int, error) {
-	return to.buf.Write(p)
-}
-
-func (to *terminalOutput) Flush() error {
-	return to.buf.Flush()
-}
-
-func (to *terminalOutput) Close() error {
-	return to.Flush()
+	return to.f.Write(p)
 }
 
 func (to *terminalOutput) GetSize() (int, int, error) {

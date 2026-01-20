@@ -59,45 +59,7 @@ func (ti *terminalInput) MakeRaw() (func() error, error) {
 	return restore, nil
 }
 
-func (ti *terminalInput) Ready(ctx context.Context) error {
-	if ti.buffer.Len() > 0 {
-		return nil
-	}
-
-	console := windows.Handle(ti.f.Fd())
-	buffer := make([]windowsx.INPUT_RECORD, 1024)
-
-	for {
-		n, err := windowsx.PeekConsoleInput(console, buffer)
-		if err != nil {
-			return err
-		}
-
-		if n == 0 {
-			if err := ti.waitEvent(ctx); err != nil {
-				return err
-			}
-			continue
-		}
-
-		for i := range n {
-			record := buffer[i]
-
-			keyEvent, ok := record.KeyEvent()
-			if !ok || keyEvent.KeyDown == 0 {
-				continue
-			}
-
-			return nil
-		}
-
-		if _, err := windowsx.ReadConsoleInput(console, buffer); err != nil {
-			return err
-		}
-	}
-}
-
-func (ti *terminalInput) Read(ctx context.Context, p []byte) (n int, err error) {
+func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err error) {
 	if ti.buffer.Len() > 0 {
 		return ti.buffer.Read(p)
 	}
@@ -106,11 +68,19 @@ func (ti *terminalInput) Read(ctx context.Context, p []byte) (n int, err error) 
 	buffer := make([]windowsx.INPUT_RECORD, 1024)
 
 	for {
-		if err := ti.Ready(ctx); err != nil {
+		n, err := windowsx.PeekConsoleInput(console, buffer)
+		if err != nil {
 			return 0, err
 		}
 
-		n, err := windowsx.ReadConsoleInput(console, buffer)
+		if n == 0 {
+			if err := ti.waitEvent(ctx); err != nil {
+				return 0, err
+			}
+			continue
+		}
+
+		n, err = windowsx.ReadConsoleInput(console, buffer)
 		if err != nil {
 			return 0, nil
 		}

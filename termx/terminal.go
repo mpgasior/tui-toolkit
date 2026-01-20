@@ -36,11 +36,3 @@ func NewTerminal(in *os.File, out *os.File) (Terminal, error) {
 
 	return terminal, nil
 }
-
-func (t *terminal) Close() error {
-	inErr := t.TerminalInput.Close()
-	outErr := t.TerminalOutput.Close()
-
-	err := errors.Join(inErr, outErr)
-	return err
-}

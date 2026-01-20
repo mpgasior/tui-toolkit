@@ -3,5 +3,5 @@ package iox
 import "context"
 
 type ContextReader interface {
-	Read(ctx context.Context, p []byte) (n int, err error)
+	ReadContext(ctx context.Context, p []byte) (n int, err error)
 }

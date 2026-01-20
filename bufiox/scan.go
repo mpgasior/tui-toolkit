@@ -96,7 +96,7 @@ func (s *ContextScanner) Scan(ctx context.Context) bool {
 
 func (s *ContextScanner) readIntoBuffer(ctx context.Context) (n int, err error) {
 	tmp := make([]byte, 1024)
-	n, err = s.reader.Read(ctx, tmp)
+	n, err = s.reader.ReadContext(ctx, tmp)
 	if err == nil {
 		s.buffer = append(s.buffer, tmp[:n]...)
 	}

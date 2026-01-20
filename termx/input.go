@@ -1,12 +1,9 @@
 package termx
 
-import (
-	"context"
-)
+import "github.com/nimelo/tui-go/iox"
 
 type TerminalInput interface {
+	iox.ContextReader
 	MakeRaw() (restore func() error, err error)
-	Ready(ctx context.Context) error
-	Read(ctx context.Context, p []byte) (n int, err error)
 	Close() error
 }

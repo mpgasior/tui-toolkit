@@ -15,7 +15,7 @@ type mockReader struct {
 	cursor int
 }
 
-func (m *mockReader) Read(ctx context.Context, p []byte) (int, error) {
+func (m *mockReader) ReadContext(ctx context.Context, p []byte) (int, error) {
 	if m.cursor >= len(m.data) {
 		return 0, io.EOF
 	}
