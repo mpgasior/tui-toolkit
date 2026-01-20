@@ -1,10 +1,12 @@
-package utf16x
+package utf16x_test
 
 import (
 	"testing"
+
+	"github.com/nimelo/tui-go/utf16x"
 )
 
-func TestRuneScanner(t *testing.T) {
+func TestDecoder(t *testing.T) {
 	tests := []struct {
 		name   string
 		input  []uint16
@@ -39,16 +41,16 @@ func TestRuneScanner(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rs := &RuneScanner{}
+			decoder := utf16x.Decoder{}
 			var got rune
 			var ok bool
 
 			for _, val := range tt.input {
-				got, ok = rs.Scan(val)
+				got, ok = decoder.Decode(val)
 			}
 
 			if got != tt.want || ok != tt.wantOk {
-				t.Errorf("Write() = (%U, %v), want (%U, %v)", got, ok, tt.want, tt.wantOk)
+				t.Errorf("Decode() = (%U, %v), want (%U, %v)", got, ok, tt.want, tt.wantOk)
 			}
 		})
 	}

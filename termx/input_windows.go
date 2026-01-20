@@ -19,7 +19,7 @@ import (
 type terminalInput struct {
 	f         *os.File
 	stopEvent windows.Handle
-	scanner   utf16x.RuneScanner
+	decoder   utf16x.Decoder
 	buffer    bytes.Buffer
 }
 
@@ -123,7 +123,7 @@ func (ti *terminalInput) Read(ctx context.Context, p []byte) (n int, err error) 
 				continue
 			}
 
-			r, ok := ti.scanner.Scan(keyEvent.UnicodeChar)
+			r, ok := ti.decoder.Decode(keyEvent.UnicodeChar)
 			if !ok {
 				continue
 			}

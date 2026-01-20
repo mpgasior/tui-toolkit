@@ -72,9 +72,9 @@ MainLoop:
 			}
 
 			terminal.Flush()
-			if b == '\x1b' {
-				cancel()
-			}
+			//	if b == '\x1b' {
+			//		cancel()
+			//	}
 		}
 		terminal.Flush()
 	}
