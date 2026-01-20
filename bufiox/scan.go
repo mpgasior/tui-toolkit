@@ -13,12 +13,19 @@ import (
 
 type ContextSplitFunc = func(data []byte, atEOF bool) (advance int, token []byte, err error)
 
-type TimeoutError struct {
+type ErrAmbiguous struct {
 	Wait time.Duration
 }
 
-func (e *TimeoutError) Error() string {
+func (e *ErrAmbiguous) Error() string {
 	return fmt.Sprintf("wait for %v", e.Wait)
+}
+
+func IsErrAmbiguous(err error) (*ErrAmbiguous, bool) {
+	var errAmbiguous *ErrAmbiguous
+	ok := errors.As(err, &errAmbiguous)
+
+	return errAmbiguous, ok
 }
 
 type ContextScanner struct {
@@ -46,9 +53,9 @@ func (s *ContextScanner) Scan(ctx context.Context) bool {
 	for {
 		advance, token, err := s.split(s.buffer, false)
 
-		var tErr *TimeoutError
-		if errors.As(err, &tErr) {
-			readCtx, cancel := context.WithTimeout(ctx, tErr.Wait)
+		aErr, ok := IsErrAmbiguous(err)
+		if ok {
+			readCtx, cancel := context.WithTimeout(ctx, aErr.Wait)
 			n, rErr := s.readIntoBuffer(readCtx)
 			cancel()
 
@@ -67,7 +74,7 @@ func (s *ContextScanner) Scan(ctx context.Context) bool {
 			}
 		}
 
-		if err != nil && tErr != nil {
+		if err != nil && aErr != nil {
 			s.err = err
 			return false
 		}
