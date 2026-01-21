@@ -35,6 +35,10 @@ func main() {
 		n, _ := terminal.ReadContext(ctx, buffer)
 		sequence := buffer[:n]
 
+		if n == 0 {
+			continue
+		}
+
 		fmt.Fprintf(terminal, "[% X]\r\n", sequence)
 
 		if slices.Equal(sequence, ctrlC) {
