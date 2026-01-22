@@ -1,6 +1,6 @@
 package vt
 
-//go:generate stringer -type=Key
+//go:generate go run golang.org/x/tools/cmd/stringer -type=Key
 type Key int
 
 const (

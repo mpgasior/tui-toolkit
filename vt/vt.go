@@ -5,8 +5,10 @@ const (
 	ESC = "\x1b"
 	CSI = ESC + "["
 	OSC = ESC + "]"
-	ST  = ESC + "\\"
+	DCS = ESC + "P"
 	SS3 = ESC + "O"
+	ST  = ESC + "\\"
+	BEL = "\a"
 )
 
 const (

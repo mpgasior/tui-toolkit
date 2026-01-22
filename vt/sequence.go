@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"slices"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/nimelo/tui-go/bufiox"
 	"github.com/nimelo/tui-go/iox"
 )
 
-//go:generate stringer -type=SequenceType
+//go:generate go run golang.org/x/tools/cmd/stringer -type=SequenceType
 type SequenceType int
 
 const (
@@ -22,7 +23,9 @@ const (
 	SeqUtf8
 	SeqCSI
 	SeqOSC
+	SeqDCS
 	SeqSS3
+	SeqMeta
 )
 
 type Sequence struct {
@@ -94,7 +97,7 @@ func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence
 	}
 
 	b := buf[0]
-	if b == 0x1B {
+	if b == EscByte {
 		peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
 		defer cancel()
 
@@ -110,11 +113,19 @@ func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence
 		}
 
 		if bytes.HasPrefix(prefix, []byte(OSC)) {
-			return ScanCSI, seq, err
+			return ScanOSC, seq, err
+		}
+
+		if bytes.HasPrefix(prefix, []byte(DCS)) {
+			return ScanDCS, seq, err
 		}
 
 		if bytes.HasPrefix(prefix, []byte(SS3)) {
 			return ScanSS3, seq, err
+		}
+
+		if next, seq, err = ScanMeta(ctx, i); err != nil {
+			return next, seq, err
 		}
 	}
 
@@ -127,7 +138,8 @@ func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
 	defer cancel()
 
-	buf, err = i.PeekContext(peekCtx, 64)
+	const maxCSILen = 64
+	buf, err = i.PeekContext(peekCtx, maxCSILen)
 	if len(buf) == 0 {
 		return nil, seq, err
 	}
@@ -154,17 +166,82 @@ func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 }
 
 func ScanOSC(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	return TODO, seq, err
-}
-
-func ScanSS3(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	var buf []byte
-
 	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
 	defer cancel()
 
-	buf, err = i.PeekContext(peekCtx, 3)
-	if err != nil || len(buf) != 3 {
+	const maxOSCLen = 8192
+	buf, err := i.PeekContext(peekCtx, maxOSCLen)
+	if len(buf) < 2 {
+		return nil, seq, err
+	}
+
+	if !bytes.HasPrefix(buf, []byte(OSC)) {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	idx := bytes.Index(buf, []byte(ST))
+	termLen := 2
+
+	if idx == -1 {
+		idx = bytes.Index(buf, []byte(ESC+BEL))
+		termLen = 1
+	}
+
+	if idx != -1 {
+		size := idx + termLen
+		if _, err = i.Discard(size); err != nil {
+			return nil, seq, err
+		}
+
+		return nil, Sequence{Data: buf[:size], Type: SeqOSC}, nil
+	}
+
+	if len(buf) >= maxOSCLen {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	return nil, seq, err
+}
+
+func ScanDCS(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+	defer cancel()
+
+	const maxDCSLen = 8192
+	buf, err := i.PeekContext(peekCtx, maxDCSLen)
+	if len(buf) < 2 {
+		return nil, seq, err
+	}
+
+	if !bytes.HasPrefix(buf, []byte(DCS)) {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	idx := bytes.Index(buf, []byte(ST))
+
+	if idx != -1 {
+		size := idx + 2
+		if _, err = i.Discard(size); err != nil {
+			return nil, seq, err
+		}
+
+		return nil, Sequence{Data: buf[:size], Type: SeqDCS}, nil
+	}
+
+	if len(buf) >= maxDCSLen {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	return nil, seq, err
+}
+
+func ScanSS3(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+	defer cancel()
+
+	const SS3Len = 3
+	buf, err := i.PeekContext(peekCtx, SS3Len)
+	if err != nil || len(buf) != SS3Len {
 		return nil, seq, err
 	}
 
@@ -176,9 +253,38 @@ func ScanSS3(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 	return nil, seq, ErrInvalidSeq
 }
 
+func ScanMeta(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+	defer cancel()
+
+	const MetaLen = 2
+	buf, err := i.PeekContext(peekCtx, MetaLen)
+	if err != nil || len(buf) != MetaLen {
+		return nil, seq, err
+	}
+
+	r := rune(buf[1])
+	if ok := unicode.IsDigit(r) || unicode.IsLetter(r); !ok {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	if buf[0] != EscByte {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	if _, err := i.Discard(MetaLen); err != nil {
+		return nil, seq, err
+	}
+
+	return nil, Sequence{Data: buf, Type: SeqMeta}, nil
+}
+
 func ScanUtf8(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	shortCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+	defer cancel()
+
 	var b byte
-	b, err = i.ReadByteContext(ctx)
+	b, err = i.ReadByteContext(shortCtx)
 	if err != nil {
 		return ScanInitial, seq, err
 	}
@@ -196,7 +302,7 @@ func ScanUtf8(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, e
 	data[0] = b
 
 	for !utf8.FullRune(data) {
-		b, err = i.ReadByteContext(ctx)
+		b, err = i.ReadByteContext(shortCtx)
 		if err != nil {
 			return nil, seq, err
 		}

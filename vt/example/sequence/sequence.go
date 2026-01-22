@@ -22,6 +22,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	terminal.Write([]byte(vt.QueryTerminalName))
+	terminal.Write([]byte(vt.QueryBgColor))
+	terminal.Write([]byte(vt.QueryFgColor))
+	terminal.Write([]byte(vt.QueryCursorColor))
+
 	scanner := vt.NewSequenceScanner(terminal, vt.ScanInitial)
 	ctrlC := []byte{0x03}
 
