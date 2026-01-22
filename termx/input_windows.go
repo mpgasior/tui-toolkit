@@ -82,7 +82,7 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err 
 
 		n, err = windowsx.ReadConsoleInput(console, buffer)
 		if err != nil {
-			return 0, nil
+			return 0, err
 		}
 
 		for i := range n {
@@ -103,7 +103,9 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err 
 			ti.buffer.Write(runeBytes[:runeLength])
 		}
 
-		return ti.buffer.Read(p)
+		if ti.buffer.Len() > 0 {
+			return ti.buffer.Read(p)
+		}
 	}
 }
 

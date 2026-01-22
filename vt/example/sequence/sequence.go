@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
+	"slices"
+	"unicode/utf8"
 
 	"github.com/nimelo/tui-go/termx"
 	"github.com/nimelo/tui-go/vt"
@@ -17,15 +18,27 @@ func main() {
 	restoreInput, _ := terminal.MakeRaw()
 	defer restoreInput()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	scanner := vt.NewSequenceScanner(terminal, vt.TODO)
+	scanner := vt.NewSequenceScanner(terminal, vt.ScanInitial)
+	ctrlC := []byte{0x03}
 
 	for scanner.ScanContext(ctx) {
 		seq := scanner.Sequence()
 
-		fmt.Fprintf(terminal, "%s: [% X] \r\n", seq.Type.String(), seq.Data)
+		fmt.Fprintf(terminal, "%s: [% X]", seq.Type.String(), seq.Data)
+
+		if seq.Is(vt.SeqUtf8) {
+			r, _ := utf8.DecodeRune(seq.Data)
+			fmt.Fprintf(terminal, " (%c)", r)
+		}
+
+		if slices.Equal(seq.Data, ctrlC) {
+			cancel()
+		}
+
+		fmt.Fprintf(terminal, "\r\n")
 	}
 
 	if err := scanner.Err(); err != nil {

@@ -9,16 +9,15 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[SeqUnknown-0]
-	_ = x[SeqUtf8-1]
-	_ = x[SeqControl-2]
-	_ = x[SeqEscape-3]
-	_ = x[SeqCSI-4]
-	_ = x[SeqOSC-5]
+	_ = x[SeqEscape-1]
+	_ = x[SeqUtf8-2]
+	_ = x[SeqCSI-3]
+	_ = x[SeqOSC-4]
 }
 
-const _SequenceType_name = "SeqUnknownSeqUtf8SeqControlSeqEscapeSeqCSISeqOSC"
+const _SequenceType_name = "SeqUnknownSeqEscapeSeqUtf8SeqCSISeqOSC"
 
-var _SequenceType_index = [...]uint8{0, 10, 17, 27, 36, 42, 48}
+var _SequenceType_index = [...]uint8{0, 10, 19, 26, 32, 38}
 
 func (i SequenceType) String() string {
 	idx := int(i) - 0
