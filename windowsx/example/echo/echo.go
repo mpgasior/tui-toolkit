@@ -24,7 +24,7 @@ func main() {
 	}
 	defer restore()
 
-	rs := utf16x.RuneScanner{}
+	d := utf16x.Decoder{}
 	buffer := make([]windowsx.INPUT_RECORD, 1)
 	for {
 		_, err := windowsx.ReadConsoleInput(windows.Handle(fd), buffer)
@@ -38,7 +38,7 @@ func main() {
 				continue
 			}
 
-			r, ok := rs.Scan(keyEvent.UnicodeChar)
+			r, ok := d.Decode(keyEvent.UnicodeChar)
 
 			if !ok {
 				continue

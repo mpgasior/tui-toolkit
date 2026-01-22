@@ -1,134 +1,84 @@
 package vt
 
 import (
-	"bytes"
+	"context"
 	"fmt"
-	"time"
-	"unicode/utf8"
 
 	"github.com/nimelo/tui-go/bufiox"
+	"github.com/nimelo/tui-go/iox"
 )
 
-var ErrInvalidSequence = fmt.Errorf("invalid sequence")
+//go:generate stringer -type=SequenceType
+type SequenceType int
 
-func ScanMulti(funcs ...bufiox.ContextSplitFunc) bufiox.ContextSplitFunc {
-	return nil
+const (
+	SeqUnknown SequenceType = iota
+	SeqUtf8
+	SeqControl
+	SeqEscape
+	SeqCSI
+	SeqOSC
+)
+
+type Sequence struct {
+	Data []byte
+	Type SequenceType
 }
 
-func ScanInput(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	advance, token, err = ScanESC(data, atEOF)
-
-	if token != nil {
-		return advance, token, err
-	}
-
-	if err != nil {
-		if _, ok := bufiox.IsErrAmbiguous(err); ok {
-			return advance, token, err
-		}
-
-		advance, token, err = ScanSS3(data, atEOF)
-	}
-
-	return advance, token, err
+func (s Sequence) Is(t SequenceType) bool {
+	return s.Type == t
 }
 
-func ScanESC(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if len(data) == 0 {
-		if atEOF {
-			return 0, nil, ErrInvalidSequence
-		}
-
-		return 0, nil, nil
-	}
-
-	if data[0] == 0x1b {
-		if atEOF {
-			return 1, data[0:0], nil
-		}
-
-		if len(data) == 1 {
-			err := &bufiox.ErrAmbiguous{
-				Wait: 20 * time.Millisecond,
-			}
-			return 0, nil, err
-		}
-	}
-
-	return 0, nil, ErrInvalidSequence
+type InputBuffer struct {
+	*bufiox.ContextReader
 }
 
-func ScanCSI(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if len(data) < len(CSI) {
-		if atEOF && len(data) > 0 {
-			return 0, nil, ErrInvalidSequence
-		}
+type ScanFn func(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error)
 
-		return 0, nil, nil
-	}
-
-	if bytes.HasPrefix(data, []byte(CSI)) {
-		return 0, nil, ErrInvalidSequence
-	}
-
-	for idx, b := range data[len(CSI):] {
-		if IsFinalByte(b) {
-			advance := idx + 1 + len(CSI)
-			return advance, data[:advance], nil
-		}
-	}
-
-	if atEOF {
-		return 0, nil, ErrInvalidSequence
-	}
-
-	return 0, nil, nil
+type SequenceScanner struct {
+	buf          *InputBuffer
+	initialState ScanFn
+	sequence     Sequence
+	err          error
 }
 
-func ScanSS3(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if len(data) < 3 {
-		if atEOF && len(data) > 0 {
-			return 0, nil, ErrInvalidSequence
-		}
-
-		return 0, nil, nil
+func NewSequenceScanner(r iox.ContextReader, f ScanFn) *SequenceScanner {
+	s := &SequenceScanner{
+		initialState: f,
+		buf: &InputBuffer{
+			bufiox.NewContextReader(r),
+		},
 	}
 
-	if !bytes.HasPrefix(data, []byte(SS3)) {
-		return 0, nil, ErrInvalidSequence
-	}
-
-	finalByte := data[2]
-
-	if IsFinalByte(finalByte) {
-		return 3, data[:3], nil
-	}
-
-	return 0, nil, ErrInvalidSequence
+	return s
 }
 
-func ScanUtf8(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if len(data) == 0 {
-		return 0, nil, nil
-	}
+func (s *SequenceScanner) ScanContext(ctx context.Context) bool {
+	state := s.initialState
 
-	r, size := utf8.DecodeRune(data)
+	for state != nil {
+		state, s.sequence, s.err = state(ctx, s.buf)
 
-	if r == utf8.RuneError && size == 1 {
-		if len(data) < utf8.UTFMax && !atEOF {
-			return 0, nil, nil
+		if s.err != nil {
+			return false
 		}
 
-		return 0, nil, ErrInvalidSequence
-	}
-
-	return size, data[:size], nil
-}
-
-func IsFinalByte(b byte) bool {
-	if b >= 0x40 && b <= 0x7E {
-		return true
+		if len(s.sequence.Data) > 0 {
+			return true
+		}
 	}
 
 	return false
+}
+
+func (s *SequenceScanner) Sequence() Sequence {
+	return s.sequence
+}
+
+func (s *SequenceScanner) Err() error {
+	return s.err
+}
+
+func TODO(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	return nil, seq, fmt.Errorf("not implemented")
 }
