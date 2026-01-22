@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/nimelo/tui-go/termx"
@@ -31,7 +32,9 @@ func main() {
 
 		if seq.Is(vt.SeqUtf8) {
 			r, _ := utf8.DecodeRune(seq.Data)
-			fmt.Fprintf(terminal, " (%c)", r)
+			if unicode.IsPrint(r) {
+				fmt.Fprintf(terminal, " (%c)", r)
+			}
 		}
 
 		if slices.Equal(seq.Data, ctrlC) {

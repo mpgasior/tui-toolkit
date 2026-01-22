@@ -1,8 +1,10 @@
 package vt
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"time"
 	"unicode/utf8"
 
 	"github.com/nimelo/tui-go/bufiox"
@@ -18,6 +20,7 @@ const (
 	SeqUtf8
 	SeqCSI
 	SeqOSC
+	SeqSS3
 )
 
 type Sequence struct {
@@ -80,18 +83,66 @@ func (s *SequenceScanner) Err() error {
 }
 
 func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	var b byte
-	b, err = i.ReadByteContext(ctx)
+	var buf []byte
+	buf, err = i.PeekContext(ctx, 1)
 	if err != nil {
 		return nil, seq, err
 	}
 
+	b := buf[0]
 	if b == 0x1B {
-		return nil, Sequence{Data: []byte{b}, Type: SeqEscape}, err
+		readCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+		defer cancel()
+
+		buf, err = i.PeekContext(readCtx, 2)
+		if len(buf) < 2 {
+			_, err = i.ReadByteContext(ctx)
+			return nil, Sequence{Data: []byte{b}, Type: SeqEscape}, err
+		}
+
+		prefix := buf[:2]
+		if bytes.HasPrefix(prefix, []byte(CSI)) {
+			return ScanCSI, seq, err
+		}
+
+		if bytes.HasPrefix(prefix, []byte(OSC)) {
+			return ScanCSI, seq, err
+		}
+
+		if bytes.HasPrefix(prefix, []byte(SS3)) {
+			return ScanSS3, seq, err
+		}
 	}
 
-	err = i.UnreadByte()
 	return ScanUtf8, seq, err
+}
+
+func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	return TODO, seq, err
+}
+
+func ScanOSC(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	return TODO, seq, err
+}
+
+func ScanSS3(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	var buf []byte
+
+	buf, err = i.PeekContext(ctx, 3)
+	if err != nil {
+		return nil, seq, err
+	}
+
+	if len(buf) != 3 {
+		return nil, seq, fmt.Errorf("short read")
+	}
+
+	if bytes.HasPrefix(buf, []byte(SS3)) && IsCSIFinalByte(buf[2]) {
+		_, _ = i.ReadContext(ctx, buf)
+		return nil, Sequence{Data: buf, Type: SeqSS3}, nil
+	}
+
+	return nil, seq, fmt.Errorf("not a valid SS3 sequence")
 }
 
 func ScanUtf8(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
