@@ -10,20 +10,8 @@ const (
 )
 
 const (
-	EscByte byte = 0x1b
+	EscByte byte = 0x1B
 )
-
-func IsESC(b byte) bool {
-	return b == 0x1b
-}
-
-func IsCSI(b []byte) bool {
-	if len(b) < 2 {
-		return false
-	}
-
-	return IsESC(b[0]) && b[1] == '['
-}
 
 func IsESCFinalByte(b byte) bool {
 	return b >= 0x30 && b <= 0x7E

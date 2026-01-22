@@ -3,7 +3,9 @@ package vt
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"time"
 	"unicode/utf8"
 
@@ -37,6 +39,8 @@ type InputBuffer struct {
 }
 
 type ScanFn func(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error)
+
+var ErrInvalidSeq = fmt.Errorf("the sequence is invalid")
 
 type SequenceScanner struct {
 	buf          *InputBuffer
@@ -85,16 +89,16 @@ func (s *SequenceScanner) Err() error {
 func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
 	var buf []byte
 	buf, err = i.PeekContext(ctx, 1)
-	if err != nil {
+	if len(buf) != 1 || err != nil {
 		return nil, seq, err
 	}
 
 	b := buf[0]
 	if b == 0x1B {
-		readCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+		peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
 		defer cancel()
 
-		buf, err = i.PeekContext(readCtx, 2)
+		buf, err = i.PeekContext(peekCtx, 2)
 		if len(buf) < 2 {
 			_, err = i.ReadByteContext(ctx)
 			return nil, Sequence{Data: []byte{b}, Type: SeqEscape}, err
@@ -118,7 +122,35 @@ func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence
 }
 
 func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	return TODO, seq, err
+	var buf []byte
+
+	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+	defer cancel()
+
+	buf, err = i.PeekContext(peekCtx, 64)
+	if len(buf) == 0 {
+		return nil, seq, err
+	}
+
+	if !bytes.HasPrefix(buf, []byte(CSI)) {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	idx := slices.IndexFunc(buf[2:], IsCSIFinalByte)
+	if idx == -1 {
+		if errors.Is(err, context.DeadlineExceeded) && len(buf) <= 64 {
+			return nil, seq, err
+		}
+
+		return nil, seq, ErrInvalidSeq
+	}
+
+	size := 2 + idx + 1
+	if _, err = i.Discard(size); err != nil {
+		return nil, seq, err
+	}
+
+	return nil, Sequence{Data: buf[:size], Type: SeqCSI}, nil
 }
 
 func ScanOSC(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
@@ -128,21 +160,20 @@ func ScanOSC(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 func ScanSS3(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
 	var buf []byte
 
-	buf, err = i.PeekContext(ctx, 3)
-	if err != nil {
+	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+	defer cancel()
+
+	buf, err = i.PeekContext(peekCtx, 3)
+	if err != nil || len(buf) != 3 {
 		return nil, seq, err
 	}
 
-	if len(buf) != 3 {
-		return nil, seq, fmt.Errorf("short read")
-	}
-
 	if bytes.HasPrefix(buf, []byte(SS3)) && IsCSIFinalByte(buf[2]) {
-		_, _ = i.ReadContext(ctx, buf)
+		_, err = i.ReadContext(ctx, buf)
 		return nil, Sequence{Data: buf, Type: SeqSS3}, nil
 	}
 
-	return nil, seq, fmt.Errorf("not a valid SS3 sequence")
+	return nil, seq, ErrInvalidSeq
 }
 
 func ScanUtf8(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {

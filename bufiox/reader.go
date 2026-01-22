@@ -29,6 +29,23 @@ func (b *ContextReader) Buffered() int {
 	return b.size - b.pos
 }
 
+func (b *ContextReader) Discard(n int) (discarded int, err error) {
+	size := b.Buffered()
+	if size <= 0 {
+		return 0, fmt.Errorf("empty buffer")
+	}
+
+	if size >= n {
+		discarded = size - n
+		b.pos += n
+
+		return discarded, nil
+	}
+
+	discarded = n - b.Buffered()
+	return discarded, fmt.Errorf("not enough in the buffer")
+}
+
 func (b *ContextReader) PeekContext(ctx context.Context, n int) ([]byte, error) {
 	for b.Buffered() < n && b.err == nil {
 		b.fill(ctx)
