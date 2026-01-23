@@ -32,6 +32,7 @@ const (
 	KeyShiftRight
 	KeyShiftLeft
 
+	KeyEnter
 	KeyBackspace
 	KeyPause
 	KeyEsc
@@ -39,6 +40,9 @@ const (
 	KeyDelete
 	KeyPageUp
 	KeyPageDown
+
+	KeyCtrlEnter
+	KeyCtrlBackspace
 
 	KeyF1
 	KeyF2
@@ -108,106 +112,143 @@ const (
 	KeyAltZ
 )
 
-var KeySequences = map[Key]string{
-	KeyUnknown:  "",
-	KeyTab:      "\t",
-	KeyShiftTab: CSI + "Z",
+var KeyToCanonical = map[Key]Key{
+	KeyCtrlH: KeyCtrlBackspace,
+	KeyCtrlI: KeyTab,
+	KeyCtrlJ: KeyCtrlEnter,
+	KeyCtrlM: KeyEnter,
+	KeyCtrlZ: KeyPause,
+}
 
-	KeyUp:    CSI + "A",
-	KeyDown:  CSI + "B",
-	KeyRight: CSI + "C",
-	KeyLeft:  CSI + "D",
+func (k Key) Normalize() Key {
+	if canonical, ok := KeyToCanonical[k]; ok {
+		return canonical
+	}
 
-	KeyHome: CSI + "H",
-	KeyEnd:  CSI + "F",
+	return k
+}
 
-	KeyCtrlUp:    CSI + "1;5A",
-	KeyCtrlDown:  CSI + "1;5B",
-	KeyCtrlRight: CSI + "1;5C",
-	KeyCtrlLeft:  CSI + "1;5D",
+func (k Key) Equivalents() []Key {
+	results := []Key{k}
 
-	KeyAltUp:    CSI + "1;3A",
-	KeyAltDown:  CSI + "1;3B",
-	KeyAltRight: CSI + "1;3C",
-	KeyAltLeft:  CSI + "1;3D",
+	if canonical, ok := KeyToCanonical[k]; ok {
+		results = append(results, canonical)
+	}
 
-	KeyShiftUp:    CSI + "1;2A",
-	KeyShiftDown:  CSI + "1;2B",
-	KeyShiftRight: CSI + "1;2C",
-	KeyShiftLeft:  CSI + "1;2D",
+	for combo, canonical := range KeyToCanonical {
+		if canonical == k {
+			results = append(results, combo)
+		}
+	}
 
-	KeyBackspace: "\x7f",
-	KeyPause:     "\x1a",
-	KeyEsc:       ESC,
-	KeyInsert:    CSI + "2~",
-	KeyDelete:    CSI + "3~",
-	KeyPageUp:    CSI + "5~",
-	KeyPageDown:  CSI + "6~",
+	return results
+}
 
-	KeyF1:  ESC + "OP",
-	KeyF2:  ESC + "OQ",
-	KeyF3:  ESC + "OR",
-	KeyF4:  ESC + "OS",
-	KeyF5:  CSI + "15~",
-	KeyF6:  CSI + "17~",
-	KeyF7:  CSI + "18~",
-	KeyF8:  CSI + "19~",
-	KeyF9:  CSI + "20~",
-	KeyF10: CSI + "21~",
-	KeyF11: CSI + "23~",
-	KeyF12: CSI + "24~",
+var SequenceToKey = map[string]Key{
+	"": KeyUnknown,
 
-	KeyCtrlA: "\x01",
-	KeyCtrlB: "\x02",
-	KeyCtrlC: "\x03",
-	KeyCtrlD: "\x04",
-	KeyCtrlE: "\x05",
-	KeyCtrlF: "\x06",
-	KeyCtrlG: "\x07",
-	KeyCtrlH: "\x08",
-	KeyCtrlI: "\x09",
-	KeyCtrlJ: "\x0a",
-	KeyCtrlK: "\x0b",
-	KeyCtrlL: "\x0c",
-	KeyCtrlM: "\x0d",
-	KeyCtrlN: "\x0e",
-	KeyCtrlO: "\x0f",
-	KeyCtrlP: "\x10",
-	KeyCtrlQ: "\x11",
-	KeyCtrlR: "\x12",
-	KeyCtrlS: "\x13",
-	KeyCtrlT: "\x14",
-	KeyCtrlU: "\x15",
-	KeyCtrlV: "\x16",
-	KeyCtrlW: "\x17",
-	KeyCtrlX: "\x18",
-	KeyCtrlY: "\x19",
-	KeyCtrlZ: "\x1a",
+	"\t":      KeyTab,
+	CSI + "Z": KeyShiftTab,
 
-	KeyAltA: ESC + "a",
-	KeyAltB: ESC + "b",
-	KeyAltC: ESC + "c",
-	KeyAltD: ESC + "d",
-	KeyAltE: ESC + "e",
-	KeyAltF: ESC + "f",
-	KeyAltG: ESC + "g",
-	KeyAltH: ESC + "h",
-	KeyAltI: ESC + "i",
-	KeyAltJ: ESC + "j",
-	KeyAltK: ESC + "k",
-	KeyAltL: ESC + "l",
-	KeyAltM: ESC + "m",
-	KeyAltN: ESC + "n",
-	KeyAltO: ESC + "o",
-	KeyAltP: ESC + "p",
-	KeyAltQ: ESC + "q",
-	KeyAltR: ESC + "r",
-	KeyAltS: ESC + "s",
-	KeyAltT: ESC + "t",
-	KeyAltU: ESC + "u",
-	KeyAltV: ESC + "v",
-	KeyAltW: ESC + "w",
-	KeyAltX: ESC + "x",
-	KeyAltY: ESC + "y",
-	KeyAltZ: ESC + "z",
+	CSI + "A": KeyUp,
+	CSI + "B": KeyDown,
+	CSI + "C": KeyRight,
+	CSI + "D": KeyLeft,
+
+	CSI + "H": KeyHome,
+	CSI + "F": KeyEnd,
+
+	CSI + "1;5A": KeyCtrlUp,
+	CSI + "1;5B": KeyCtrlDown,
+	CSI + "1;5C": KeyCtrlRight,
+	CSI + "1;5D": KeyCtrlLeft,
+
+	CSI + "1;3A": KeyAltUp,
+	CSI + "1;3B": KeyAltDown,
+	CSI + "1;3C": KeyAltRight,
+	CSI + "1;3D": KeyAltLeft,
+
+	CSI + "1;2A": KeyShiftUp,
+	CSI + "1;2B": KeyShiftDown,
+	CSI + "1;2C": KeyShiftRight,
+	CSI + "1;2D": KeyShiftLeft,
+
+	"\x0d":     KeyEnter,
+	"\x7f":     KeyBackspace,
+	"\x1a":     KeyPause,
+	ESC:        KeyEsc,
+	CSI + "2~": KeyInsert,
+	CSI + "3~": KeyDelete,
+	CSI + "5~": KeyPageUp,
+	CSI + "6~": KeyPageDown,
+
+	"\x0a": KeyCtrlEnter,
+	"\x08": KeyCtrlBackspace,
+
+	ESC + "OP":  KeyF1,
+	ESC + "OQ":  KeyF2,
+	ESC + "OR":  KeyF3,
+	ESC + "OS":  KeyF4,
+	CSI + "15~": KeyF5,
+	CSI + "17~": KeyF6,
+	CSI + "18~": KeyF7,
+	CSI + "19~": KeyF8,
+	CSI + "20~": KeyF9,
+	CSI + "21~": KeyF10,
+	CSI + "23~": KeyF11,
+	CSI + "24~": KeyF12,
+
+	"\x01": KeyCtrlA,
+	"\x02": KeyCtrlB,
+	"\x03": KeyCtrlC,
+	"\x04": KeyCtrlD,
+	"\x05": KeyCtrlE,
+	"\x06": KeyCtrlF,
+	"\x07": KeyCtrlG,
+	//"\x08": KeyCtrlH,
+	//"\x09": KeyCtrlI,
+	//"\x0a": KeyCtrlJ,
+	"\x0b": KeyCtrlK,
+	"\x0c": KeyCtrlL,
+	//"\x0d": KeyCtrlM,
+	"\x0e": KeyCtrlN,
+	"\x0f": KeyCtrlO,
+	"\x10": KeyCtrlP,
+	"\x11": KeyCtrlQ,
+	"\x12": KeyCtrlR,
+	"\x13": KeyCtrlS,
+	"\x14": KeyCtrlT,
+	"\x15": KeyCtrlU,
+	"\x16": KeyCtrlV,
+	"\x17": KeyCtrlW,
+	"\x18": KeyCtrlX,
+	"\x19": KeyCtrlY,
+	//"\x1a": KeyCtrlZ,
+
+	ESC + "a": KeyAltA,
+	ESC + "b": KeyAltB,
+	ESC + "c": KeyAltC,
+	ESC + "d": KeyAltD,
+	ESC + "e": KeyAltE,
+	ESC + "f": KeyAltF,
+	ESC + "g": KeyAltG,
+	ESC + "h": KeyAltH,
+	ESC + "i": KeyAltI,
+	ESC + "j": KeyAltJ,
+	ESC + "k": KeyAltK,
+	ESC + "l": KeyAltL,
+	ESC + "m": KeyAltM,
+	ESC + "n": KeyAltN,
+	ESC + "o": KeyAltO,
+	ESC + "p": KeyAltP,
+	ESC + "q": KeyAltQ,
+	ESC + "r": KeyAltR,
+	ESC + "s": KeyAltS,
+	ESC + "t": KeyAltT,
+	ESC + "u": KeyAltU,
+	ESC + "v": KeyAltV,
+	ESC + "w": KeyAltW,
+	ESC + "x": KeyAltX,
+	ESC + "y": KeyAltY,
+	ESC + "z": KeyAltZ,
 }
