@@ -103,11 +103,21 @@ func _() {
 	_ = x[KeyAltX-92]
 	_ = x[KeyAltY-93]
 	_ = x[KeyAltZ-94]
+	_ = x[KeyAlt0-95]
+	_ = x[KeyAlt1-96]
+	_ = x[KeyAlt2-97]
+	_ = x[KeyAlt3-98]
+	_ = x[KeyAlt4-99]
+	_ = x[KeyAlt5-100]
+	_ = x[KeyAlt6-101]
+	_ = x[KeyAlt7-102]
+	_ = x[KeyAlt8-103]
+	_ = x[KeyAlt9-104]
 }
 
-const _Key_name = "KeyUnknownKeyTabKeyShiftTabKeyUpKeyDownKeyRightKeyLeftKeyHomeKeyEndKeyCtrlUpKeyCtrlDownKeyCtrlRightKeyCtrlLeftKeyAltUpKeyAltDownKeyAltRightKeyAltLeftKeyShiftUpKeyShiftDownKeyShiftRightKeyShiftLeftKeyEnterKeyBackspaceKeyPauseKeyEscKeyInsertKeyDeleteKeyPageUpKeyPageDownKeyCtrlEnterKeyCtrlBackspaceKeyF1KeyF2KeyF3KeyF4KeyF5KeyF6KeyF7KeyF8KeyF9KeyF10KeyF11KeyF12KeyCtrlAKeyCtrlBKeyCtrlCKeyCtrlDKeyCtrlEKeyCtrlFKeyCtrlGKeyCtrlHKeyCtrlIKeyCtrlJKeyCtrlKKeyCtrlLKeyCtrlMKeyCtrlNKeyCtrlOKeyCtrlPKeyCtrlQKeyCtrlRKeyCtrlSKeyCtrlTKeyCtrlUKeyCtrlVKeyCtrlWKeyCtrlXKeyCtrlYKeyCtrlZKeyAltAKeyAltBKeyAltCKeyAltDKeyAltEKeyAltFKeyAltGKeyAltHKeyAltIKeyAltJKeyAltKKeyAltLKeyAltMKeyAltNKeyAltOKeyAltPKeyAltQKeyAltRKeyAltSKeyAltTKeyAltUKeyAltVKeyAltWKeyAltXKeyAltYKeyAltZ"
+const _Key_name = "KeyUnknownKeyTabKeyShiftTabKeyUpKeyDownKeyRightKeyLeftKeyHomeKeyEndKeyCtrlUpKeyCtrlDownKeyCtrlRightKeyCtrlLeftKeyAltUpKeyAltDownKeyAltRightKeyAltLeftKeyShiftUpKeyShiftDownKeyShiftRightKeyShiftLeftKeyEnterKeyBackspaceKeyPauseKeyEscKeyInsertKeyDeleteKeyPageUpKeyPageDownKeyCtrlEnterKeyCtrlBackspaceKeyF1KeyF2KeyF3KeyF4KeyF5KeyF6KeyF7KeyF8KeyF9KeyF10KeyF11KeyF12KeyCtrlAKeyCtrlBKeyCtrlCKeyCtrlDKeyCtrlEKeyCtrlFKeyCtrlGKeyCtrlHKeyCtrlIKeyCtrlJKeyCtrlKKeyCtrlLKeyCtrlMKeyCtrlNKeyCtrlOKeyCtrlPKeyCtrlQKeyCtrlRKeyCtrlSKeyCtrlTKeyCtrlUKeyCtrlVKeyCtrlWKeyCtrlXKeyCtrlYKeyCtrlZKeyAltAKeyAltBKeyAltCKeyAltDKeyAltEKeyAltFKeyAltGKeyAltHKeyAltIKeyAltJKeyAltKKeyAltLKeyAltMKeyAltNKeyAltOKeyAltPKeyAltQKeyAltRKeyAltSKeyAltTKeyAltUKeyAltVKeyAltWKeyAltXKeyAltYKeyAltZKeyAlt0KeyAlt1KeyAlt2KeyAlt3KeyAlt4KeyAlt5KeyAlt6KeyAlt7KeyAlt8KeyAlt9"
 
-var _Key_index = [...]uint16{0, 10, 16, 27, 32, 39, 47, 54, 61, 67, 76, 87, 99, 110, 118, 128, 139, 149, 159, 171, 184, 196, 204, 216, 224, 230, 239, 248, 257, 268, 280, 296, 301, 306, 311, 316, 321, 326, 331, 336, 341, 347, 353, 359, 367, 375, 383, 391, 399, 407, 415, 423, 431, 439, 447, 455, 463, 471, 479, 487, 495, 503, 511, 519, 527, 535, 543, 551, 559, 567, 574, 581, 588, 595, 602, 609, 616, 623, 630, 637, 644, 651, 658, 665, 672, 679, 686, 693, 700, 707, 714, 721, 728, 735, 742, 749}
+var _Key_index = [...]uint16{0, 10, 16, 27, 32, 39, 47, 54, 61, 67, 76, 87, 99, 110, 118, 128, 139, 149, 159, 171, 184, 196, 204, 216, 224, 230, 239, 248, 257, 268, 280, 296, 301, 306, 311, 316, 321, 326, 331, 336, 341, 347, 353, 359, 367, 375, 383, 391, 399, 407, 415, 423, 431, 439, 447, 455, 463, 471, 479, 487, 495, 503, 511, 519, 527, 535, 543, 551, 559, 567, 574, 581, 588, 595, 602, 609, 616, 623, 630, 637, 644, 651, 658, 665, 672, 679, 686, 693, 700, 707, 714, 721, 728, 735, 742, 749, 756, 763, 770, 777, 784, 791, 798, 805, 812, 819}
 
 func (i Key) String() string {
 	idx := int(i) - 0

@@ -109,6 +109,17 @@ const (
 	KeyAltX
 	KeyAltY
 	KeyAltZ
+
+	KeyAlt0
+	KeyAlt1
+	KeyAlt2
+	KeyAlt3
+	KeyAlt4
+	KeyAlt5
+	KeyAlt6
+	KeyAlt7
+	KeyAlt8
+	KeyAlt9
 )
 
 var KeyToCanonical = map[Key]Key{
@@ -250,4 +261,15 @@ var SequenceToKey = map[string]Key{
 	ESC + "x": KeyAltX,
 	ESC + "y": KeyAltY,
 	ESC + "z": KeyAltZ,
+
+	ESC + "0": KeyAlt0,
+	ESC + "1": KeyAlt1,
+	ESC + "2": KeyAlt2,
+	ESC + "3": KeyAlt3,
+	ESC + "4": KeyAlt4,
+	ESC + "5": KeyAlt5,
+	ESC + "6": KeyAlt6,
+	ESC + "7": KeyAlt7,
+	ESC + "8": KeyAlt8,
+	ESC + "9": KeyAlt9,
 }
