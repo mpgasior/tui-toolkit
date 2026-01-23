@@ -50,7 +50,7 @@ func main() {
 			}
 		}
 
-		fmt.Println()
+		fmt.Printf("\r\n")
 	}
 
 	if err := scanner.Err(); err != nil {
