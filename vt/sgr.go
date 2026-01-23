@@ -6,23 +6,29 @@ const (
 	SGRFmt = CSI + "%dm"
 )
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type=Attr
+type Attr int
+
 // SGR Parameter Codes
 const (
-	AttrReset         = 0
-	AttrBold          = 1
-	AttrFaint         = 2
-	AttrItalic        = 3
-	AttrUnderline     = 4
-	AttrBlinkSlow     = 5
-	AttrBlinkRapid    = 6
-	AttrReverseVideo  = 7
-	AttrConceal       = 8
-	AttrStrikethrough = 9
+	AttrReset         Attr = 0
+	AttrBold          Attr = 1
+	AttrFaint         Attr = 2
+	AttrItalic        Attr = 3
+	AttrUnderline     Attr = 4
+	AttrBlinkSlow     Attr = 5
+	AttrBlinkRapid    Attr = 6
+	AttrReverseVideo  Attr = 7
+	AttrConceal       Attr = 8
+	AttrStrikethrough Attr = 9
 )
+
+//go:generate go run golang.org/x/tools/cmd/stringer -type=FgColor
+type FgColor int
 
 // Foreground Colors (30-37)
 const (
-	FgBlack = iota + 30
+	FgBlack FgColor = iota + 30
 	FgRed
 	FgGreen
 	FgYellow
@@ -33,9 +39,12 @@ const (
 	FgDefault = 39
 )
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type=FgBrightColor
+type FgBrightColor int
+
 // Foreground Colors (Bright/High Intensity)
 const (
-	FgBrightBlack = iota + 90
+	FgBrightBlack FgBrightColor = iota + 90
 	FgBrightRed
 	FgBrightGreen
 	FgBrightYellow
@@ -45,9 +54,12 @@ const (
 	FgBrightWhite
 )
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type=BgColor
+type BgColor int
+
 // Background Colors (40-47)
 const (
-	BgBlack = iota + 40
+	BgBlack BgColor = iota + 40
 	BgRed
 	BgGreen
 	BgYellow
@@ -58,9 +70,12 @@ const (
 	BgDefault = 49
 )
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type=BgBrightColor
+type BgBrightColor int
+
 // Background Colors (Bright/High Intensity)
 const (
-	BgBrightBlack = iota + 100
+	BgBrightBlack BgBrightColor = iota + 100
 	BgBrightRed
 	BgBrightGreen
 	BgBrightYellow
