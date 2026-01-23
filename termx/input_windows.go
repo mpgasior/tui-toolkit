@@ -93,6 +93,10 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err 
 				continue
 			}
 
+			if keyEvent.VirtualKeyCode != 0 && keyEvent.UnicodeChar == 0 {
+				continue
+			}
+
 			r, ok := ti.decoder.Decode(keyEvent.UnicodeChar)
 			if !ok {
 				continue
