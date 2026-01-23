@@ -15,14 +15,8 @@ import (
 func main() {
 	fd := os.Stdin.Fd()
 
-	state, err := term.MakeRaw(int(fd))
-	if err != nil {
-		panic(err)
-	}
-	restore := func() {
-		term.Restore(int(fd), state)
-	}
-	defer restore()
+	state, _ := term.MakeRaw(int(fd))
+	defer term.Restore(int(fd), state)
 
 	d := utf16x.Decoder{}
 	buffer := make([]windowsx.INPUT_RECORD, 1)
@@ -38,13 +32,16 @@ func main() {
 				continue
 			}
 
-			r, ok := d.Decode(keyEvent.UnicodeChar)
+			if keyEvent.VirtualKeyCode != 0 && keyEvent.UnicodeChar == 0 {
+				continue
+			}
 
+			r, ok := d.Decode(keyEvent.UnicodeChar)
 			if !ok {
 				continue
 			}
 
-			if r == '\x1b' {
+			if r == '\x03' {
 				break
 			}
 

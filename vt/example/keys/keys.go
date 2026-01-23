@@ -14,11 +14,11 @@ import (
 )
 
 func main() {
-	terminal, _ := termx.NewTerminal(os.Stdin, os.Stdout)
+	terminal, _ := termx.NewTerminalInput(os.Stdin)
 	defer terminal.Close()
 
-	restoreInput, _ := terminal.MakeRaw()
-	defer restoreInput()
+	restore, _ := terminal.MakeRaw()
+	defer restore()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -33,27 +33,27 @@ func main() {
 	for scanner.ScanContext(ctx) {
 		seq := scanner.Sequence()
 
-		fmt.Fprintf(terminal, "%s: [% X]", seq.Type.String(), seq.Data)
+		fmt.Printf("%s: [% X]", seq.Type.String(), seq.Data)
 
-		if seq.Is(vt.SeqUtf8) {
+		if seq.Is(vt.SeqUTF8) {
 			r, _ := utf8.DecodeRune(seq.Data)
 			if unicode.IsPrint(r) {
-				fmt.Fprintf(terminal, " %c", r)
+				fmt.Printf(" %c", r)
 			}
 		}
 
 		if key, ok := trie.Get(slices.Values(seq.Data)); ok {
-			fmt.Fprintf(terminal, " => % s", key.Equivalents())
+			fmt.Printf(" => % s", key.Equivalents())
 
 			if key == vt.KeyCtrlC {
 				cancel()
 			}
 		}
 
-		fmt.Fprintf(terminal, "\r\n")
+		fmt.Println()
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(terminal, "Error: %v\r\n", err)
+		fmt.Printf("Error: %v\r\n", err)
 	}
 }

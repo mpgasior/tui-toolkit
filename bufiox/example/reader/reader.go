@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"time"
 
@@ -12,19 +13,16 @@ import (
 )
 
 func main() {
-	tty, _ := termx.OpenTTY()
-	defer tty.Close()
+	input, _ := termx.NewTerminalInput(os.Stdin)
+	defer input.Close()
 
-	terminal, _ := termx.NewTerminal(tty.In, tty.Out)
-	defer terminal.Close()
-
-	restoreInput, _ := terminal.MakeRaw()
-	defer restoreInput()
+	restore, _ := input.MakeRaw()
+	defer restore()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	reader := bufiox.NewContextReader(terminal)
+	reader := bufiox.NewContextReader(input)
 	ctrlC := []byte{0x03}
 
 	var buffer []byte
@@ -44,7 +42,7 @@ func main() {
 
 		buffer = append(buffer, b)
 
-		fmt.Fprintf(terminal, "[% X]\r\n", buffer)
+		fmt.Printf("[% X]\r\n", buffer)
 
 		if slices.Equal(buffer, ctrlC) {
 			cancel()

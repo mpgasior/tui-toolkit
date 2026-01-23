@@ -1,6 +1,11 @@
 package trie
 
-import "iter"
+import (
+	"fmt"
+	"iter"
+)
+
+var ErrAlreadyExists = fmt.Errorf("key already exists in the trie")
 
 type Trie[K comparable, V any] struct {
 	children map[K]*Trie[K, V]
@@ -14,18 +19,26 @@ func NewTrie[K comparable, V any]() *Trie[K, V] {
 	}
 }
 
-func (t *Trie[K, V]) Insert(seq iter.Seq[K], value V) {
+func (t *Trie[K, V]) Insert(seq iter.Seq[K], value V) error {
 	current := t
 	for k := range seq {
-		if _, ok := current.children[k]; !ok {
-			current.children[k] = NewTrie[K, V]()
+		next, ok := current.children[k]
+		if !ok {
+			next = NewTrie[K, V]()
+			current.children[k] = next
 		}
 
-		current = current.children[k]
+		current = next
+	}
+
+	if current.isTerm {
+		return ErrAlreadyExists
 	}
 
 	current.value = value
 	current.isTerm = true
+
+	return nil
 }
 
 func (t *Trie[K, V]) Get(seq iter.Seq[K]) (val V, found bool) {

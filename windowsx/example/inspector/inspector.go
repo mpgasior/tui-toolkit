@@ -15,10 +15,7 @@ import (
 func main() {
 	fd := os.Stdin.Fd()
 
-	state, err := term.MakeRaw(int(fd))
-	if err != nil {
-		panic(err)
-	}
+	state, _ := term.MakeRaw(int(fd))
 	defer term.Restore(int(fd), state)
 
 	buffer := make([]windowsx.INPUT_RECORD, 1)

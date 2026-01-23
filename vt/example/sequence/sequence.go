@@ -35,7 +35,7 @@ func main() {
 
 		fmt.Fprintf(terminal, "%s: [% X]", seq.Type.String(), seq.Data)
 
-		if seq.Is(vt.SeqUtf8) {
+		if seq.Is(vt.SeqUTF8) {
 			r, _ := utf8.DecodeRune(seq.Data)
 			if unicode.IsPrint(r) {
 				fmt.Fprintf(terminal, " (%c)", r)

@@ -6,7 +6,6 @@ const (
 	SGRFmt = CSI + "%dm"
 )
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=Attr
 type Attr int
 
 // SGR Parameter Codes
@@ -23,7 +22,6 @@ const (
 	AttrStrikethrough Attr = 9
 )
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=FgColor
 type FgColor int
 
 // Foreground Colors (30-37)
@@ -39,7 +37,6 @@ const (
 	FgDefault = 39
 )
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=FgBrightColor
 type FgBrightColor int
 
 // Foreground Colors (Bright/High Intensity)
@@ -54,7 +51,6 @@ const (
 	FgBrightWhite
 )
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=BgColor
 type BgColor int
 
 // Background Colors (40-47)
@@ -70,7 +66,6 @@ const (
 	BgDefault = 49
 )
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=BgBrightColor
 type BgBrightColor int
 
 // Background Colors (Bright/High Intensity)

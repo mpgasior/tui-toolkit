@@ -1,5 +1,7 @@
 package vt
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type=Key,SequenceType,Attr,FgColor,FgBrightColor,BgColor,BgBrightColor -output=vt_string.go
+
 // See: https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
 const (
 	ESC = "\x1b"

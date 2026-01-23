@@ -62,6 +62,7 @@ func main() {
 
 	printRow("Attrs", attrs)
 
+	fmt.Println()
 	reset := fmt.Sprintf(vt.SGRFmt, vt.AttrReset)
 	for i := range 256 {
 		fmt256 := fmt.Sprintf(vt.BgColor256Fmt, i)

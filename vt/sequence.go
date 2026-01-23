@@ -14,13 +14,12 @@ import (
 	"github.com/nimelo/tui-go/iox"
 )
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=SequenceType
 type SequenceType int
 
 const (
 	SeqUnknown SequenceType = iota
 	SeqEscape
-	SeqUtf8
+	SeqUTF8
 	SeqCSI
 	SeqOSC
 	SeqDCS
@@ -315,7 +314,7 @@ func ScanUtf8(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, e
 		return nil, Sequence{Data: data, Type: SeqUnknown}, nil
 	}
 
-	return nil, Sequence{Data: data, Type: SeqUtf8}, nil
+	return nil, Sequence{Data: data, Type: SeqUTF8}, nil
 }
 
 func TODO(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
