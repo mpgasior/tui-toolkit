@@ -149,7 +149,7 @@ func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 
 	idx := slices.IndexFunc(buf[2:], IsCSIFinalByte)
 	if idx == -1 {
-		if errors.Is(err, context.DeadlineExceeded) && len(buf) <= 64 {
+		if errors.Is(err, context.DeadlineExceeded) && len(buf) <= maxCSILen {
 			return nil, seq, err
 		}
 
