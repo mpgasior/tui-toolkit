@@ -68,6 +68,11 @@ func (s *SequenceScanner) ScanContext(ctx context.Context) bool {
 	for state != nil {
 		state, s.sequence, s.err = state(ctx, s.buf)
 
+		if errors.Is(s.err, ErrInvalidSeq) {
+			state = ScanInvalid
+			continue
+		}
+
 		if s.err != nil {
 			return false
 		}
@@ -89,8 +94,7 @@ func (s *SequenceScanner) Err() error {
 }
 
 func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	var buf []byte
-	buf, err = i.PeekContext(ctx, 1)
+	buf, err := i.PeekContext(ctx, 1)
 	if len(buf) != 1 || err != nil {
 		return nil, seq, err
 	}
@@ -132,13 +136,11 @@ func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence
 }
 
 func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	var buf []byte
-
 	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
 	defer cancel()
 
 	const maxCSILen = 64
-	buf, err = i.PeekContext(peekCtx, maxCSILen)
+	buf, err := i.PeekContext(peekCtx, maxCSILen)
 	if len(buf) == 0 {
 		return nil, seq, err
 	}
@@ -317,6 +319,22 @@ func ScanUtf8(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, e
 	return nil, Sequence{Data: data, Type: SeqUTF8}, nil
 }
 
-func TODO(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	return nil, seq, fmt.Errorf("not implemented")
+func ScanInvalid(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	const maxGarbage = 4096
+
+	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+	defer cancel()
+
+	buf, err := i.PeekContext(peekCtx, maxGarbage)
+
+	if len(buf) > 0 {
+		_, err = i.Discard(len(buf))
+		return nil, Sequence{Data: buf, Type: SeqUnknown}, err
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return nil, seq, nil
+	}
+
+	return nil, seq, err
 }
