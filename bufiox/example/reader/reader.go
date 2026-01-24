@@ -33,14 +33,15 @@ func main() {
 		}
 
 		shortCtx, shortCancel := context.WithTimeout(ctx, 20*time.Millisecond)
-		b, err := reader.ReadByteContext(shortCtx)
+		b, err := reader.PeekContext(shortCtx, 1)
+		shortCancel()
 		if errors.Is(err, context.DeadlineExceeded) {
 			buffer = nil
 			continue
 		}
-		shortCancel()
 
-		buffer = append(buffer, b)
+		_, _ = reader.Discard(1)
+		buffer = append(buffer, b...)
 
 		fmt.Printf("[% X]\r\n", buffer)
 
