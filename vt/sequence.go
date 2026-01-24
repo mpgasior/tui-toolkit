@@ -38,11 +38,29 @@ func (s Sequence) Is(t SequenceType) bool {
 
 type InputBuffer struct {
 	*bufiox.ContextReader
+	BurstTimeout time.Duration
+}
+
+func (i *InputBuffer) PeekBurst(ctx context.Context, n int) ([]byte, error) {
+	peekCtx, cancel := context.WithTimeout(ctx, i.BurstTimeout)
+	defer cancel()
+
+	buf, err := i.PeekContext(peekCtx, n)
+
+	if errors.Is(err, context.DeadlineExceeded) && len(buf) > 0 {
+		return buf, nil
+	}
+
+	return buf, err
 }
 
 type ScanFn func(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error)
 
 var ErrInvalidSeq = fmt.Errorf("the sequence is invalid")
+
+const (
+	DefaultEscapeTimeout = 20 * time.Millisecond
+)
 
 type SequenceScanner struct {
 	buf          *InputBuffer
@@ -56,10 +74,15 @@ func NewSequenceScanner(r iox.ContextReader, f ScanFn) *SequenceScanner {
 		initialState: f,
 		buf: &InputBuffer{
 			bufiox.NewContextReader(r),
+			DefaultEscapeTimeout,
 		},
 	}
 
 	return s
+}
+
+func (s *SequenceScanner) SetBurstTimeout(d time.Duration) {
+	s.buf.BurstTimeout = d
 }
 
 func (s *SequenceScanner) ScanContext(ctx context.Context) bool {
@@ -101,12 +124,9 @@ func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence
 
 	b := buf[0]
 	if b == EscByte {
-		peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
-		defer cancel()
-
-		buf, err = i.PeekContext(peekCtx, 2)
+		buf, err = i.PeekBurst(ctx, 2)
 		if len(buf) < 2 {
-			_, err = i.ReadByteContext(ctx)
+			_, err = i.Discard(1)
 			return nil, Sequence{Data: []byte{b}, Type: SeqEscape}, err
 		}
 
@@ -136,11 +156,8 @@ func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence
 }
 
 func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
-	defer cancel()
-
 	const maxCSILen = 64
-	buf, err := i.PeekContext(peekCtx, maxCSILen)
+	buf, err := i.PeekBurst(ctx, maxCSILen)
 	if len(buf) == 0 {
 		return nil, seq, err
 	}
@@ -151,10 +168,6 @@ func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 
 	idx := slices.IndexFunc(buf[2:], IsCSIFinalByte)
 	if idx == -1 {
-		if errors.Is(err, context.DeadlineExceeded) && len(buf) <= maxCSILen {
-			return nil, seq, err
-		}
-
 		return nil, seq, ErrInvalidSeq
 	}
 
@@ -167,12 +180,9 @@ func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 }
 
 func ScanOSC(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
-	defer cancel()
-
 	const maxOSCLen = 8192
-	buf, err := i.PeekContext(peekCtx, maxOSCLen)
-	if len(buf) < 2 {
+	buf, err := i.PeekBurst(ctx, maxOSCLen)
+	if len(buf) == 0 {
 		return nil, seq, err
 	}
 
@@ -197,20 +207,13 @@ func ScanOSC(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 		return nil, Sequence{Data: buf[:size], Type: SeqOSC}, nil
 	}
 
-	if len(buf) >= maxOSCLen {
-		return nil, seq, ErrInvalidSeq
-	}
-
-	return nil, seq, err
+	return nil, seq, ErrInvalidSeq
 }
 
 func ScanDCS(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
-	defer cancel()
-
 	const maxDCSLen = 8192
-	buf, err := i.PeekContext(peekCtx, maxDCSLen)
-	if len(buf) < 2 {
+	buf, err := i.PeekBurst(ctx, maxDCSLen)
+	if len(buf) == 0 {
 		return nil, seq, err
 	}
 
@@ -218,9 +221,7 @@ func ScanDCS(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 		return nil, seq, ErrInvalidSeq
 	}
 
-	idx := bytes.Index(buf, []byte(ST))
-
-	if idx != -1 {
+	if idx := bytes.Index(buf, []byte(ST)); idx != -1 {
 		size := idx + 2
 		if _, err = i.Discard(size); err != nil {
 			return nil, seq, err
@@ -229,39 +230,44 @@ func ScanDCS(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 		return nil, Sequence{Data: buf[:size], Type: SeqDCS}, nil
 	}
 
-	if len(buf) >= maxDCSLen {
-		return nil, seq, ErrInvalidSeq
-	}
-
-	return nil, seq, err
-}
-
-func ScanSS3(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
-	defer cancel()
-
-	const SS3Len = 3
-	buf, err := i.PeekContext(peekCtx, SS3Len)
-	if err != nil || len(buf) != SS3Len {
-		return nil, seq, err
-	}
-
-	if bytes.HasPrefix(buf, []byte(SS3)) && IsCSIFinalByte(buf[2]) {
-		_, err = i.ReadContext(ctx, buf)
-		return nil, Sequence{Data: buf, Type: SeqSS3}, nil
-	}
-
 	return nil, seq, ErrInvalidSeq
 }
 
-func ScanMeta(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
-	defer cancel()
-
-	const MetaLen = 2
-	buf, err := i.PeekContext(peekCtx, MetaLen)
-	if err != nil || len(buf) != MetaLen {
+func ScanSS3(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	const SS3Len = 3
+	buf, err := i.PeekBurst(ctx, SS3Len)
+	if len(buf) == 0 {
 		return nil, seq, err
+	}
+
+	if len(buf) != SS3Len {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	if !bytes.HasPrefix(buf, []byte(SS3)) {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	if !IsCSIFinalByte(buf[2]) {
+		return nil, seq, ErrInvalidSeq
+	}
+
+	if _, err = i.Discard(SS3Len); err != nil {
+		return nil, seq, err
+	}
+
+	return nil, Sequence{Data: buf, Type: SeqSS3}, nil
+}
+
+func ScanMeta(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	const MetaLen = 2
+	buf, err := i.PeekBurst(ctx, MetaLen)
+	if len(buf) == 0 {
+		return nil, seq, err
+	}
+
+	if len(buf) != MetaLen {
+		return nil, seq, ErrInvalidSeq
 	}
 
 	r := rune(buf[1])
@@ -281,59 +287,28 @@ func ScanMeta(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, e
 }
 
 func ScanUtf8(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	shortCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
-	defer cancel()
-
-	var b byte
-	b, err = i.ReadByteContext(shortCtx)
-	if err != nil {
-		return ScanInitial, seq, err
+	buf, err := i.PeekBurst(ctx, utf8.UTFMax)
+	if len(buf) == 0 {
+		return nil, seq, err
 	}
 
-	if !utf8.RuneStart(b) {
-		return nil, Sequence{Data: []byte{b}, Type: SeqUnknown}, nil
+	r, size := utf8.DecodeRune(buf)
+	if r == utf8.RuneError && size == 1 {
+		return nil, seq, ErrInvalidSeq
 	}
 
-	size := utf8.RuneLen(rune(b))
-	if size == -1 {
-		return nil, Sequence{Data: []byte{b}, Type: SeqUnknown}, nil
-	}
-
-	data := make([]byte, 1, utf8.UTFMax)
-	data[0] = b
-
-	for !utf8.FullRune(data) {
-		b, err = i.ReadByteContext(shortCtx)
-		if err != nil {
-			return nil, seq, err
-		}
-
-		data = append(data, b)
-	}
-
-	r, rSize := utf8.DecodeRune(data)
-	if r == utf8.RuneError && rSize == 1 {
-		return nil, Sequence{Data: data, Type: SeqUnknown}, nil
-	}
-
-	return nil, Sequence{Data: data, Type: SeqUTF8}, nil
+	_, err = i.Discard(size)
+	return nil, Sequence{Data: buf[:size], Type: SeqUTF8}, nil
 }
 
 func ScanInvalid(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	const maxGarbage = 4096
+	const maxGarbage = 8192
 
-	peekCtx, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
-	defer cancel()
-
-	buf, err := i.PeekContext(peekCtx, maxGarbage)
+	buf, err := i.PeekBurst(ctx, maxGarbage)
 
 	if len(buf) > 0 {
 		_, err = i.Discard(len(buf))
 		return nil, Sequence{Data: buf, Type: SeqUnknown}, err
-	}
-
-	if errors.Is(err, context.DeadlineExceeded) {
-		return nil, seq, nil
 	}
 
 	return nil, seq, err

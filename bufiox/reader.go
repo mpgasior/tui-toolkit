@@ -2,10 +2,18 @@ package bufiox
 
 import (
 	"context"
-	"fmt"
-	"unicode/utf8"
+	"errors"
+	"io"
 
 	"github.com/nimelo/tui-go/iox"
+)
+
+var (
+	ErrBufferFull = errors.New("bufiox: buffer full")
+)
+
+const (
+	maxConsecutiveEmptyReads = 100
 )
 
 type ContextReader struct {
@@ -25,6 +33,13 @@ func NewContextReader(r iox.ContextReader) *ContextReader {
 	}
 }
 
+func NewContextReaderSize(r iox.ContextReader, size int) *ContextReader {
+	return &ContextReader{
+		reader: r,
+		buf:    make([]byte, size),
+	}
+}
+
 func (b *ContextReader) Buffered() int {
 	return b.size - b.pos
 }
@@ -32,7 +47,7 @@ func (b *ContextReader) Buffered() int {
 func (b *ContextReader) Discard(n int) (discarded int, err error) {
 	size := b.Buffered()
 	if size <= 0 {
-		return 0, fmt.Errorf("empty buffer")
+		return 0, nil
 	}
 
 	if size >= n {
@@ -43,31 +58,52 @@ func (b *ContextReader) Discard(n int) (discarded int, err error) {
 	}
 
 	discarded = n - b.Buffered()
-	return discarded, fmt.Errorf("not enough in the buffer")
+	return discarded, b.readErr()
 }
 
 func (b *ContextReader) PeekContext(ctx context.Context, n int) ([]byte, error) {
-	for b.Buffered() < n && b.err == nil {
+	if n > len(b.buf) {
+		return nil, ErrBufferFull
+	}
+
+	for b.Buffered() < n && b.Buffered() < len(b.buf) && b.err == nil {
 		b.fill(ctx)
 	}
 
-	if b.Buffered() < n {
-		return b.buf[b.pos:b.size], b.readErr()
+	if n > len(b.buf) {
+		return b.buf[b.pos:b.size], ErrBufferFull
+	}
+
+	var err error
+	if avail := b.size - b.pos; avail < n {
+		n = avail
+		err = b.readErr()
+		if err != nil {
+			err = ErrBufferFull
+		}
 	}
 
 	return b.buf[b.pos : b.pos+n], nil
 }
 
-func (b *ContextReader) ReadContext(ctx context.Context, p []byte) (int, error) {
-	if b.pos >= b.size && b.err == nil {
-		b.fill(ctx)
+func (b *ContextReader) ReadContext(ctx context.Context, p []byte) (n int, err error) {
+	if b.Buffered() == 0 && len(p) > len(b.buf) {
+		return b.reader.ReadContext(ctx, p)
 	}
 
-	if b.pos >= b.size {
-		return 0, b.readErr()
+	if b.Buffered() == 0 {
+		if b.err != nil {
+			return 0, b.readErr()
+		}
+
+		n, b.err = b.reader.ReadContext(ctx, b.buf)
+		if n == 0 {
+			return 0, b.readErr()
+		}
+		b.size += n
 	}
 
-	n := copy(p, b.buf[b.pos:b.size])
+	n = copy(p, b.buf[b.pos:b.size])
 	b.pos += n
 	return n, nil
 }
@@ -79,71 +115,25 @@ func (b *ContextReader) fill(ctx context.Context) {
 		b.pos = 0
 	}
 
-	if b.size == len(b.buf) {
-		tmp := make([]byte, b.size*2)
-		copy(tmp, b.buf[b.pos:b.size])
-		b.buf = tmp
-	}
+	for i := maxConsecutiveEmptyReads; i > 0; i-- {
+		n, err := b.reader.ReadContext(ctx, b.buf[b.size:])
+		b.size += n
 
-	n, err := b.reader.ReadContext(ctx, b.buf[b.size:])
-	b.size += n
-
-	if err != nil {
-		b.err = err
-	}
-}
-
-func (b *ContextReader) ReadByteContext(ctx context.Context) (byte, error) {
-	if b.Buffered() < 1 {
-		b.fill(ctx)
-	}
-
-	if b.Buffered() >= 1 {
-		byte := b.buf[b.pos]
-		b.pos += 1
-
-		return byte, nil
-	}
-
-	return 0, b.readErr()
-}
-
-func (b *ContextReader) ReadRuneContext(ctx context.Context) (r rune, size int, err error) {
-	for {
-		if b.Buffered() > 0 {
-			buf := b.buf[b.pos:b.size]
-			r, size = utf8.DecodeRune(buf)
-			if utf8.FullRune(buf) {
-				b.pos += size
-				return r, size, nil
-			}
+		if err != nil {
+			b.err = err
+			return
 		}
 
-		if b.err != nil {
-			if b.Buffered() <= 0 {
-				return 0, 0, b.readErr()
-			}
-
-			r, size = utf8.DecodeRune(b.buf[b.pos:b.size])
-			b.pos += size
-			return r, size, nil
+		if n > 0 {
+			return
 		}
-
-		b.fill(ctx)
 	}
+
+	b.err = io.ErrNoProgress
 }
 
 func (b *ContextReader) Reset() {
 	b.pos, b.size = 0, 0
-}
-
-func (b *ContextReader) UnreadByte() error {
-	if b.pos > 0 {
-		b.pos -= 1
-		return nil
-	}
-
-	return fmt.Errorf("nothing to unread")
 }
 
 func (b *ContextReader) readErr() error {
