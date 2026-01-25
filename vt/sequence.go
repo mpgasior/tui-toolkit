@@ -47,10 +47,6 @@ func (i *InputBuffer) PeekBurst(ctx context.Context, n int) ([]byte, error) {
 
 	buf, err := i.PeekContext(peekCtx, n)
 
-	if errors.Is(err, context.DeadlineExceeded) && len(buf) > 0 {
-		return buf, nil
-	}
-
 	return buf, err
 }
 
@@ -126,7 +122,7 @@ func ScanInitial(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence
 	if b == EscByte {
 		buf, err = i.PeekBurst(ctx, 2)
 		if len(buf) < 2 {
-			_, err = i.Discard(1)
+			_, err = i.DiscardContext(ctx, 1)
 			return nil, Sequence{Data: []byte{b}, Type: SeqEscape}, err
 		}
 
@@ -168,14 +164,15 @@ func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 
 	idx := slices.IndexFunc(buf[2:], IsCSIFinalByte)
 	if idx == -1 {
-		return nil, seq, ErrInvalidSeq
-	}
-
-	size := 2 + idx + 1
-	if _, err = i.Discard(size); err != nil {
+		if len(buf) == maxCSILen {
+			return nil, seq, ErrInvalidSeq
+		}
 		return nil, seq, err
 	}
 
+	size := 2 + idx + 1
+
+	_, _ = i.DiscardContext(ctx, size)
 	return nil, Sequence{Data: buf[:size], Type: SeqCSI}, nil
 }
 
@@ -198,16 +195,16 @@ func ScanOSC(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 		termLen = 1
 	}
 
-	if idx != -1 {
-		size := idx + termLen
-		if _, err = i.Discard(size); err != nil {
-			return nil, seq, err
+	if idx == -1 {
+		if len(buf) == maxOSCLen {
+			return nil, seq, ErrInvalidSeq
 		}
-
-		return nil, Sequence{Data: buf[:size], Type: SeqOSC}, nil
+		return nil, seq, err
 	}
 
-	return nil, seq, ErrInvalidSeq
+	size := idx + termLen
+	_, _ = i.DiscardContext(ctx, size)
+	return nil, Sequence{Data: buf[:size], Type: SeqOSC}, nil
 }
 
 func ScanDCS(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
@@ -221,27 +218,24 @@ func ScanDCS(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 		return nil, seq, ErrInvalidSeq
 	}
 
-	if idx := bytes.Index(buf, []byte(ST)); idx != -1 {
-		size := idx + 2
-		if _, err = i.Discard(size); err != nil {
-			return nil, seq, err
+	idx := bytes.Index(buf, []byte(ST))
+	if idx == -1 {
+		if len(buf) == maxDCSLen {
+			return nil, seq, ErrInvalidSeq
 		}
-
-		return nil, Sequence{Data: buf[:size], Type: SeqDCS}, nil
+		return nil, seq, err
 	}
 
-	return nil, seq, ErrInvalidSeq
+	size := idx + 2
+	_, _ = i.DiscardContext(ctx, size)
+	return nil, Sequence{Data: buf[:size], Type: SeqDCS}, nil
 }
 
 func ScanSS3(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
 	const SS3Len = 3
 	buf, err := i.PeekBurst(ctx, SS3Len)
-	if len(buf) == 0 {
-		return nil, seq, err
-	}
-
 	if len(buf) != SS3Len {
-		return nil, seq, ErrInvalidSeq
+		return nil, seq, err
 	}
 
 	if !bytes.HasPrefix(buf, []byte(SS3)) {
@@ -252,22 +246,15 @@ func ScanSS3(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 		return nil, seq, ErrInvalidSeq
 	}
 
-	if _, err = i.Discard(SS3Len); err != nil {
-		return nil, seq, err
-	}
-
+	_, _ = i.DiscardContext(ctx, len(buf))
 	return nil, Sequence{Data: buf, Type: SeqSS3}, nil
 }
 
 func ScanMeta(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
 	const MetaLen = 2
 	buf, err := i.PeekBurst(ctx, MetaLen)
-	if len(buf) == 0 {
-		return nil, seq, err
-	}
-
 	if len(buf) != MetaLen {
-		return nil, seq, ErrInvalidSeq
+		return nil, seq, err
 	}
 
 	r := rune(buf[1])
@@ -279,10 +266,7 @@ func ScanMeta(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, e
 		return nil, seq, ErrInvalidSeq
 	}
 
-	if _, err := i.Discard(MetaLen); err != nil {
-		return nil, seq, err
-	}
-
+	_, _ = i.DiscardContext(ctx, len(buf))
 	return nil, Sequence{Data: buf, Type: SeqMeta}, nil
 }
 
@@ -297,7 +281,7 @@ func ScanUtf8(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, e
 		return nil, seq, ErrInvalidSeq
 	}
 
-	_, err = i.Discard(size)
+	_, _ = i.DiscardContext(ctx, size)
 	return nil, Sequence{Data: buf[:size], Type: SeqUTF8}, nil
 }
 
@@ -307,7 +291,7 @@ func ScanInvalid(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence
 	buf, err := i.PeekBurst(ctx, maxGarbage)
 
 	if len(buf) > 0 {
-		_, err = i.Discard(len(buf))
+		_, err = i.DiscardContext(ctx, len(buf))
 		return nil, Sequence{Data: buf, Type: SeqUnknown}, err
 	}
 

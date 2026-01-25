@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -26,6 +25,7 @@ func main() {
 	ctrlC := []byte{0x03}
 
 	var buffer []byte
+	const peekSize = 64
 
 	for {
 		if ctx.Err() != nil {
@@ -33,14 +33,14 @@ func main() {
 		}
 
 		shortCtx, shortCancel := context.WithTimeout(ctx, 20*time.Millisecond)
-		b, err := reader.PeekContext(shortCtx, 1)
+		b, _ := reader.PeekContext(shortCtx, peekSize)
 		shortCancel()
-		if errors.Is(err, context.DeadlineExceeded) {
+		if len(b) == 0 {
 			buffer = nil
 			continue
 		}
 
-		_, _ = reader.Discard(1)
+		_, _ = reader.DiscardContext(ctx, len(b))
 		buffer = append(buffer, b...)
 
 		fmt.Printf("[% X]\r\n", buffer)
