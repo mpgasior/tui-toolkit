@@ -25,10 +25,10 @@ func main() {
 
 	exitMode, _ := vt.EnterMode(terminal, vt.ModeBracketedPaste)
 	defer exitMode()
-	io.WriteString(terminal, vt.QueryTerminalName)
-	io.WriteString(terminal, vt.QueryBgColor)
-	io.WriteString(terminal, vt.QueryFgColor)
-	io.WriteString(terminal, vt.QueryCursorColor)
+	_, _ = io.WriteString(terminal, vt.QueryTerminalName)
+	_, _ = io.WriteString(terminal, vt.QueryBgColor)
+	_, _ = io.WriteString(terminal, vt.QueryFgColor)
+	_, _ = io.WriteString(terminal, vt.QueryCursorColor)
 
 	scanner := vt.NewSequenceScanner(terminal, vt.ScanInitial)
 	ctrlC := []byte{0x03}

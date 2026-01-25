@@ -18,7 +18,7 @@ func main() {
 	defer terminal.Close()
 
 	restore, _ := terminal.MakeRaw()
-	defer restore()
+	defer func() { _ = restore() }()
 
 	exit, _ := vt.EnterMode(os.Stdout, vt.ModeBracketedPaste)
 	defer exit()
@@ -30,7 +30,7 @@ func main() {
 
 	trie := trie.NewTrie[byte, vt.Key]()
 	for seq, key := range vt.SequenceToKey {
-		trie.Insert(slices.Values([]byte(seq)), key)
+		_ = trie.Insert(slices.Values([]byte(seq)), key)
 	}
 
 	for scanner.ScanContext(ctx) {

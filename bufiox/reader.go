@@ -31,14 +31,14 @@ const maxConsecutiveEmptyReads = 100
 func NewContextReaderSize(r iox.ContextReader, size int) *ContextReader {
 	return &ContextReader{
 		rd:  r,
-		buf: make([]byte, size),
+		buf: make([]byte, max(minReadBufferSize, size)),
 	}
 }
 
 func NewContextReader(r iox.ContextReader) *ContextReader {
 	return &ContextReader{
 		rd:  r,
-		buf: make([]byte, 4096),
+		buf: make([]byte, defaultBufSize),
 	}
 }
 

@@ -30,7 +30,7 @@ func main() {
 
 	trie := trie.NewTrie[byte, vt.Key]()
 	for seq, key := range vt.SequenceToKey {
-		trie.Insert(slices.Values([]byte(seq)), key)
+		_ = trie.Insert(slices.Values([]byte(seq)), key)
 	}
 
 	for scanner.ScanContext(ctx) {
