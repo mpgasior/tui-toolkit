@@ -20,6 +20,9 @@ func main() {
 	restore, _ := terminal.MakeRaw()
 	defer restore()
 
+	exit, _ := vt.EnterMode(os.Stdout, vt.ModeBracketedPaste)
+	defer exit()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
