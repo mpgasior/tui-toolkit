@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"slices"
 	"unicode"
@@ -22,12 +23,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	terminal.Write([]byte(vt.ModeBracketedPaste.Enable()))
-	defer terminal.Write([]byte(vt.ModeBracketedPaste.Disable()))
-	terminal.Write([]byte(vt.QueryTerminalName))
-	terminal.Write([]byte(vt.QueryBgColor))
-	terminal.Write([]byte(vt.QueryFgColor))
-	terminal.Write([]byte(vt.QueryCursorColor))
+	exitMode, _ := vt.EnterMode(terminal, vt.ModeBracketedPaste)
+	defer exitMode()
+	io.WriteString(terminal, vt.QueryTerminalName)
+	io.WriteString(terminal, vt.QueryBgColor)
+	io.WriteString(terminal, vt.QueryFgColor)
+	io.WriteString(terminal, vt.QueryCursorColor)
 
 	scanner := vt.NewSequenceScanner(terminal, vt.ScanInitial)
 	ctrlC := []byte{0x03}

@@ -15,11 +15,8 @@ func main() {
 	terminal, _ := termx.NewTerminal(tty.In, tty.Out)
 	defer terminal.Close()
 
-	restoreOutput, _ := terminal.EnterAltScreen()
-	defer restoreOutput()
-
-	restoreInput, _ := terminal.MakeRaw()
-	defer restoreInput()
+	restore, _ := terminal.MakeRaw()
+	defer restore()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

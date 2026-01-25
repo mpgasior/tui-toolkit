@@ -1,6 +1,10 @@
 package vt
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+	"sync"
+)
 
 type Mode int
 
@@ -19,6 +23,22 @@ const (
 	ModeAlternateScreen Mode = 1049
 	ModeBracketedPaste  Mode = 2004
 )
+
+func EnterMode(w io.Writer, m Mode) (restore func() error, err error) {
+	_, err = io.WriteString(w, m.Enable())
+
+	var once sync.Once
+	var restoreErr error
+	restore = func() error {
+		once.Do(func() {
+			_, restoreErr = io.WriteString(w, m.Disable())
+		})
+
+		return restoreErr
+	}
+
+	return restore, err
+}
 
 // Mode Changes
 // See: https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#mode-changes
