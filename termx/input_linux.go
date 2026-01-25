@@ -97,7 +97,7 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (int, error)
 	}
 
 	stop := context.AfterFunc(ctx, func() {
-		ti.pipeW.Write([]byte{0})
+		_, _ = ti.pipeW.Write([]byte{0})
 	})
 	defer stop()
 

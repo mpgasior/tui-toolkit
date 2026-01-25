@@ -18,7 +18,7 @@ func main() {
 	defer terminal.Close()
 
 	restoreInput, _ := terminal.MakeRaw()
-	defer restoreInput()
+	defer func() { _ = restoreInput() }()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

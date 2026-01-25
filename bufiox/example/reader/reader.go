@@ -16,7 +16,7 @@ func main() {
 	defer input.Close()
 
 	restore, _ := input.MakeRaw()
-	defer restore()
+	defer func() { _ = restore() }()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
