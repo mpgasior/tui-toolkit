@@ -18,7 +18,7 @@ func main() {
 	defer terminal.Close()
 
 	restore, _ := terminal.MakeRaw()
-	defer func() { _ = restore() }()
+	defer restore()
 
 	exit, _ := vt.EnterMode(os.Stdout, vt.ModeBracketedPaste)
 	defer exit()

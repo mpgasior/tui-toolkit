@@ -44,8 +44,8 @@ func main() {
 			}
 
 			if key == vt.KeyCtrlE {
-				exitAltScreen()
-				restoreInput()
+				_ = exitAltScreen()
+				_ = restoreInput()
 
 				cmd := exec.Command("nvim")
 				cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, tty.In, tty.Out

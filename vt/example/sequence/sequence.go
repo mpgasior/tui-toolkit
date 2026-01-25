@@ -18,17 +18,17 @@ func main() {
 	defer terminal.Close()
 
 	restoreInput, _ := terminal.MakeRaw()
-	defer func() { _ = restoreInput() }()
+	defer restoreInput()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	exitMode, _ := vt.EnterMode(terminal, vt.ModeBracketedPaste)
 	defer exitMode()
-	_, _ = io.WriteString(terminal, vt.QueryTerminalName)
-	_, _ = io.WriteString(terminal, vt.QueryBgColor)
-	_, _ = io.WriteString(terminal, vt.QueryFgColor)
-	_, _ = io.WriteString(terminal, vt.QueryCursorColor)
+	io.WriteString(terminal, vt.QueryTerminalName)
+	io.WriteString(terminal, vt.QueryBgColor)
+	io.WriteString(terminal, vt.QueryFgColor)
+	io.WriteString(terminal, vt.QueryCursorColor)
 
 	scanner := vt.NewSequenceScanner(terminal, vt.ScanInitial)
 	ctrlC := []byte{0x03}

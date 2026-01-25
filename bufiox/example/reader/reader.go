@@ -16,7 +16,7 @@ func main() {
 	defer input.Close()
 
 	restore, _ := input.MakeRaw()
-	defer func() { _ = restore() }()
+	defer restore()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -40,7 +40,7 @@ func main() {
 			continue
 		}
 
-		_, _ = reader.DiscardContext(ctx, len(b))
+		reader.DiscardContext(ctx, len(b))
 		buffer = append(buffer, b...)
 
 		fmt.Printf("[% X]\r\n", buffer)
