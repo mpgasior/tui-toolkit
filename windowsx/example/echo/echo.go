@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nimelo/tui-go/utf16x"
-	"github.com/nimelo/tui-go/windowsx"
+	"github.com/mpgasior/tui-go/utf16x"
+	"github.com/mpgasior/tui-go/windowsx"
 	"golang.org/x/sys/windows"
 	"golang.org/x/term"
 )

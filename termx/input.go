@@ -1,6 +1,6 @@
 package termx
 
-import "github.com/nimelo/tui-go/iox"
+import "github.com/mpgasior/tui-go/iox"
 
 type TerminalInput interface {
 	iox.ContextReader

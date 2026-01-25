@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/nimelo/tui-go/vt"
+	"github.com/mpgasior/tui-go/vt"
 )
 
 type Stringer interface {

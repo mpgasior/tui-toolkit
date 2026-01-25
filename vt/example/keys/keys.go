@@ -8,9 +8,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/nimelo/tui-go/termx"
-	"github.com/nimelo/tui-go/trie"
-	"github.com/nimelo/tui-go/vt"
+	"github.com/mpgasior/tui-go/termx"
+	"github.com/mpgasior/tui-go/trie"
+	"github.com/mpgasior/tui-go/vt"
 )
 
 func main() {

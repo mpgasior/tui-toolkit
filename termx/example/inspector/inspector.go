@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/nimelo/tui-go/termx"
+	"github.com/mpgasior/tui-go/termx"
 )
 
 func main() {

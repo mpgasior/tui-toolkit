@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/nimelo/tui-go/iox"
+	"github.com/mpgasior/tui-go/iox"
 )
 
 const (

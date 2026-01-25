@@ -1,4 +1,4 @@
-module github.com/nimelo/tui-go
+module github.com/mpgasior/tui-go
 
 go 1.24.0
 

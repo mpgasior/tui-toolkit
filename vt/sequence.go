@@ -10,8 +10,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/nimelo/tui-go/bufiox"
-	"github.com/nimelo/tui-go/iox"
+	"github.com/mpgasior/tui-go/bufiox"
+	"github.com/mpgasior/tui-go/iox"
 )
 
 type SequenceType int

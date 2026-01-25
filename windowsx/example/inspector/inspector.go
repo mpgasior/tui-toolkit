@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nimelo/tui-go/windowsx"
+	"github.com/mpgasior/tui-go/windowsx"
 	"golang.org/x/sys/windows"
 	"golang.org/x/term"
 )
