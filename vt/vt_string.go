@@ -138,11 +138,12 @@ func _() {
 	_ = x[SeqDCS-5]
 	_ = x[SeqSS3-6]
 	_ = x[SeqMeta-7]
+	_ = x[SeqPaste-8]
 }
 
-const _SequenceType_name = "SeqUnknownSeqEscapeSeqUTF8SeqCSISeqOSCSeqDCSSeqSS3SeqMeta"
+const _SequenceType_name = "SeqUnknownSeqEscapeSeqUTF8SeqCSISeqOSCSeqDCSSeqSS3SeqMetaSeqPaste"
 
-var _SequenceType_index = [...]uint8{0, 10, 19, 26, 32, 38, 44, 50, 57}
+var _SequenceType_index = [...]uint8{0, 10, 19, 26, 32, 38, 44, 50, 57, 65}
 
 func (i SequenceType) String() string {
 	idx := int(i) - 0

@@ -42,7 +42,7 @@ func NewContextReader(r iox.ContextReader) *ContextReader {
 	}
 }
 
-func (b *ContextReader) Size(r iox.ContextReader) int {
+func (b *ContextReader) Size() int {
 	return len(b.buf)
 }
 
@@ -145,7 +145,7 @@ func (b *ContextReader) DiscardContext(ctx context.Context, n int) (discarded in
 		}
 
 		if skip > remain {
-			remain = skip
+			skip = remain
 		}
 
 		b.r += skip

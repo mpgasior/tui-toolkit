@@ -25,6 +25,7 @@ const (
 	SeqDCS
 	SeqSS3
 	SeqMeta
+	SeqPaste
 )
 
 type Sequence struct {
@@ -170,8 +171,11 @@ func ScanCSI(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, er
 		return nil, seq, err
 	}
 
-	size := 2 + idx + 1
+	if bytes.HasPrefix(buf, []byte(PasteBegin)) {
+		return ScanPaste, seq, nil
+	}
 
+	size := 2 + idx + 1
 	_, _ = i.DiscardContext(ctx, size)
 	return nil, Sequence{Data: buf[:size], Type: SeqCSI}, nil
 }
@@ -285,14 +289,53 @@ func ScanUtf8(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, e
 	return nil, Sequence{Data: buf[:size], Type: SeqUTF8}, nil
 }
 
+func ScanPaste(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
+	buf, err := i.PeekBurst(ctx, len(PasteBegin))
+
+	if !bytes.HasPrefix(buf, []byte(PasteBegin)) {
+		return next, seq, err
+	}
+
+	_, _ = i.DiscardContext(ctx, len(buf))
+
+	var content []byte
+	for {
+		buf, err = i.PeekBurst(ctx, i.Size())
+		if len(buf) == 0 {
+			return nil, seq, err
+		}
+
+		idx := bytes.Index(buf, []byte(PasteEnd))
+		if idx == -1 {
+			content = append(content, buf...)
+			_, _ = i.DiscardContext(ctx, len(buf))
+			continue
+		}
+
+		content = append(content, buf[:idx]...)
+		_, _ = i.DiscardContext(ctx, idx+len([]byte(PasteEnd)))
+		return nil, Sequence{Data: content, Type: SeqPaste}, nil
+	}
+}
+
 func ScanInvalid(ctx context.Context, i *InputBuffer) (next ScanFn, seq Sequence, err error) {
-	const maxGarbage = 8192
+	size := i.Size()
+	acc := make([]byte, 0, size)
 
-	buf, err := i.PeekBurst(ctx, maxGarbage)
+	for {
+		buf, err := i.PeekBurst(ctx, size)
+		if len(buf) > 0 {
+			_, err = i.DiscardContext(ctx, len(buf))
+			acc = append(acc, buf...)
+		}
 
-	if len(buf) > 0 {
-		_, err = i.DiscardContext(ctx, len(buf))
-		return nil, Sequence{Data: buf, Type: SeqUnknown}, err
+		if err != nil {
+			break
+		}
+	}
+
+	if len(acc) > 0 {
+		return nil, Sequence{Data: acc, Type: SeqUnknown}, err
 	}
 
 	return nil, seq, err

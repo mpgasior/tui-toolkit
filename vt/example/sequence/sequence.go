@@ -22,6 +22,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	terminal.Write([]byte(vt.ModeBracketedPaste.Enable()))
+	defer terminal.Write([]byte(vt.ModeBracketedPaste.Disable()))
 	terminal.Write([]byte(vt.QueryTerminalName))
 	terminal.Write([]byte(vt.QueryBgColor))
 	terminal.Write([]byte(vt.QueryFgColor))
@@ -39,6 +41,13 @@ func main() {
 			r, _ := utf8.DecodeRune(seq.Data)
 			if unicode.IsPrint(r) {
 				fmt.Fprintf(terminal, " (%c)", r)
+			}
+		}
+
+		if seq.Is(vt.SeqPaste) {
+			str := string(seq.Data)
+			if utf8.ValidString(str) {
+				fmt.Fprintf(terminal, " %s", str)
 			}
 		}
 
