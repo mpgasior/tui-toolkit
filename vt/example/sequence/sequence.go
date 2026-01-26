@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	terminal, _ := termx.NewTerminal(os.Stdin, os.Stdout)
+	terminal, _ := termx.New(os.Stdin, os.Stdout)
 	defer terminal.Close()
 
 	restoreInput, _ := terminal.MakeRaw()

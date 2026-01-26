@@ -5,33 +5,28 @@ import (
 	"os"
 )
 
-type Terminal interface {
-	TerminalInput
-	TerminalOutput
+type Terminal struct {
+	*Input
+	*Output
 }
 
-type terminal struct {
-	TerminalInput
-	TerminalOutput
-}
-
-func NewTerminal(in *os.File, out *os.File) (Terminal, error) {
-	termInput, err := NewTerminalInput(in)
+func New(in *os.File, out *os.File) (*Terminal, error) {
+	devIn, err := NewInput(in)
 	if err != nil {
 		return nil, err
 	}
 
-	termOutput, err := NewTerminalOutput(out)
+	devOut, err := NewOutput(out)
 	if err != nil {
-		closeErr := termInput.Close()
+		closeErr := devIn.Close()
 
 		err := errors.Join(closeErr, err)
 		return nil, err
 	}
 
-	terminal := &terminal{
-		termInput,
-		termOutput,
+	terminal := &Terminal{
+		devIn,
+		devOut,
 	}
 
 	return terminal, nil

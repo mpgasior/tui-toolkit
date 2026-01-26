@@ -13,7 +13,7 @@ type Trie[K comparable, V any] struct {
 	isTerm   bool
 }
 
-func NewTrie[K comparable, V any]() *Trie[K, V] {
+func New[K comparable, V any]() *Trie[K, V] {
 	return &Trie[K, V]{
 		children: make(map[K]*Trie[K, V]),
 	}
@@ -24,7 +24,7 @@ func (t *Trie[K, V]) Insert(seq iter.Seq[K], value V) error {
 	for k := range seq {
 		next, ok := current.children[k]
 		if !ok {
-			next = NewTrie[K, V]()
+			next = New[K, V]()
 			current.children[k] = next
 		}
 

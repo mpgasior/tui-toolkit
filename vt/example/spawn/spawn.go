@@ -14,7 +14,7 @@ import (
 
 func main() {
 	tty, _ := termx.OpenTTY()
-	terminal, _ := termx.NewTerminal(tty.In, tty.Out)
+	terminal, _ := termx.New(tty.In, tty.Out)
 	defer terminal.Close()
 
 	restoreInput, _ := terminal.MakeRaw()
@@ -28,7 +28,7 @@ func main() {
 
 	scanner := vt.NewSequenceScanner(terminal, vt.ScanInitial)
 
-	trie := trie.NewTrie[byte, vt.Key]()
+	trie := trie.New[byte, vt.Key]()
 	for seq, key := range vt.SequenceToKey {
 		_ = trie.Insert(slices.Values([]byte(seq)), key)
 	}

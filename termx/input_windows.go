@@ -16,21 +16,21 @@ import (
 	"golang.org/x/term"
 )
 
-type terminalInput struct {
+type Input struct {
 	f         *os.File
 	stopEvent windows.Handle
 	decoder   utf16x.Decoder
 	buffer    bytes.Buffer
 }
 
-func NewTerminalInput(f *os.File) (*terminalInput, error) {
+func NewInput(f *os.File) (*Input, error) {
 	event, err := windows.CreateEvent(nil, 0, 0, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	r := &terminalInput{
+	r := &Input{
 		f:         f,
 		stopEvent: event,
 	}
@@ -38,8 +38,8 @@ func NewTerminalInput(f *os.File) (*terminalInput, error) {
 	return r, nil
 }
 
-func (ti *terminalInput) MakeRaw() (func() error, error) {
-	fd := int(ti.f.Fd())
+func (i *Input) MakeRaw() (func() error, error) {
+	fd := int(i.f.Fd())
 	state, err := term.MakeRaw(fd)
 
 	if err != nil {
@@ -59,7 +59,7 @@ func (ti *terminalInput) MakeRaw() (func() error, error) {
 	return restore, nil
 }
 
-func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err error) {
+func (ti *Input) ReadContext(ctx context.Context, p []byte) (n int, err error) {
 	if ti.buffer.Len() > 0 {
 		return ti.buffer.Read(p)
 	}
@@ -85,8 +85,8 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err 
 			return 0, err
 		}
 
-		for i := range n {
-			record := buffer[i]
+		for idx := range n {
+			record := buffer[idx]
 
 			keyEvent, ok := record.KeyEvent()
 			if !ok || keyEvent.KeyDown == 0 {
@@ -113,19 +113,19 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (n int, err 
 	}
 }
 
-func (ti *terminalInput) waitEvent(ctx context.Context) error {
+func (i *Input) waitEvent(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	console := windows.Handle(ti.f.Fd())
+	console := windows.Handle(i.f.Fd())
 
 	stop := context.AfterFunc(ctx, func() {
-		windows.SetEvent(ti.stopEvent)
+		windows.SetEvent(i.stopEvent)
 	})
 	defer stop()
 
-	handles := []windows.Handle{console, ti.stopEvent}
+	handles := []windows.Handle{console, i.stopEvent}
 	event, err := windows.WaitForMultipleObjects(handles, false, windows.INFINITE)
 	if err != nil {
 		return err
@@ -143,10 +143,10 @@ func (ti *terminalInput) waitEvent(ctx context.Context) error {
 	}
 }
 
-func (ti *terminalInput) Close() error {
+func (i *Input) Close() error {
 	err := errors.Join(
-		windows.SetEvent(ti.stopEvent),
-		windows.CloseHandle(ti.stopEvent))
+		windows.SetEvent(i.stopEvent),
+		windows.CloseHandle(i.stopEvent))
 
 	return err
 }

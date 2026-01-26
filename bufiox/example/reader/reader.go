@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	input, _ := termx.NewTerminalInput(os.Stdin)
+	input, _ := termx.NewInput(os.Stdin)
 	defer input.Close()
 
 	restore, _ := input.MakeRaw()

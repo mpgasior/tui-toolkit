@@ -12,7 +12,7 @@ func main() {
 	tty, _ := termx.OpenTTY()
 	defer tty.Close()
 
-	terminal, _ := termx.NewTerminal(tty.In, tty.Out)
+	terminal, _ := termx.New(tty.In, tty.Out)
 	defer terminal.Close()
 
 	restore, _ := terminal.MakeRaw()

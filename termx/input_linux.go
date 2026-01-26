@@ -13,14 +13,14 @@ import (
 	"golang.org/x/term"
 )
 
-type terminalInput struct {
+type Input struct {
 	f     *os.File
 	epfd  int
 	pipeR *os.File
 	pipeW *os.File
 }
 
-func NewTerminalInput(f *os.File) (TerminalInput, error) {
+func NewInput(f *os.File) (*Input, error) {
 	var success bool
 	epfd, err := unix.EpollCreate1(unix.EPOLL_CLOEXEC)
 	if err != nil {
@@ -59,7 +59,7 @@ func NewTerminalInput(f *os.File) (TerminalInput, error) {
 		return nil, err
 	}
 
-	inputReader := &terminalInput{
+	inputReader := &Input{
 		f:     f,
 		epfd:  epfd,
 		pipeR: rd,
@@ -70,7 +70,7 @@ func NewTerminalInput(f *os.File) (TerminalInput, error) {
 	return inputReader, nil
 }
 
-func (ti *terminalInput) MakeRaw() (func() error, error) {
+func (ti *Input) MakeRaw() (func() error, error) {
 	fd := int(ti.f.Fd())
 	state, err := term.MakeRaw(fd)
 
@@ -91,7 +91,7 @@ func (ti *terminalInput) MakeRaw() (func() error, error) {
 	return restore, nil
 }
 
-func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (int, error) {
+func (ti *Input) ReadContext(ctx context.Context, p []byte) (int, error) {
 	if err := ctx.Err(); err != nil {
 		return 0, err
 	}
@@ -125,7 +125,7 @@ func (ti *terminalInput) ReadContext(ctx context.Context, p []byte) (int, error)
 	}
 }
 
-func (ti *terminalInput) Close() error {
+func (ti *Input) Close() error {
 	err := errors.Join(
 		ti.pipeW.Close(),
 		ti.pipeR.Close(),
