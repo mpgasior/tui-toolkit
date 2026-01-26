@@ -5,7 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
+	"unicode"
 
 	"github.com/mpgasior/tui-go/windowsx"
 	"golang.org/x/sys/windows"
@@ -26,7 +26,7 @@ func main() {
 		}
 
 		record := buffer[0]
-		fmt.Printf("%s\n", stringify(record))
+		printRecord(record)
 
 		if keyEvent, ok := record.KeyEvent(); ok {
 			if keyEvent.UnicodeChar == 'q' {
@@ -36,27 +36,29 @@ func main() {
 	}
 }
 
-func stringify(r windowsx.INPUT_RECORD) string {
+func printRecord(r windowsx.INPUT_RECORD) {
+	fmt.Printf("%s: ", r.EventType.String())
+
 	if e, ok := r.KeyEvent(); ok {
-		return stringifyKey(e)
+		printKey(e)
 	}
 
 	if e, ok := r.FocusEvent(); ok {
-		stringifyFocus(e)
+		printFocus(e)
 	}
 
 	if e, ok := r.MouseEvent(); ok {
-		return stringifyMouse(e)
+		printMouse(e)
 	}
 
 	if e, ok := r.WindowsBufferSizeEvent(); ok {
-		return stringifyWindow(e)
+		printWindow(e)
 	}
 
-	return fmt.Sprintf("EVENT_TYPE: %d", r.EventType)
+	fmt.Print("\r\n")
 }
 
-func stringifyKey(e *windowsx.KEY_EVENT_RECORD) string {
+func printKey(e *windowsx.KEY_EVENT_RECORD) {
 	state := "UP"
 	if e.KeyDown != 0 {
 		state = "DOWN"
@@ -67,63 +69,31 @@ func stringifyKey(e *windowsx.KEY_EVENT_RECORD) string {
 		source = "SYNTH"
 	}
 
-	vk, ok := windowsx.VirtualKeyMap[e.VirtualKeyCode]
-	if !ok {
-		vk = "-"
-	}
-
-	var sb strings.Builder
-
-	sb.WriteString("KEY_EVENT: ")
-	sb.WriteString(fmt.Sprintf("[%s] ", state))
-	sb.WriteString(fmt.Sprintf("[%s] ", source))
-	sb.WriteString(fmt.Sprintf("VK: %s (0x%02X) ", vk, e.VirtualKeyCode))
-	sb.WriteString(fmt.Sprintf("ControlKey: %s ", stringifyControlKey(e.ControlKeyState)))
-	if e.UnicodeChar >= 32 && e.UnicodeChar <= 126 {
-		sb.WriteString(fmt.Sprintf("UnicodeChar: '%c' (0x%02X) ", e.UnicodeChar, e.UnicodeChar))
+	fmt.Printf("[%s] ", state)
+	fmt.Printf("[%s] ", source)
+	fmt.Printf("%s ", e.VirtualKeyCode.String())
+	fmt.Printf("%s ", e.ControlKeyState.String())
+	if unicode.IsPrint(rune(e.UnicodeChar)) {
+		fmt.Printf("UnicodeChar: '%c' (0x%02X) ", e.UnicodeChar, e.UnicodeChar)
 	} else {
-		sb.WriteString(fmt.Sprintf("UnicodeChar: [CTRL](0x%02X) ", e.UnicodeChar))
+		fmt.Printf("UnicodeChar: (0x%02X) ", e.UnicodeChar)
 	}
-	sb.WriteString(fmt.Sprintf("Count: %d ", e.RepeatCount))
-
-	return sb.String()
+	fmt.Printf("Count: %d ", e.RepeatCount)
 }
 
-func stringifyControlKey(state uint32) string {
-	var sb strings.Builder
-
-	first := true
-	for k, v := range windowsx.ControlKeyStateMap {
-		if state&k != 0 {
-			if !first {
-				sb.WriteString(" | ")
-			}
-			first = false
-
-			sb.WriteString(v)
-		}
-	}
-
-	if sb.Len() == 0 {
-		return "-"
-	}
-
-	return sb.String()
+func printWindow(s *windowsx.WINDOW_BUFFER_SIZE_RECORD) {
+	fmt.Printf("%dx%d", s.Size.X, s.Size.Y)
 }
 
-func stringifyWindow(s *windowsx.WINDOW_BUFFER_SIZE_RECORD) string {
-	return fmt.Sprintf("RESIZE: %dx%d", s.Size.X, s.Size.Y)
+func printMouse(m *windowsx.MOUSE_EVENT_RECORD) {
+	fmt.Printf("Pos(%d, %d), Buttons: %s", m.MousePosition.X, m.MousePosition.Y, m.ButtonState.String())
 }
 
-func stringifyMouse(m *windowsx.MOUSE_EVENT_RECORD) string {
-	return fmt.Sprintf("MOUSE_EVENT: Pos(%d, %d), Buttons: 0x%X", m.MousePosition.X, m.MousePosition.Y, m.ButtonState)
-}
-
-func stringifyFocus(e *windowsx.FOCUS_EVENT_RECORD) string {
+func printFocus(e *windowsx.FOCUS_EVENT_RECORD) {
 	focus := "ENTER"
 	if e.SetFocus == 0 {
 		focus = "EXIT"
 	}
 
-	return fmt.Sprintf("FOCUS_EVENT: [%s]", focus)
+	fmt.Printf("[%s]", focus)
 }
