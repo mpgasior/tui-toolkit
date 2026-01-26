@@ -8,8 +8,8 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=EventType,VirtualKeyCode -output=types_string.go
-//go:generate go run github.com/mpgasior/tui-go/tools/bitstringer -type=ControlKeyState,MouseButtonState,MouseEventFlag -output=types_bitstring.go
+//go:generate go run golang.org/x/tools/cmd/stringer -type=EventType,VirtualKeyCode -output=types_string_windows.go
+//go:generate go run github.com/mpgasior/tui-go/tools/bitstringer -type=ControlKeyState,MouseButtonState,MouseEventFlag -output=types_bitstring_windows.go
 
 type EventType uint16
 
