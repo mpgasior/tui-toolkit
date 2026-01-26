@@ -9,9 +9,7 @@ import (
 )
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=EventType,VirtualKeyCode -output=types_string.go
-//go:generate go run github.com/mpgasior/tui-go/tools/bitstringer -type=ControlKeyState
-//go:generate go run github.com/mpgasior/tui-go/tools/bitstringer -type=MouseButtonState
-//go:generate go run github.com/mpgasior/tui-go/tools/bitstringer -type=MouseEventFlag
+//go:generate go run github.com/mpgasior/tui-go/tools/bitstringer -type=ControlKeyState,MouseButtonState,MouseEventFlag -output=types_bitstring.go
 
 type EventType uint16
 
