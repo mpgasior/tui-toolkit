@@ -46,7 +46,7 @@ func RGB(r, g, b uint8) Color {
 
 type Style uint64
 
-func EmptyStyle() Style {
+func NewStyle() Style {
 	var s uint64
 
 	s |= uint64(ColorModeDefault) << shiftFg
