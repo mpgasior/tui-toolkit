@@ -21,7 +21,13 @@ type Input struct {
 	stopEvent windows.Handle
 	decoder   utf16x.Decoder
 	buffer    bytes.Buffer
+	resizeCh  chan os.Signal
 }
+
+type bufferResizeSignal struct{}
+
+func (s bufferResizeSignal) String() string { return "buffer resize signal" }
+func (s bufferResizeSignal) Signal()        {}
 
 func NewInput(f *os.File) (*Input, error) {
 	event, err := windows.CreateEvent(nil, 0, 0, nil)
@@ -33,6 +39,7 @@ func NewInput(f *os.File) (*Input, error) {
 	r := &Input{
 		f:         f,
 		stopEvent: event,
+		resizeCh:  make(chan os.Signal, 1),
 	}
 
 	return r, nil
@@ -59,12 +66,12 @@ func (i *Input) MakeRaw() (func() error, error) {
 	return restore, nil
 }
 
-func (ti *Input) ReadContext(ctx context.Context, p []byte) (n int, err error) {
-	if ti.buffer.Len() > 0 {
-		return ti.buffer.Read(p)
+func (i *Input) ReadContext(ctx context.Context, p []byte) (n int, err error) {
+	if i.buffer.Len() > 0 {
+		return i.buffer.Read(p)
 	}
 
-	console := windows.Handle(ti.f.Fd())
+	console := windows.Handle(i.f.Fd())
 	buffer := make([]windowsx.INPUT_RECORD, 1024)
 
 	for {
@@ -74,7 +81,7 @@ func (ti *Input) ReadContext(ctx context.Context, p []byte) (n int, err error) {
 		}
 
 		if n == 0 {
-			if err := ti.waitEvent(ctx); err != nil {
+			if err := i.waitEvent(ctx); err != nil {
 				return 0, err
 			}
 			continue
@@ -88,6 +95,13 @@ func (ti *Input) ReadContext(ctx context.Context, p []byte) (n int, err error) {
 		for idx := range n {
 			record := buffer[idx]
 
+			if _, ok := record.WindowsBufferSizeEvent(); ok {
+				select {
+				case i.resizeCh <- bufferResizeSignal{}:
+				default:
+				}
+			}
+
 			keyEvent, ok := record.KeyEvent()
 			if !ok || keyEvent.KeyDown == 0 {
 				continue
@@ -97,18 +111,18 @@ func (ti *Input) ReadContext(ctx context.Context, p []byte) (n int, err error) {
 				continue
 			}
 
-			r, ok := ti.decoder.Decode(keyEvent.UnicodeChar)
+			r, ok := i.decoder.Decode(keyEvent.UnicodeChar)
 			if !ok {
 				continue
 			}
 
 			var runeBytes [utf8.UTFMax]byte
 			runeLength := utf8.EncodeRune(runeBytes[:], r)
-			ti.buffer.Write(runeBytes[:runeLength])
+			i.buffer.Write(runeBytes[:runeLength])
 		}
 
-		if ti.buffer.Len() > 0 {
-			return ti.buffer.Read(p)
+		if i.buffer.Len() > 0 {
+			return i.buffer.Read(p)
 		}
 	}
 }
@@ -143,7 +157,13 @@ func (i *Input) waitEvent(ctx context.Context) error {
 	}
 }
 
+func (i *Input) ResizeC() <-chan os.Signal {
+	return i.resizeCh
+}
+
 func (i *Input) Close() error {
+	close(i.resizeCh)
+
 	err := errors.Join(
 		windows.SetEvent(i.stopEvent),
 		windows.CloseHandle(i.stopEvent))

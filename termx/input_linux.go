@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"os/signal"
 	"sync"
 
 	"golang.org/x/sys/unix"
@@ -14,10 +15,11 @@ import (
 )
 
 type Input struct {
-	f     *os.File
-	epfd  int
-	pipeR *os.File
-	pipeW *os.File
+	f        *os.File
+	epfd     int
+	pipeR    *os.File
+	pipeW    *os.File
+	resizeCh chan os.Signal
 }
 
 func NewInput(f *os.File) (*Input, error) {
@@ -60,18 +62,21 @@ func NewInput(f *os.File) (*Input, error) {
 	}
 
 	inputReader := &Input{
-		f:     f,
-		epfd:  epfd,
-		pipeR: rd,
-		pipeW: wr,
+		f:        f,
+		epfd:     epfd,
+		pipeR:    rd,
+		pipeW:    wr,
+		resizeCh: make(chan os.Signal, 1),
 	}
+
+	signal.Notify(inputReader.resizeCh, unix.SIGWINCH)
 
 	success = true
 	return inputReader, nil
 }
 
-func (ti *Input) MakeRaw() (func() error, error) {
-	fd := int(ti.f.Fd())
+func (i *Input) MakeRaw() (func() error, error) {
+	fd := int(i.f.Fd())
 	state, err := term.MakeRaw(fd)
 
 	if err != nil {
@@ -91,19 +96,19 @@ func (ti *Input) MakeRaw() (func() error, error) {
 	return restore, nil
 }
 
-func (ti *Input) ReadContext(ctx context.Context, p []byte) (int, error) {
+func (i *Input) ReadContext(ctx context.Context, p []byte) (int, error) {
 	if err := ctx.Err(); err != nil {
 		return 0, err
 	}
 
 	stop := context.AfterFunc(ctx, func() {
-		_, _ = ti.pipeW.Write([]byte{0})
+		_, _ = i.pipeW.Write([]byte{0})
 	})
 	defer stop()
 
 	events := make([]unix.EpollEvent, 1)
 	for {
-		_, err := unix.EpollWait(ti.epfd, events, -1)
+		_, err := unix.EpollWait(i.epfd, events, -1)
 		if err != nil {
 			if err == unix.EINTR {
 				continue
@@ -112,12 +117,12 @@ func (ti *Input) ReadContext(ctx context.Context, p []byte) (int, error) {
 			return 0, err
 		}
 
-		if int(events[0].Fd) == int(ti.f.Fd()) {
-			return ti.f.Read(p)
+		if int(events[0].Fd) == int(i.f.Fd()) {
+			return i.f.Read(p)
 		}
 
-		if int(events[0].Fd) == int(ti.pipeR.Fd()) {
-			if _, err := io.CopyN(io.Discard, ti.pipeR, 1); err != nil {
+		if int(events[0].Fd) == int(i.pipeR.Fd()) {
+			if _, err := io.CopyN(io.Discard, i.pipeR, 1); err != nil {
 				return 0, err
 			}
 			return 0, ctx.Err()
@@ -125,11 +130,16 @@ func (ti *Input) ReadContext(ctx context.Context, p []byte) (int, error) {
 	}
 }
 
-func (ti *Input) Close() error {
+func (i *Input) ResizeC() <-chan os.Signal {
+	return i.resizeCh
+}
+
+func (i *Input) Close() error {
+	close(i.resizeCh)
 	err := errors.Join(
-		ti.pipeW.Close(),
-		ti.pipeR.Close(),
-		unix.Close(ti.epfd))
+		i.pipeW.Close(),
+		i.pipeR.Close(),
+		unix.Close(i.epfd))
 
 	return err
 }

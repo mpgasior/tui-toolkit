@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"sync"
 
 	"github.com/mpgasior/tui-go/termx"
 )
@@ -24,6 +25,19 @@ func main() {
 	buffer := make([]byte, 1024)
 	ctrlC := []byte{0x03}
 
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-terminal.ResizeC():
+				w, h, _ := terminal.GetSize()
+				fmt.Fprintf(terminal, "New terminal size is: (%d, %d)\r\n", w, h)
+			}
+		}
+	})
+
 	for {
 		if ctx.Err() != nil {
 			break
@@ -42,4 +56,6 @@ func main() {
 			cancel()
 		}
 	}
+
+	wg.Wait()
 }
