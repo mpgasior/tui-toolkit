@@ -23,6 +23,9 @@ const (
 	ColorModeANSI    uint32 = 0 << 24
 	ColorModePalette uint32 = 1 << 24
 	ColorModeRGB     uint32 = 2 << 24
+
+	MaskColorMode  uint32 = 0xFF << 24
+	MaskColorValue uint32 = 0x00FFFFFF
 )
 
 func ColorVt(c vt.Color) Color {
@@ -53,49 +56,36 @@ var (
 	ColorMagenta = ColorVt(vt.ColorMagenta)
 	ColorCyan    = ColorVt(vt.ColorCyan)
 	ColorWhite   = ColorVt(vt.ColorWhite)
-
-	ColorBrightBlack   = ColorVt(vt.ColorBrightBlack)
-	ColorBrightRed     = ColorVt(vt.ColorBrightRed)
-	ColorBrightGreen   = ColorVt(vt.ColorBrightGreen)
-	ColorBrightYellow  = ColorVt(vt.ColorBrightYellow)
-	ColorBrightBlue    = ColorVt(vt.ColorBrightBlue)
-	ColorBrightMagenta = ColorVt(vt.ColorBrightMagenta)
-	ColorBrightCyan    = ColorVt(vt.ColorBrightCyan)
-	ColorBrightWhite   = ColorVt(vt.ColorBrightWhite)
 )
 
 const (
-	shiftAttr uint8 = 0
-	shiftFg   uint8 = 8
-	shiftBg         = 36
+	bitsPerColor       = 28
+	shiftAttr    uint8 = 0
+	ShiftFg      uint8 = 8
+	ShiftBg            = ShiftFg + bitsPerColor
 
-	bitsPerColor        = 28
-	maskAttr     uint64 = 0xFF
-	maskColor    uint64 = 0xFFFFFFF
+	MaskAttr    uint64 = 0xFF
+	MaskColor   uint64 = 0xFFFFFFF
+	MaskFgColor uint64 = MaskColor << ShiftFg
+	MaskBgColor uint64 = MaskColor << ShiftBg
 )
 
 type Style uint64
 
 var (
-	DefaultStyle = NewStyle()
-)
-
-func NewStyle() Style {
-	s := Style(0).
+	DefaultStyle = Style(0).
 		Fg(ColorReset).
 		Bg(ColorReset)
-
-	return s
-}
+)
 
 func (s Style) Fg(c Color) Style {
-	cleanMask := ^(maskColor << shiftFg)
-	return (s & Style(cleanMask)) | Style(uint64(c))<<shiftFg
+	cleanMask := ^(MaskColor << ShiftFg)
+	return (s & Style(cleanMask)) | Style(uint64(c))<<ShiftFg
 }
 
 func (s Style) Bg(c Color) Style {
-	cleanMask := ^(maskColor << shiftBg)
-	return (s & Style(cleanMask)) | Style(uint64(c))<<shiftBg
+	cleanMask := ^(MaskColor << ShiftBg)
+	return (s & Style(cleanMask)) | Style(uint64(c))<<ShiftBg
 }
 
 func (s Style) Attr(a Attr) Style {
@@ -103,7 +93,7 @@ func (s Style) Attr(a Attr) Style {
 }
 
 func (s Style) NoAttr(a Attr) Style {
-	return s & ^(Style(a) & Style(maskAttr))
+	return s & ^(Style(a) & Style(MaskAttr))
 }
 
 var attrMap = map[Attr]vt.Attr{
@@ -115,4 +105,53 @@ var attrMap = map[Attr]vt.Attr{
 	AttrBlinkSlow:     vt.AttrBlinkSlow,
 	AttrBlinkRapid:    vt.AttrBlinkRapid,
 	AttrStrikethrough: vt.AttrStrikethrough,
+}
+
+func (a Attr) Params() []uint32 {
+	var parts []uint32
+	for k, v := range attrMap {
+		if a&k != 0 {
+			parts = append(parts, uint32(v))
+		}
+	}
+	return parts
+}
+
+func (c Color) Params(isBg bool) []uint32 {
+	mode := uint32(c) & MaskColorMode
+	val := uint32(c) & MaskColorValue
+
+	var bgOffset uint32
+	if isBg {
+		bgOffset += 10
+	}
+
+	switch mode {
+	case ColorModeANSI:
+		return []uint32{val + 30 + bgOffset}
+	case ColorModePalette:
+		return []uint32{38 + bgOffset, 5, val}
+	case ColorModeRGB:
+		return []uint32{
+			38 + bgOffset, 2,
+			(val >> 16) & 0xFF,
+			(val >> 8) & 0xFF,
+			(val) & 0xFF,
+		}
+	default:
+		return nil
+	}
+}
+
+func (s Style) Sequence() string {
+	attr := Attr(uint64(s) & MaskAttr)
+	fg := Color((uint64(s) & MaskFgColor) >> ShiftFg)
+	bg := Color((uint64(s) & MaskBgColor) >> ShiftBg)
+
+	var params []uint32
+	params = append(params, attr.Params()...)
+	params = append(params, fg.Params(false)...)
+	params = append(params, bg.Params(true)...)
+
+	return vt.FormatSGR(params...)
 }

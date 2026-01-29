@@ -30,7 +30,7 @@ func NewBuffer(w, h int) *Buffer {
 	defaultCell := Cell{
 		Primary: ' ',
 		Width:   1,
-		Style:   NewStyle(),
+		Style:   DefaultStyle,
 	}
 
 	for i := range b.cells {

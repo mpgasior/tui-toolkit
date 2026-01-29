@@ -1,13 +1,33 @@
 package vt
 
+import (
+	"strconv"
+	"strings"
+
+	"golang.org/x/exp/constraints"
+)
+
 // Text Formatting
 // See: https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#text-formatting
 const (
-	SGRFmt    = CSI + "%dm"
-	SGRStrFmt = CSI + "%sm"
+	SGRFmt   = CSI + "%dm"
+	SGRReset = CSI + "0m"
 )
 
-type Attr int
+func FormatSGR[T constraints.Integer](p ...T) string {
+	if len(p) == 0 {
+		return SGRReset
+	}
+
+	parts := make([]string, len(p))
+	for i, part := range p {
+		parts[i] = strconv.FormatInt(int64(part), 10)
+	}
+
+	return CSI + strings.Join(parts, ";") + "m"
+}
+
+type Attr uint32
 
 // SGR Parameter Codes
 const (
@@ -36,18 +56,9 @@ const (
 	ColorWhite
 	_
 	ColorReset
-	_ = 49 + iota
-	ColorBrightBlack
-	ColorBrightRed
-	ColorBrightGreen
-	ColorBrightYellow
-	ColorBrightBlue
-	ColorBrightMagenta
-	ColorBrightCyan
-	ColorBrightWhite
 )
 
-type FgColor int
+type FgColor uint32
 
 // Foreground Colors (30-37)
 const (
@@ -63,7 +74,7 @@ const (
 	FgDefault
 )
 
-type FgBrightColor int
+type FgBrightColor uint32
 
 // Foreground Colors (Bright/High Intensity)
 const (
@@ -77,7 +88,7 @@ const (
 	FgBrightWhite
 )
 
-type BgColor int
+type BgColor uint32
 
 // Background Colors (40-47)
 const (
@@ -93,7 +104,7 @@ const (
 	BgDefault
 )
 
-type BgBrightColor int
+type BgBrightColor uint32
 
 // Background Colors (Bright/High Intensity)
 const (

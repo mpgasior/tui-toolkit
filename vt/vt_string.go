@@ -191,18 +191,28 @@ func _() {
 	_ = x[FgMagenta-35]
 	_ = x[FgCyan-36]
 	_ = x[FgWhite-37]
+	_ = x[FgDefault-39]
 }
 
-const _FgColor_name = "FgBlackFgRedFgGreenFgYellowFgBlueFgMagentaFgCyanFgWhite"
+const (
+	_FgColor_name_0 = "FgBlackFgRedFgGreenFgYellowFgBlueFgMagentaFgCyanFgWhite"
+	_FgColor_name_1 = "FgDefault"
+)
 
-var _FgColor_index = [...]uint8{0, 7, 12, 19, 27, 33, 42, 48, 55}
+var (
+	_FgColor_index_0 = [...]uint8{0, 7, 12, 19, 27, 33, 42, 48, 55}
+)
 
 func (i FgColor) String() string {
-	idx := int(i) - 30
-	if i < 30 || idx >= len(_FgColor_index)-1 {
+	switch {
+	case 30 <= i && i <= 37:
+		i -= 30
+		return _FgColor_name_0[_FgColor_index_0[i]:_FgColor_index_0[i+1]]
+	case i == 39:
+		return _FgColor_name_1
+	default:
 		return "FgColor(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _FgColor_name[_FgColor_index[idx]:_FgColor_index[idx+1]]
 }
 func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
@@ -241,18 +251,28 @@ func _() {
 	_ = x[BgMagenta-45]
 	_ = x[BgCyan-46]
 	_ = x[BgWhite-47]
+	_ = x[BgDefault-49]
 }
 
-const _BgColor_name = "BgBlackBgRedBgGreenBgYellowBgBlueBgMagentaBgCyanBgWhite"
+const (
+	_BgColor_name_0 = "BgBlackBgRedBgGreenBgYellowBgBlueBgMagentaBgCyanBgWhite"
+	_BgColor_name_1 = "BgDefault"
+)
 
-var _BgColor_index = [...]uint8{0, 7, 12, 19, 27, 33, 42, 48, 55}
+var (
+	_BgColor_index_0 = [...]uint8{0, 7, 12, 19, 27, 33, 42, 48, 55}
+)
 
 func (i BgColor) String() string {
-	idx := int(i) - 40
-	if i < 40 || idx >= len(_BgColor_index)-1 {
+	switch {
+	case 40 <= i && i <= 47:
+		i -= 40
+		return _BgColor_name_0[_BgColor_index_0[i]:_BgColor_index_0[i+1]]
+	case i == 49:
+		return _BgColor_name_1
+	default:
 		return "BgColor(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _BgColor_name[_BgColor_index[idx]:_BgColor_index[idx+1]]
 }
 func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.

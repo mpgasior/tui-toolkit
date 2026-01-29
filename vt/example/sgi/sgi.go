@@ -2,16 +2,13 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 
 	"github.com/mpgasior/tui-go/vt"
+	"golang.org/x/exp/constraints"
 )
-
-type Stringer interface {
-	~int
-	String() string
-}
 
 func main() {
 	bgStandard := []vt.BgColor{
@@ -76,13 +73,14 @@ func main() {
 	fmt.Println()
 }
 
-func printRow[S Stringer](label string, items []S) {
+func printRow[T constraints.Integer](label string, items []T) {
 	reset := fmt.Sprintf(vt.SGRFmt, vt.AttrReset)
 	fmt.Printf("%-8s | ", label)
 
 	for _, item := range items {
 		sgi := fmt.Sprintf(vt.SGRFmt, item)
-		text := lastCapitalized(item.String())
+		str := strconv.FormatInt(int64(item), 10)
+		text := lastCapitalized(str)
 		fmt.Printf("%s %s %s ", sgi, text, reset)
 	}
 	fmt.Println()
