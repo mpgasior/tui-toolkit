@@ -3,23 +3,48 @@ package vt
 // Text Formatting
 // See: https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#text-formatting
 const (
-	SGRFmt = CSI + "%dm"
+	SGRFmt    = CSI + "%dm"
+	SGRStrFmt = CSI + "%sm"
 )
 
 type Attr int
 
 // SGR Parameter Codes
 const (
-	AttrReset         Attr = 0
-	AttrBold          Attr = 1
-	AttrFaint         Attr = 2
-	AttrItalic        Attr = 3
-	AttrUnderline     Attr = 4
-	AttrBlinkSlow     Attr = 5
-	AttrBlinkRapid    Attr = 6
-	AttrReverseVideo  Attr = 7
-	AttrConceal       Attr = 8
-	AttrStrikethrough Attr = 9
+	AttrReset Attr = iota
+	AttrBold
+	AttrFaint
+	AttrItalic
+	AttrUnderline
+	AttrBlinkSlow
+	AttrBlinkRapid
+	AttrReverseVideo
+	AttrConceal
+	AttrStrikethrough
+)
+
+type Color int
+
+const (
+	ColorBlack Color = iota
+	ColorRed
+	ColorGreen
+	ColorYellow
+	ColorBlue
+	ColorMagenta
+	ColorCyan
+	ColorWhite
+	_
+	ColorReset
+	_ = 49 + iota
+	ColorBrightBlack
+	ColorBrightRed
+	ColorBrightGreen
+	ColorBrightYellow
+	ColorBrightBlue
+	ColorBrightMagenta
+	ColorBrightCyan
+	ColorBrightWhite
 )
 
 type FgColor int
@@ -34,7 +59,8 @@ const (
 	FgMagenta
 	FgCyan
 	FgWhite
-	FgDefault = 39
+	_
+	FgDefault
 )
 
 type FgBrightColor int
@@ -63,7 +89,8 @@ const (
 	BgMagenta
 	BgCyan
 	BgWhite
-	BgDefault = 49
+	_
+	BgDefault
 )
 
 type BgBrightColor int
