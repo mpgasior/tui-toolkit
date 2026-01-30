@@ -24,6 +24,8 @@ func TaskOne(e Event) Task {
 	}
 }
 
+var TaskShutdown = TaskOne(ShutdownEvent)
+
 func TaskF(f func(ctx context.Context, ch chan<- Event)) Task {
 	return Task{
 		Execute: f,

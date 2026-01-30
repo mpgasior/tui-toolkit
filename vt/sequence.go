@@ -33,8 +33,8 @@ type Sequence struct {
 	Type SequenceType
 }
 
-func (s Sequence) Is(t SequenceType) bool {
-	return s.Type == t
+func (s Sequence) Is(types ...SequenceType) bool {
+	return slices.Contains(types, s.Type)
 }
 
 type InputBuffer struct {

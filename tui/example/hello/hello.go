@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mpgasior/tui-go/tui"
+	"github.com/mpgasior/tui-go/vt"
 )
 
 type Hello struct {
@@ -54,6 +55,16 @@ func (h *Hello) Init() tui.Task {
 func (h *Hello) Update(e tui.Event) tui.Task {
 	if e, ok := e.(HelloTickEvent); ok {
 		h.left = e.left
+	}
+
+	if e, ok := e.(tui.KeyEvent); ok {
+		if e.IsKey(vt.KeyCtrlC, vt.KeyEsc) {
+			return tui.TaskShutdown
+		}
+
+		if e.IsRune('q') {
+			return tui.TaskShutdown
+		}
 	}
 	return tui.TaskNone()
 }
