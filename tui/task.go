@@ -9,11 +9,11 @@ type Task struct {
 	Execute func(ctx context.Context, ch chan<- Event)
 }
 
-func None() Task {
+func TaskNone() Task {
 	return Task{}
 }
 
-func Send(e Event) Task {
+func TaskOne(e Event) Task {
 	return Task{
 		Execute: func(ctx context.Context, ch chan<- Event) {
 			select {
@@ -21,5 +21,11 @@ func Send(e Event) Task {
 			case ch <- e:
 			}
 		},
+	}
+}
+
+func TaskF(f func(ctx context.Context, ch chan<- Event)) Task {
+	return Task{
+		Execute: f,
 	}
 }
