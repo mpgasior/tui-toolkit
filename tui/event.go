@@ -1,8 +1,11 @@
 package tui
 
-import "slices"
+import (
+	"os/exec"
+	"slices"
 
-import "github.com/mpgasior/tui-go/vt"
+	"github.com/mpgasior/tui-go/vt"
+)
 
 type Event any
 
@@ -25,4 +28,9 @@ func (e KeyEvent) IsRune(r rune) bool {
 
 type PasteEvent struct {
 	Bytes []byte
+}
+
+type LaunchEvent struct {
+	CmdBuilder func() (cmd *exec.Cmd, captureOutput bool, err error)
+	OnResult   func(out []byte, err error) Task
 }

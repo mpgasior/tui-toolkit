@@ -1,7 +1,9 @@
 package tui
 
 import (
+	"bytes"
 	"context"
+	"os"
 
 	"github.com/mpgasior/tui-go/termx"
 )
@@ -62,6 +64,46 @@ func (a App) Run(c Component) error {
 			if ev == ShutdownEvent {
 				cancel()
 				return nil
+			}
+
+			if launch, ok := ev.(LaunchEvent); ok {
+				shutdown()
+				restore()
+
+				cmd, captureOutput, _ := launch.CmdBuilder()
+				if cmd.Stderr == nil {
+					cmd.Stderr = os.Stderr
+				}
+				if cmd.Stdout == nil {
+					cmd.Stdout = tty.Out
+				}
+				if cmd.Stdin == nil {
+					cmd.Stdin = tty.In
+				}
+
+				var buf bytes.Buffer
+				if captureOutput {
+					cmd.Stdout = &buf
+				}
+
+				execErr := cmd.Run()
+
+				dispatch, shutdown = runtime.Start(ctx)
+				defer shutdown()
+
+				restore, err = terminal.MakeRaw()
+				if err != nil {
+					return err
+				}
+				defer restore()
+				dispatch(TaskF(Input(terminal)))
+
+				if launch.OnResult != nil {
+					t := launch.OnResult(buf.Bytes(), execErr)
+					dispatch(t)
+				}
+
+				continue
 			}
 
 			task := c.Update(ev)
