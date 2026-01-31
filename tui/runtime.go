@@ -6,7 +6,7 @@ import (
 )
 
 type Runtime struct {
-	inCh    chan<- Event
+	events  chan<- Event
 	mu      sync.Mutex
 	tasks   map[string]context.CancelFunc
 	pending map[string]Task
@@ -16,7 +16,7 @@ func NewRuntime(ch chan<- Event) *Runtime {
 	return &Runtime{
 		tasks:   make(map[string]context.CancelFunc),
 		pending: make(map[string]Task),
-		inCh:    ch,
+		events:  ch,
 	}
 }
 
@@ -27,7 +27,7 @@ func (r *Runtime) Start(ctx context.Context) (dispatch func(Task), shutdown func
 
 	run := func(t Task) {
 		if t.ID == "" {
-			wg.Go(func() { t.Execute(ctx, r.inCh) })
+			wg.Go(func() { t.Execute(ctx, r.events) })
 			return
 		}
 
@@ -37,7 +37,7 @@ func (r *Runtime) Start(ctx context.Context) (dispatch func(Task), shutdown func
 		wg.Go(func() {
 			defer tCancel()
 
-			t.Execute(tCtx, r.inCh)
+			t.Execute(tCtx, r.events)
 			select {
 			case quitCh <- t.ID:
 			case <-tCtx.Done():
@@ -81,10 +81,10 @@ func (r *Runtime) Start(ctx context.Context) (dispatch func(Task), shutdown func
 		}
 	}
 
-	shutdown = func() {
+	shutdown = sync.OnceFunc(func() {
 		cancel()
 		wg.Wait()
-	}
+	})
 
 	wg.Go(coordinate)
 	return dispatch, shutdown
