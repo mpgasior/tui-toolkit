@@ -10,7 +10,30 @@ import (
 	"github.com/mpgasior/tui-go/vt"
 )
 
-func Input(terminal *termx.Terminal) func(ctx context.Context, ch chan<- Event) {
+func CaptureResize(terminal *termx.Terminal) func(ctx context.Context, ch chan<- Event) {
+	return func(ctx context.Context, ch chan<- Event) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-terminal.ResizeC():
+				w, h, err := terminal.GetSize()
+				if err != nil {
+					continue
+				}
+				ev := ResizeEvent{
+					Width: w, Height: h,
+				}
+				select {
+				case <-ctx.Done():
+				case ch <- ev:
+				}
+			}
+		}
+	}
+}
+
+func CaptureInput(terminal *termx.Terminal) func(ctx context.Context, ch chan<- Event) {
 	return func(ctx context.Context, ch chan<- Event) {
 		trie := trie.New[byte, vt.Key]()
 		for seq, key := range vt.SequenceToKey {

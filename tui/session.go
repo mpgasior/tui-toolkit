@@ -56,7 +56,8 @@ func (s *Session) Start(ctx context.Context) error {
 
 	dispatch, shutdown := s.runtime.Start(ctx)
 	cleanupSteps = append(cleanupSteps, func() error { shutdown(); return nil })
-	dispatch(TaskF(Input(s.terminal)))
+	dispatch(TaskF(CaptureInput(s.terminal)))
+	dispatch(TaskF(CaptureResize(s.terminal)))
 
 	s.dispatch = dispatch
 	s.restore = rollback

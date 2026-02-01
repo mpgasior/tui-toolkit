@@ -57,6 +57,11 @@ func Run(c Component) error {
 				return nil
 			}
 
+			if resize, ok := ev.(ResizeEvent); ok {
+				renderer.Resize(resize.Width, resize.Height)
+				continue
+			}
+
 			if launch, ok := ev.(LaunchEvent); ok {
 				var buf bytes.Buffer
 				runErr, err := session.RunSuspended(ctx, func() error {

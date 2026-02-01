@@ -25,6 +25,16 @@ func (r *Renderer) Size() (w, h int) {
 	return r.Front.Size()
 }
 
+func (r *Renderer) Resize(width int, height int) {
+	w, h := r.Size()
+	if w == width && h == height {
+		return
+	}
+
+	r.Front = NewBuffer(width, height)
+	r.Back = NewBuffer(width, height)
+}
+
 func (r *Renderer) SwapBuffers() {
 	r.Front, r.Back = r.Back, r.Front
 }
