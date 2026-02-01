@@ -81,6 +81,7 @@ func Run(c Component) error {
 					session.Dispatch(t)
 				}
 
+				renderer.ForceRedraw()
 				continue
 			}
 
