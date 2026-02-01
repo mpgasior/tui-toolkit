@@ -3,6 +3,7 @@ package tui
 type RenderContext struct {
 	Viewport Viewport
 	Focused  bool
+	Theme    Theme
 }
 
 func (rc RenderContext) Fragment(x, y, w, h int) RenderContext {
