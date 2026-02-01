@@ -56,6 +56,33 @@ const (
 	KeyF11
 	KeyF12
 
+	KeyA
+	KeyB
+	KeyC
+	KeyD
+	KeyE
+	KeyF
+	KeyG
+	KeyH
+	KeyI
+	KeyJ
+	KeyK
+	KeyL
+	KeyM
+	KeyN
+	KeyO
+	KeyP
+	KeyQ
+	KeyR
+	KeyS
+	KeyT
+	KeyU
+	KeyV
+	KeyW
+	KeyX
+	KeyY
+	KeyZ
+
 	KeyCtrlA
 	KeyCtrlB
 	KeyCtrlC
@@ -82,6 +109,33 @@ const (
 	KeyCtrlX
 	KeyCtrlY
 	KeyCtrlZ
+
+	KeyShiftA
+	KeyShiftB
+	KeyShiftC
+	KeyShiftD
+	KeyShiftE
+	KeyShiftF
+	KeyShiftG
+	KeyShiftH
+	KeyShiftI
+	KeyShiftJ
+	KeyShiftK
+	KeyShiftL
+	KeyShiftM
+	KeyShiftN
+	KeyShiftO
+	KeyShiftP
+	KeyShiftQ
+	KeyShiftR
+	KeyShiftS
+	KeyShiftT
+	KeyShiftU
+	KeyShiftV
+	KeyShiftW
+	KeyShiftX
+	KeyShiftY
+	KeyShiftZ
 
 	KeyAltA
 	KeyAltB
@@ -208,6 +262,33 @@ var SequenceToKey = map[string]Key{
 	CSI + "23~": KeyF11,
 	CSI + "24~": KeyF12,
 
+	"a": KeyA,
+	"b": KeyB,
+	"c": KeyC,
+	"d": KeyD,
+	"e": KeyE,
+	"f": KeyF,
+	"g": KeyG,
+	"h": KeyH,
+	"i": KeyI,
+	"j": KeyJ,
+	"k": KeyK,
+	"l": KeyL,
+	"m": KeyM,
+	"n": KeyN,
+	"o": KeyO,
+	"p": KeyP,
+	"q": KeyQ,
+	"r": KeyR,
+	"s": KeyS,
+	"t": KeyT,
+	"u": KeyU,
+	"v": KeyV,
+	"w": KeyW,
+	"x": KeyX,
+	"y": KeyY,
+	"z": KeyZ,
+
 	"\x01": KeyCtrlA,
 	"\x02": KeyCtrlB,
 	"\x03": KeyCtrlC,
@@ -234,6 +315,33 @@ var SequenceToKey = map[string]Key{
 	"\x18": KeyCtrlX,
 	"\x19": KeyCtrlY,
 	//"\x1a": KeyCtrlZ,
+
+	"A": KeyShiftA,
+	"B": KeyShiftB,
+	"C": KeyShiftC,
+	"D": KeyShiftD,
+	"E": KeyShiftE,
+	"F": KeyShiftF,
+	"G": KeyShiftG,
+	"H": KeyShiftH,
+	"I": KeyShiftI,
+	"J": KeyShiftJ,
+	"K": KeyShiftK,
+	"L": KeyShiftL,
+	"M": KeyShiftM,
+	"N": KeyShiftN,
+	"O": KeyShiftO,
+	"P": KeyShiftP,
+	"Q": KeyShiftQ,
+	"R": KeyShiftR,
+	"S": KeyShiftS,
+	"T": KeyShiftT,
+	"U": KeyShiftU,
+	"V": KeyShiftV,
+	"W": KeyShiftW,
+	"X": KeyShiftX,
+	"Y": KeyShiftY,
+	"Z": KeyShiftZ,
 
 	ESC + "a": KeyAltA,
 	ESC + "b": KeyAltB,
