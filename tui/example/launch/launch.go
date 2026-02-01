@@ -18,7 +18,7 @@ type Launcher struct {
 }
 
 func (l *Launcher) Init() tui.Task {
-	return tui.TaskNone()
+	return tui.TaskNone
 }
 
 func (l *Launcher) Update(e tui.Event) tui.Task {
@@ -30,13 +30,15 @@ func (l *Launcher) Update(e tui.Event) tui.Task {
 		if e.IsRune('n') {
 			l.NvimOutput = ""
 			launch := tui.LaunchEvent{
-				CmdBuilder: func() (cmd *exec.Cmd, captureOutput bool, err error) {
-					return exec.Command("nvim"), false, nil
+				CmdBuilder: func(ttyIn, ttyOut *os.File) (cmd *exec.Cmd, captureOutput bool, err error) {
+					cmd = exec.Command("nvim")
+					cmd.Stderr, cmd.Stdin, cmd.Stdout = os.Stderr, os.Stdin, os.Stdout
+					return cmd, false, nil
 				}, OnResult: func(stdout []byte, err error) tui.Task {
 					txt := string(stdout)
 					l.NvimOutput = fmt.Sprintf("nvim: '%s' err=%v", txt, err)
 
-					return tui.TaskNone()
+					return tui.TaskNone
 				},
 			}
 
@@ -44,7 +46,7 @@ func (l *Launcher) Update(e tui.Event) tui.Task {
 		} else if e.IsRune('f') {
 			l.FzfOutput = ""
 			launch := tui.LaunchEvent{
-				CmdBuilder: func() (cmd *exec.Cmd, captureOutput bool, err error) {
+				CmdBuilder: func(ttyIn, ttyOut *os.File) (cmd *exec.Cmd, captureOutput bool, err error) {
 					cmd = exec.Command("fzf")
 					home, err := os.UserHomeDir()
 					if err != nil {
@@ -52,6 +54,7 @@ func (l *Launcher) Update(e tui.Event) tui.Task {
 					}
 					cmd.Dir = home
 					cmd.Stdin = strings.NewReader("A\nB\nC\nD")
+					cmd.Stderr, cmd.Stdout = cmd.Stdout, ttyOut
 
 					return cmd, true, nil
 				},
@@ -59,7 +62,7 @@ func (l *Launcher) Update(e tui.Event) tui.Task {
 					txt := string(bytes.TrimSpace(stdout))
 					l.FzfOutput = fmt.Sprintf("fzf: '%s' err=%v", txt, err)
 
-					return tui.TaskNone()
+					return tui.TaskNone
 				},
 			}
 
@@ -67,7 +70,7 @@ func (l *Launcher) Update(e tui.Event) tui.Task {
 		}
 	}
 
-	return tui.TaskNone()
+	return tui.TaskNone
 }
 
 func (l *Launcher) Render(ctx tui.RenderContext) {
@@ -92,11 +95,9 @@ func (l *Launcher) Render(ctx tui.RenderContext) {
 }
 
 func main() {
-	app := tui.App{}
+	launcher := &Launcher{}
 
-	c := &Launcher{}
-
-	if err := app.Run(c); err != nil {
+	if err := tui.Run(launcher); err != nil {
 		log.Fatalf("%v", err)
 	}
 }

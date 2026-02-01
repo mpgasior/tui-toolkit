@@ -40,6 +40,22 @@ func EnterMode(w io.Writer, m Mode) (restore func() error, err error) {
 	return restore, err
 }
 
+func ExitMode(w io.Writer, m Mode) (restore func() error, err error) {
+	_, err = io.WriteString(w, m.Disable())
+
+	var once sync.Once
+	var restoreErr error
+	restore = func() error {
+		once.Do(func() {
+			_, restoreErr = io.WriteString(w, m.Enable())
+		})
+
+		return restoreErr
+	}
+
+	return restore, err
+}
+
 // Mode Changes
 // See: https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#mode-changes
 const (

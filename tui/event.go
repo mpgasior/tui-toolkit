@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"os"
 	"os/exec"
 	"slices"
 
@@ -31,6 +32,6 @@ type PasteEvent struct {
 }
 
 type LaunchEvent struct {
-	CmdBuilder func() (cmd *exec.Cmd, captureOutput bool, err error)
+	CmdBuilder func(ttyIn, ttyOut *os.File) (cmd *exec.Cmd, captureOutput bool, err error)
 	OnResult   func(out []byte, err error) Task
 }

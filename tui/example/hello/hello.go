@@ -10,19 +10,15 @@ import (
 	"github.com/mpgasior/tui-go/vt"
 )
 
-type Hello struct {
-	timeout time.Duration
-	left    time.Duration
+type Ticker struct {
+	maxTicks int
+	ticks    int
 }
 
-type HelloTickEvent struct {
-	left time.Duration
-}
+type TickEvent struct{}
 
-func (h *Hello) Init() tui.Task {
+func (t *Ticker) Init() tui.Task {
 	f := func(ctx context.Context, ch chan<- tui.Event) {
-		shutdownTime := time.Now().Add(h.timeout)
-		shutdown := time.After(h.timeout)
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 
@@ -30,16 +26,8 @@ func (h *Hello) Init() tui.Task {
 			select {
 			case <-ctx.Done():
 				return
-			case <-shutdown:
-				select {
-				case ch <- tui.ShutdownEvent:
-				case <-ctx.Done():
-					return
-				}
 			case <-ticker.C:
-				e := HelloTickEvent{
-					left: time.Until(shutdownTime),
-				}
+				e := TickEvent{}
 				select {
 				case <-ctx.Done():
 					return
@@ -52,9 +40,13 @@ func (h *Hello) Init() tui.Task {
 	return tui.TaskF(f)
 }
 
-func (h *Hello) Update(e tui.Event) tui.Task {
-	if e, ok := e.(HelloTickEvent); ok {
-		h.left = e.left
+func (t *Ticker) Update(e tui.Event) tui.Task {
+	if _, ok := e.(TickEvent); ok {
+		t.ticks += 1
+	}
+
+	if t.ticks == t.maxTicks {
+		return tui.TaskShutdown
 	}
 
 	if e, ok := e.(tui.KeyEvent); ok {
@@ -66,20 +58,12 @@ func (h *Hello) Update(e tui.Event) tui.Task {
 			return tui.TaskShutdown
 		}
 	}
-	return tui.TaskNone()
+	return tui.TaskNone
 }
 
-func (h *Hello) Render(ctx tui.RenderContext) {
-	left := h.left
-	if h.left == time.Duration(0) {
-		left = h.timeout
-	}
-
-	if left < 0 {
-		left = time.Duration(0)
-	}
-
-	text := fmt.Sprintf("Stopping in %s...", left)
+func (t *Ticker) Render(ctx tui.RenderContext) {
+	left := t.maxTicks - t.ticks
+	text := fmt.Sprintf("Stopping in %ds...", left)
 	style := tui.DefaultStyle.
 		Fg(tui.ColorHex(0xFFA500)).
 		Bg(tui.ColorHex(0x303030))
@@ -90,13 +74,11 @@ func (h *Hello) Render(ctx tui.RenderContext) {
 }
 
 func main() {
-	app := tui.App{}
-
-	c := &Hello{
-		timeout: 10 * time.Second,
+	ticker := &Ticker{
+		maxTicks: 10,
 	}
 
-	if err := app.Run(c); err != nil {
+	if err := tui.Run(ticker); err != nil {
 		log.Fatalf("%v", err)
 	}
 }

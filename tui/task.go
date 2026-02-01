@@ -9,10 +9,6 @@ type Task struct {
 	Execute func(ctx context.Context, ch chan<- Event)
 }
 
-func TaskNone() Task {
-	return Task{}
-}
-
 func TaskOne(e Event) Task {
 	return Task{
 		Execute: func(ctx context.Context, ch chan<- Event) {
@@ -30,4 +26,5 @@ func TaskF(f func(ctx context.Context, ch chan<- Event)) Task {
 	}
 }
 
+var TaskNone = Task{}
 var TaskShutdown = TaskOne(ShutdownEvent)
