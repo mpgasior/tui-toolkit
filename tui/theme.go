@@ -4,12 +4,18 @@ type Theme struct {
 	Surface   Color
 	OnSurface Color
 
-	Primary   Color
-	Secondary Color
-	Tertiary  Color
+	Primary     Color
+	OnPrimary   Color
+	Secondary   Color
+	OnSecondary Color
+	Tertiary    Color
+	OnTertiary  Color
 
-	Accent Color
-	Danger Color
+	Accent  Color
+	Info    Color
+	Success Color
+	Warning Color
+	Danger  Color
 
 	Outline        Color
 	OutlineVariant Color
