@@ -6,14 +6,12 @@ type RenderContext struct {
 	Theme    Theme
 }
 
-func (rc RenderContext) Fragment(x, y, w, h int) RenderContext {
-	return RenderContext{
-		Viewport: rc.Viewport.Slice(x, y, w, h),
-		Focused:  rc.Focused,
-	}
+func (rc RenderContext) WithViewport(vp Viewport) RenderContext {
+	rc.Viewport = vp
+	return rc
 }
 
-func (rc RenderContext) Unfocus() RenderContext {
-	rc.Focused = false
+func (rc RenderContext) WithFocus(focus bool) RenderContext {
+	rc.Focused = focus
 	return rc
 }
