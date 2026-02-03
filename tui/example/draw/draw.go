@@ -25,8 +25,8 @@ func (c Component) Render(ctx tui.RenderContext) {
 
 	w, h := ctx.Viewport.Size()
 
-	tui.Clear(ctx.Viewport, style)
-	tui.DrawBox(ctx.Viewport.Slice(0, 0, w, h-1), "", style)
+	tui.DrawClear(ctx.Viewport, style)
+	tui.DrawBox(ctx.Viewport.Slice(0, 0, w, h-1), tui.BoxBorderThin, style)
 	tui.DrawText(ctx.Viewport.Slice(0, h-1, w, 1), "[esc/ctrl+c/q] quit", style.Fg(tui.ColorYellow))
 }
 

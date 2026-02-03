@@ -27,7 +27,7 @@ func DrawText(vp Viewport, text string, style Style) {
 	}
 }
 
-func Fill(vp Viewport, r rune, style Style) {
+func DrawFill(vp Viewport, r rune, style Style) {
 	w, h := vp.Size()
 	for col := range w {
 		for row := range h {
@@ -36,34 +36,37 @@ func Fill(vp Viewport, r rune, style Style) {
 	}
 }
 
-func Clear(vp Viewport, style Style) {
-	Fill(vp, ' ', style)
+func DrawClear(vp Viewport, style Style) {
+	DrawFill(vp, ' ', style)
 }
 
-func DrawBox(vp Viewport, border string, style Style) {
+type BoxBorderStyle struct {
+	TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left rune
+}
+
+var (
+	BoxBorderThin   = BoxBorderStyle{'┌', '─', '┐', '│', '┘', '─', '└', '│'}
+	BoxBorderDouble = BoxBorderStyle{'╔', '═', '╗', '║', '╝', '═', '╚', '║'}
+)
+
+func DrawBox(vp Viewport, borderStyle BoxBorderStyle, style Style) {
 	w, h := vp.Size()
 	if w < 2 || h < 2 {
 		return
 	}
 
-	if len(border) < 8 {
-		border = "┌─┐│┘─└│"
-	}
-
-	b := []rune(border)
-
 	for col := range w {
-		SetRune(vp, col, 0, b[1], style)
-		SetRune(vp, col, h-1, b[5], style)
+		SetRune(vp, col, 0, borderStyle.Top, style)
+		SetRune(vp, col, h-1, borderStyle.Bottom, style)
 	}
 
 	for row := range h {
-		SetRune(vp, 0, row, b[7], style)
-		SetRune(vp, w-1, row, b[3], style)
+		SetRune(vp, 0, row, borderStyle.Left, style)
+		SetRune(vp, w-1, row, borderStyle.Right, style)
 	}
 
-	SetRune(vp, 0, 0, b[0], style)
-	SetRune(vp, w-1, 0, b[2], style)
-	SetRune(vp, w-1, h-1, b[4], style)
-	SetRune(vp, 0, h-1, b[6], style)
+	SetRune(vp, 0, 0, borderStyle.TopLeft, style)
+	SetRune(vp, w-1, 0, borderStyle.TopRight, style)
+	SetRune(vp, w-1, h-1, borderStyle.BottomRight, style)
+	SetRune(vp, 0, h-1, borderStyle.BottomLeft, style)
 }
