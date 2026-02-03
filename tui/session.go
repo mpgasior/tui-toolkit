@@ -37,17 +37,15 @@ func (s *Session) Start(ctx context.Context) error {
 		return errors.Join(errs...)
 	}
 
-	steps := []struct {
-		action func() (func() error, error)
-	}{
-		{action: func() (func() error, error) { return s.terminal.MakeRaw() }},
-		{action: func() (func() error, error) { return vt.EnterMode(s.terminal, vt.ModeAlternateScreen) }},
-		{action: func() (func() error, error) { return vt.EnterMode(s.terminal, vt.ModeBracketedPaste) }},
-		{action: func() (func() error, error) { return vt.ExitMode(s.terminal, vt.ModeShowCursor) }},
+	steps := []func() (func() error, error){
+		func() (func() error, error) { return s.terminal.MakeRaw() },
+		func() (func() error, error) { return vt.EnterMode(s.terminal, vt.ModeAlternateScreen) },
+		func() (func() error, error) { return vt.EnterMode(s.terminal, vt.ModeBracketedPaste) },
+		func() (func() error, error) { return vt.ExitMode(s.terminal, vt.ModeShowCursor) },
 	}
 
 	for _, step := range steps {
-		restore, err := step.action()
+		restore, err := step()
 		if err != nil {
 			return errors.Join(rollback(), err)
 		}
