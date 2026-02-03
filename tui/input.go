@@ -40,6 +40,19 @@ func CaptureInput(terminal *termx.Terminal) func(ctx context.Context, ch chan<- 
 			_ = trie.Insert(slices.Values([]byte(seq)), key)
 		}
 
+		decodeKey := func(seq vt.Sequence) (key vt.Key) {
+			key, _ = trie.Get(slices.Values(seq.Data))
+			return key
+		}
+
+		decodeRune := func(seq vt.Sequence) (r rune) {
+			r = utf8.RuneError
+			if ok := seq.Is(vt.SeqUTF8); ok {
+				r, _ = utf8.DecodeRune(seq.Data)
+			}
+			return r
+		}
+
 		scanner := vt.NewSequenceScanner(terminal, vt.ScanInitial)
 		for scanner.ScanContext(ctx) {
 			seq := scanner.Sequence()
@@ -55,24 +68,13 @@ func CaptureInput(terminal *termx.Terminal) func(ctx context.Context, ch chan<- 
 				continue
 			}
 
-			if key, ok := trie.Get(slices.Values(seq.Data)); ok {
-				e := KeyEvent{Key: key, Rune: utf8.RuneError}
-				select {
-				case <-ctx.Done():
-					return
-				case ch <- e:
-				}
-				continue
-			}
-
-			if seq.Is(vt.SeqUTF8) {
-				r, _ := utf8.DecodeRune(seq.Data)
-				e := KeyEvent{Key: vt.KeyUnknown, Rune: r}
-				select {
-				case <-ctx.Done():
-					return
-				case ch <- e:
-				}
+			key := decodeKey(seq)
+			r := decodeRune(seq)
+			e := KeyEvent{Key: key, Rune: r}
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- e:
 			}
 		}
 	}
