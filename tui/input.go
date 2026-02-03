@@ -56,7 +56,7 @@ func CaptureInput(terminal *termx.Terminal) func(ctx context.Context, ch chan<- 
 			}
 
 			if key, ok := trie.Get(slices.Values(seq.Data)); ok {
-				e := KeyEvent{Key: key}
+				e := KeyEvent{Key: key, Rune: utf8.RuneError}
 				select {
 				case <-ctx.Done():
 					return
@@ -67,7 +67,7 @@ func CaptureInput(terminal *termx.Terminal) func(ctx context.Context, ch chan<- 
 
 			if seq.Is(vt.SeqUTF8) {
 				r, _ := utf8.DecodeRune(seq.Data)
-				e := KeyEvent{Rune: r}
+				e := KeyEvent{Key: vt.KeyUnknown, Rune: r}
 				select {
 				case <-ctx.Done():
 					return
