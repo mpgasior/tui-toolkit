@@ -1,45 +1,27 @@
-package tui
+package screen
 
 import (
 	"errors"
-	"slices"
 )
 
-type Cell struct {
-	Primary   rune
-	Combining []rune
-	Style     Style
-	Width     uint8
-}
-
-func (c *Cell) Equal(other *Cell) bool {
-	if c.Primary != other.Primary {
-		return false
-	}
-	if !slices.Equal(c.Combining, other.Combining) {
-		return false
-	}
-	if c.Style != other.Style {
-		return false
-	}
-	if c.Width != other.Width {
-		return false
-	}
-
-	return true
+type Buffer interface {
+	Size() (width, height int)
+	GetAt(x, y int) (*Cell, error)
+	SetAt(x, y int, primary rune, combs []rune, width uint8, style Style)
+	SetCursorPos(x, y int)
 }
 
 var ErrInvalidPos = errors.New("invalid position")
 
-type Buffer struct {
+type cellBuffer struct {
 	w, h  int
 	cells []Cell
 
 	cursorX, cursorY int
 }
 
-func NewBuffer(w, h int) *Buffer {
-	b := &Buffer{
+func New(w, h int) Buffer {
+	b := &cellBuffer{
 		w: w, h: h,
 		cells: make([]Cell, w*h),
 
@@ -60,11 +42,11 @@ func NewBuffer(w, h int) *Buffer {
 	return b
 }
 
-func (b *Buffer) Size() (width, heigh int) {
+func (b *cellBuffer) Size() (width, heigh int) {
 	return b.w, b.h
 }
 
-func (b *Buffer) GetAt(x, y int) (*Cell, error) {
+func (b *cellBuffer) GetAt(x, y int) (*Cell, error) {
 	if x < 0 || x >= b.w || y < 0 || y >= b.h {
 		return nil, ErrInvalidPos
 	}
@@ -73,7 +55,7 @@ func (b *Buffer) GetAt(x, y int) (*Cell, error) {
 	return &b.cells[idx], nil
 }
 
-func (b *Buffer) SetAt(x, y int, primary rune, combs []rune, width uint8, style Style) {
+func (b *cellBuffer) SetAt(x, y int, primary rune, combs []rune, width uint8, style Style) {
 	if x < 0 || x >= b.w || y < 0 || y >= b.h {
 		return
 	}
@@ -87,6 +69,6 @@ func (b *Buffer) SetAt(x, y int, primary rune, combs []rune, width uint8, style 
 	cell.Style = style
 }
 
-func (b *Buffer) SetCursorPos(x, y int) {
+func (b *cellBuffer) SetCursorPos(x, y int) {
 	b.cursorX, b.cursorY = x, y
 }

@@ -1,4 +1,4 @@
-package tui
+package screen
 
 import (
 	"github.com/mpgasior/tui-go/vt"
