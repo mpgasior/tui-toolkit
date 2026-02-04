@@ -5,9 +5,9 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/mpgasior/tui-go/termx"
-	"github.com/mpgasior/tui-go/trie"
-	"github.com/mpgasior/tui-go/vt"
+	"github.com/mpgasior/tui-toolkit/termx"
+	"github.com/mpgasior/tui-toolkit/trie"
+	"github.com/mpgasior/tui-toolkit/vt"
 )
 
 func CaptureResize(terminal *termx.Terminal) func(ctx context.Context, ch chan<- Event) {

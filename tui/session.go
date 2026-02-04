@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/mpgasior/tui-go/termx"
-	"github.com/mpgasior/tui-go/vt"
+	"github.com/mpgasior/tui-toolkit/termx"
+	"github.com/mpgasior/tui-toolkit/vt"
 )
 
 type Session struct {

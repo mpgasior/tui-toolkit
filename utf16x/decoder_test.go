@@ -3,7 +3,7 @@ package utf16x_test
 import (
 	"testing"
 
-	"github.com/mpgasior/tui-go/utf16x"
+	"github.com/mpgasior/tui-toolkit/utf16x"
 )
 
 func TestDecoder(t *testing.T) {

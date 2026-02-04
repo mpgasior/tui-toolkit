@@ -1,6 +1,6 @@
 package draw
 
-import "github.com/mpgasior/tui-go/screen"
+import "github.com/mpgasior/tui-toolkit/screen"
 
 type BoxBorder struct {
 	TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left rune

@@ -1,7 +1,7 @@
 package view
 
 import (
-	"github.com/mpgasior/tui-go/screen"
+	"github.com/mpgasior/tui-toolkit/screen"
 )
 
 type Port struct {

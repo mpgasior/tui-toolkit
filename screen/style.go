@@ -1,7 +1,7 @@
 package screen
 
 import (
-	"github.com/mpgasior/tui-go/vt"
+	"github.com/mpgasior/tui-toolkit/vt"
 )
 
 type Attr uint8

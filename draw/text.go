@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"strings"
 
-	"github.com/mpgasior/tui-go/screen"
+	"github.com/mpgasior/tui-toolkit/screen"
 )
 
 func Text(b screen.Buffer, text string, style screen.Style) {

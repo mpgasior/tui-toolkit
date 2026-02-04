@@ -1,6 +1,6 @@
 package draw
 
-import "github.com/mpgasior/tui-go/screen"
+import "github.com/mpgasior/tui-toolkit/screen"
 
 func Fill(b screen.Buffer, r rune, style screen.Style) {
 	w, h := b.Size()

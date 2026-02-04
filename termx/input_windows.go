@@ -10,8 +10,8 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/mpgasior/tui-go/utf16x"
-	"github.com/mpgasior/tui-go/windowsx"
+	"github.com/mpgasior/tui-toolkit/utf16x"
+	"github.com/mpgasior/tui-toolkit/windowsx"
 	"golang.org/x/sys/windows"
 	"golang.org/x/term"
 )

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/mpgasior/tui-go/termx"
+	"github.com/mpgasior/tui-toolkit/termx"
 )
 
 func Run(c Component) error {

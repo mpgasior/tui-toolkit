@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"slices"
 
-	"github.com/mpgasior/tui-go/vt"
+	"github.com/mpgasior/tui-toolkit/vt"
 )
 
 type Event any

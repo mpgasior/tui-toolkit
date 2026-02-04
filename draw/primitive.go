@@ -1,7 +1,7 @@
 package draw
 
 import (
-	"github.com/mpgasior/tui-go/screen"
+	"github.com/mpgasior/tui-toolkit/screen"
 )
 
 func Rune(b screen.Buffer, x, y int, r rune, style screen.Style) {

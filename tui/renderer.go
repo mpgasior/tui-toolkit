@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/mpgasior/tui-go/vt"
+	"github.com/mpgasior/tui-toolkit/vt"
 )
 
 type Renderer struct {
