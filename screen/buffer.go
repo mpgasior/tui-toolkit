@@ -9,6 +9,7 @@ type Buffer interface {
 	GetAt(x, y int) (*Cell, error)
 	SetAt(x, y int, primary rune, combs []rune, width uint8, style Style)
 	SetCursorPos(x, y int)
+	GetCursorPos() (x, y int)
 }
 
 var ErrInvalidPos = errors.New("invalid position")
@@ -71,4 +72,8 @@ func (b *cellBuffer) SetAt(x, y int, primary rune, combs []rune, width uint8, st
 
 func (b *cellBuffer) SetCursorPos(x, y int) {
 	b.cursorX, b.cursorY = x, y
+}
+
+func (b *cellBuffer) GetCursorPos() (x, y int) {
+	return b.cursorX, b.cursorY
 }

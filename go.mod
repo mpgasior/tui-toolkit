@@ -1,4 +1,4 @@
-module github.com/mpgasior/tui-go
+module github.com/mpgasior/tui-toolkit
 
 go 1.25.0
 

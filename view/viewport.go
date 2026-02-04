@@ -32,12 +32,25 @@ func (p Port) SetAt(x, y int, primary rune, combs []rune, width uint8, style scr
 	p.buffer.SetAt(x+p.x, y+p.y, primary, combs, width, style)
 }
 
+func (p Port) GetAt(x, y int) (*screen.Cell, error) {
+	if x < 0 || x >= p.w || y < 0 || y >= p.h {
+		return nil, screen.ErrInvalidPos
+	}
+
+	return p.buffer.GetAt(x+p.x, y+p.y)
+}
+
 func (p Port) SetCursorPos(x, y int) {
 	if x < 0 || x >= p.w || y < 0 || y >= p.h {
 		p.buffer.SetCursorPos(-1, -1)
 		return
 	}
 	p.buffer.SetCursorPos(p.x+x, p.y+y)
+}
+
+func (p Port) GetCursorPos() (x, y int) {
+	// TODO adjust...
+	return p.buffer.GetCursorPos()
 }
 
 func (p Port) Slice(x, y, w, h int) Port {
