@@ -11,24 +11,24 @@ var (
 	BoxBorderDouble = BoxBorder{'╔', '═', '╗', '║', '╝', '═', '╚', '║'}
 )
 
-func Box(b screen.Buffer, border BoxBorder, style screen.Style) {
-	w, h := b.Size()
+func Box(m screen.Mutator, border BoxBorder, style screen.Style) {
+	w, h := m.Size()
 	if w < 2 || h < 2 {
 		return
 	}
 
 	for col := range w {
-		Rune(b, col, 0, border.Top, style)
-		Rune(b, col, h-1, border.Bottom, style)
+		Rune(m, col, 0, border.Top, style)
+		Rune(m, col, h-1, border.Bottom, style)
 	}
 
 	for row := range h {
-		Rune(b, 0, row, border.Left, style)
-		Rune(b, w-1, row, border.Right, style)
+		Rune(m, 0, row, border.Left, style)
+		Rune(m, w-1, row, border.Right, style)
 	}
 
-	Rune(b, 0, 0, border.TopLeft, style)
-	Rune(b, w-1, 0, border.TopRight, style)
-	Rune(b, w-1, h-1, border.BottomRight, style)
-	Rune(b, 0, h-1, border.BottomLeft, style)
+	Rune(m, 0, 0, border.TopLeft, style)
+	Rune(m, w-1, 0, border.TopRight, style)
+	Rune(m, w-1, h-1, border.BottomRight, style)
+	Rune(m, 0, h-1, border.BottomLeft, style)
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/mpgasior/tui-toolkit/screen"
 )
 
-func Text(b screen.Buffer, text string, style screen.Style) {
+func Text(m screen.Buffer, text string, style screen.Style) {
 	scanner := bufio.NewScanner(strings.NewReader(text))
 
 	row := 0
@@ -15,7 +15,7 @@ func Text(b screen.Buffer, text string, style screen.Style) {
 		line := scanner.Text()
 
 		for idx, r := range []rune(line) {
-			Rune(b, idx, row, r, style)
+			Rune(m, idx, row, r, style)
 		}
 		row += 1
 	}

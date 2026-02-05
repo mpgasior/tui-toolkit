@@ -16,6 +16,7 @@ type Accessor interface {
 }
 
 type Mutator interface {
+	Size() (width, height int)
 	SetAt(x, y int, primary rune, combs []rune, width uint8, style Style)
 	SetCursorPos(x, y int)
 }
@@ -29,7 +30,7 @@ type buffer struct {
 	cursorX, cursorY int
 }
 
-func New(w, h int) Buffer {
+func NewBuffer(w, h int) Buffer {
 	b := &buffer{
 		w: w, h: h,
 		cells: make([]Cell, w*h),
