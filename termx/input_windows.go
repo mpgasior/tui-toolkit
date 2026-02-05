@@ -1,5 +1,3 @@
-//go:build windows
-
 package termx
 
 import (
@@ -10,8 +8,8 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/mpgasior/tui-toolkit/utf16x"
-	"github.com/mpgasior/tui-toolkit/windowsx"
+	"github.com/mpgasior/tui-toolkit/termx/utf16x"
+	"github.com/mpgasior/tui-toolkit/termx/windowsx"
 	"golang.org/x/sys/windows"
 	"golang.org/x/term"
 )

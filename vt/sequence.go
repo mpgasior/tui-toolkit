@@ -10,8 +10,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/mpgasior/tui-toolkit/bufiox"
 	"github.com/mpgasior/tui-toolkit/iox"
+	"github.com/mpgasior/tui-toolkit/vt/bufiox"
 )
 
 type SequenceType int

@@ -6,7 +6,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/mpgasior/tui-toolkit/iox"
-	"github.com/mpgasior/tui-toolkit/trie"
+	"github.com/mpgasior/tui-toolkit/vt/trie"
 )
 
 type KeyEvent struct {
