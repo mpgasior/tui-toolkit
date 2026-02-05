@@ -5,16 +5,24 @@ import (
 )
 
 type Buffer interface {
+	Accessor
+	Mutator
+}
+
+type Accessor interface {
 	Size() (width, height int)
 	GetAt(x, y int) (*Cell, error)
+	GetCursorPos() (x, y int)
+}
+
+type Mutator interface {
 	SetAt(x, y int, primary rune, combs []rune, width uint8, style Style)
 	SetCursorPos(x, y int)
-	GetCursorPos() (x, y int)
 }
 
 var ErrInvalidPos = errors.New("invalid position")
 
-type cellBuffer struct {
+type buffer struct {
 	w, h  int
 	cells []Cell
 
@@ -22,7 +30,7 @@ type cellBuffer struct {
 }
 
 func New(w, h int) Buffer {
-	b := &cellBuffer{
+	b := &buffer{
 		w: w, h: h,
 		cells: make([]Cell, w*h),
 
@@ -43,11 +51,11 @@ func New(w, h int) Buffer {
 	return b
 }
 
-func (b *cellBuffer) Size() (width, heigh int) {
+func (b *buffer) Size() (width, heigh int) {
 	return b.w, b.h
 }
 
-func (b *cellBuffer) GetAt(x, y int) (*Cell, error) {
+func (b *buffer) GetAt(x, y int) (*Cell, error) {
 	if x < 0 || x >= b.w || y < 0 || y >= b.h {
 		return nil, ErrInvalidPos
 	}
@@ -56,7 +64,7 @@ func (b *cellBuffer) GetAt(x, y int) (*Cell, error) {
 	return &b.cells[idx], nil
 }
 
-func (b *cellBuffer) SetAt(x, y int, primary rune, combs []rune, width uint8, style Style) {
+func (b *buffer) SetAt(x, y int, primary rune, combs []rune, width uint8, style Style) {
 	if x < 0 || x >= b.w || y < 0 || y >= b.h {
 		return
 	}
@@ -70,10 +78,10 @@ func (b *cellBuffer) SetAt(x, y int, primary rune, combs []rune, width uint8, st
 	cell.Style = style
 }
 
-func (b *cellBuffer) SetCursorPos(x, y int) {
+func (b *buffer) SetCursorPos(x, y int) {
 	b.cursorX, b.cursorY = x, y
 }
 
-func (b *cellBuffer) GetCursorPos() (x, y int) {
+func (b *buffer) GetCursorPos() (x, y int) {
 	return b.cursorX, b.cursorY
 }
