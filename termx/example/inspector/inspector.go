@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/mpgasior/tui-go/termx"
+	"github.com/mpgasior/tui-toolkit/termx"
 )
 
 func main() {
