@@ -7,7 +7,7 @@ import (
 	"github.com/mpgasior/tui-toolkit/screen"
 )
 
-func Text(m screen.Buffer, text string, style screen.Style) {
+func Text(m screen.Mutator, text string, style screen.Style) {
 	scanner := bufio.NewScanner(strings.NewReader(text))
 
 	row := 0

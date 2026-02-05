@@ -13,15 +13,15 @@ func (c *Cell) Equal(other *Cell) bool {
 	if c.Primary != other.Primary {
 		return false
 	}
-	if !slices.Equal(c.Combining, other.Combining) {
-		return false
-	}
 	if c.Style != other.Style {
 		return false
 	}
 	if c.Width != other.Width {
 		return false
 	}
+	if len(c.Combining) != len(other.Combining) {
+		return false
+	}
 
-	return true
+	return slices.Equal(c.Combining, other.Combining)
 }

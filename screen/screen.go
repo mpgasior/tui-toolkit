@@ -12,6 +12,7 @@ type Screen interface {
 	Mutator
 	io.WriterTo
 	Flush(w io.Writer) (int64, error)
+	Resize(w, h int)
 }
 
 type screen struct {
@@ -33,6 +34,16 @@ func (s *screen) Size() (x, y int) {
 	return s.next.Size()
 }
 
+func (s *screen) Resize(w, h int) {
+	oldW, oldH := s.Size()
+	if oldW == w && oldH == h {
+		return
+	}
+
+	s.next = NewBuffer(w, h)
+	s.current = NewBuffer(w, h)
+}
+
 func (s *screen) SetAt(x, y int, primary rune, combs []rune, width uint8, style Style) {
 	s.next.SetAt(x, y, primary, combs, width, style)
 }
@@ -42,15 +53,22 @@ func (s *screen) SetCursorPos(x, y int) {
 }
 
 func (s *screen) WriteTo(writer io.Writer) (n int64, err error) {
-	return s.writeTo(writer, false)
+	n, err = s.writeTo(writer, false)
+	s.current, s.next = s.next, s.current
+
+	return n, err
 }
 
 func (s *screen) Flush(writer io.Writer) (n int64, err error) {
-	return s.writeTo(writer, true)
+	s.current, s.next = s.next, s.current
+	n, err = s.writeTo(writer, true)
+	s.current, s.next = s.next, s.current
+
+	return n, err
 }
 
 func (s *screen) writeTo(writer io.Writer, force bool) (n int64, err error) {
-	w, h := s.current.Size()
+	w, h := s.next.Size()
 
 	s.buf.WriteString(vt.CursorHide)
 	for row := range h {
@@ -71,11 +89,10 @@ func (s *screen) writeTo(writer io.Writer, force bool) (n int64, err error) {
 
 			s.buf.WriteString(s.styleCache[next.Style])
 			s.buf.WriteRune(next.Primary)
-			if current.Combining != nil {
+			if next.Combining != nil {
 				s.buf.WriteString(string(next.Combining))
 			}
 
-			s.current.SetAt(col, row, next.Primary, next.Combining, next.Width, next.Style)
 			col += int(next.Width)
 		}
 	}
@@ -88,9 +105,6 @@ func (s *screen) writeTo(writer io.Writer, force bool) (n int64, err error) {
 	}
 
 	s.buf.WriteString(vt.SGRReset)
-
-	s.current, s.next = s.next, s.current
-
 	return s.buf.WriteTo(writer)
 }
 
