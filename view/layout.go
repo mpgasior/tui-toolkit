@@ -27,6 +27,32 @@ func Dynamic(name string, value int) Constraint {
 	}
 }
 
+func Grid(p Port, rowConstraints []Constraint, colConstraints []Constraint) map[string]Port {
+	result := make(map[string]Port)
+
+	rows := SplitH(p, rowConstraints...)
+
+	for _, rc := range rowConstraints {
+		if rc.Name == "" {
+			continue
+		}
+
+		rowPort := rows[rc.Name]
+		cols := SplitV(rowPort, colConstraints...)
+
+		for _, cc := range colConstraints {
+			if cc.Name == "" {
+				continue
+			}
+
+			key := rc.Name + ":" + cc.Name
+			result[key] = cols[cc.Name]
+		}
+	}
+
+	return result
+}
+
 func Center(p Port, cw Constraint, ch Constraint) Port {
 	centerV := CenterV(p, cw)
 
