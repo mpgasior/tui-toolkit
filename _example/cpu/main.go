@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -78,6 +78,9 @@ func main() {
 
 	for {
 		vp := view.NewPort(buf)
+		screen.DefaultStyle = screen.DefaultStyle.Bg(screen.ColorHex(0x3030))
+		draw.Clear(vp, screen.DefaultStyle)
+
 		layout := view.SplitH(vp, view.Fixed("search", 3), view.Dynamic("body", 3), view.Fixed("help", 1))
 		search, body, help := layout["search"], layout["body"], layout["help"]
 
@@ -89,8 +92,48 @@ func main() {
 		if processList == nil {
 			draw.Line(body.Offset(1), "waiting...", screen.DefaultStyle)
 		} else {
-			line := fmt.Sprintf("%-10s %-20s %-20s %s\n", "PID", "Kernel Time", "User Time", "Name")
-			draw.Line(body.Offset(1, 0, 0, 1), line, screen.DefaultStyle.Fg(screen.ColorGreen))
+			drawLine := func(vp view.Port, pid draw.TextChunk, name draw.TextChunk, kernel draw.TextChunk, user draw.TextChunk) {
+				layout := view.SplitV(vp,
+					view.Fixed("pid", 7),
+					view.Dynamic("name", 25),
+					view.Dynamic("kernel", 5),
+					view.Dynamic("user", 5))
+
+				draw.Text(layout["pid"], pid)
+				draw.Text(layout["name"], name)
+				draw.Text(layout["kernel"], kernel)
+				draw.Text(layout["user"], user)
+			}
+
+			drawInfo := func(vp view.Port, info ProcessInfo) {
+				drawLine(vp,
+					draw.TextChunk{
+						Text:  strconv.FormatInt(int64(info.PID), 10),
+						Style: screen.DefaultStyle.Fg(screen.ColorYellow),
+					},
+					draw.TextChunk{
+						Text:  info.Name,
+						Style: screen.DefaultStyle.Fg(screen.ColorCyan),
+					},
+					draw.TextChunk{
+						Text:  info.KernelTime.String(),
+						Style: screen.DefaultStyle.Fg(screen.ColorBlue),
+					},
+					draw.TextChunk{
+						Text:  info.UserTime.String(),
+						Style: screen.DefaultStyle.Fg(screen.ColorRed),
+					})
+			}
+
+			headerStyle := screen.DefaultStyle.
+				Fg(screen.ColorGreen).
+				Attr(screen.AttrUnderline)
+
+			drawLine(body.Offset(1, 0, 0, 1),
+				draw.TextChunk{"PID", headerStyle},
+				draw.TextChunk{"Name", headerStyle},
+				draw.TextChunk{"Kernel", headerStyle},
+				draw.TextChunk{"User", headerStyle})
 
 			vp := body.Offset(2, 0, 0, 1)
 			w, h := vp.Size()
@@ -100,24 +143,9 @@ func main() {
 					break
 				}
 
-				draw.Text(
-					vp.Offset(idx, 0, 0, 0).Slice(0, 0, w, 1),
-					draw.TextChunk{
-						Text:  fmt.Sprintf("%-10d ", info.PID),
-						Style: screen.DefaultStyle.Fg(screen.ColorYellow),
-					},
-					draw.TextChunk{
-						Text:  fmt.Sprintf("%-20s ", info.KernelTime.String()),
-						Style: screen.DefaultStyle.Fg(screen.ColorBlue),
-					},
-					draw.TextChunk{
-						Text:  fmt.Sprintf("%-20s ", info.UserTime.String()),
-						Style: screen.DefaultStyle.Fg(screen.ColorRed),
-					},
-					draw.TextChunk{
-						Text:  info.Name,
-						Style: screen.DefaultStyle.Fg(screen.ColorCyan),
-					})
+				row := vp.Offset(idx, 0, 0, 0).Slice(0, 0, w, 1)
+
+				drawInfo(row, info)
 			}
 		}
 

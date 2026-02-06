@@ -92,6 +92,7 @@ func (s *screen) writeTo(writer io.Writer, force bool) (n int64, err error) {
 			if next.Combining != nil {
 				s.buf.WriteString(string(next.Combining))
 			}
+			s.buf.WriteString(vt.SGRReset)
 
 			col += int(next.Width)
 		}
