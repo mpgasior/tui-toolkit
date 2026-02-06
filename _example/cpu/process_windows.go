@@ -8,13 +8,6 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-type ProcessInfo struct {
-	PID        uint32
-	Name       string
-	UserTime   time.Duration
-	KernelTime time.Duration
-}
-
 func getProcessInfo(entry windows.ProcessEntry32) ProcessInfo {
 	info := ProcessInfo{
 		PID:  entry.ProcessID,
