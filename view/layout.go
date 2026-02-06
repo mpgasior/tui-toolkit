@@ -27,6 +27,22 @@ func Dynamic(name string, value int) Constraint {
 	}
 }
 
+func Center(p Port, cw Constraint, ch Constraint) Port {
+	centerV := CenterV(p, cw)
+
+	return CenterH(centerV, ch)
+}
+
+func CenterH(p Port, cs Constraint) Port {
+	split := SplitH(p, Dynamic("", 1), cs, Dynamic("", 1))
+	return split[cs.Name]
+}
+
+func CenterV(p Port, cs Constraint) Port {
+	split := SplitV(p, Dynamic("", 1), cs, Dynamic("", 1))
+	return split[cs.Name]
+}
+
 func SplitH(p Port, cs ...Constraint) map[string]Port {
 	return splitMap(p, dirHorizontal, cs...)
 }
@@ -57,9 +73,6 @@ func splitMap(p Port, dir direction, cs ...Constraint) map[string]Port {
 	offset := 0
 	for i, allocation := range allocations {
 		c := cs[i]
-		if c.Name == "" {
-			continue
-		}
 
 		if c.IsStatic {
 			allocation = c.Value

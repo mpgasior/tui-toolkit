@@ -49,6 +49,11 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Go(func() { eventsF(ctx) })
 	wg.Go(func() {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(2 * time.Second):
+		}
 		for {
 			list, err := ListProcesses()
 			if err != nil {
@@ -78,19 +83,27 @@ func main() {
 
 	for {
 		vp := view.NewPort(buf)
-		screen.DefaultStyle = screen.DefaultStyle.Bg(screen.ColorHex(0x3030))
+		screen.DefaultStyle = screen.DefaultStyle.
+			Bg(screen.ColorHex(0x2B2D42)).
+			Fg(screen.ColorHex(0xEDF2F4)).
+			Fg(screen.ColorHex(0xEF233C)).
+			Fg(screen.ColorHex(0x8D99AE))
+
 		draw.Clear(vp, screen.DefaultStyle)
 
 		layout := view.SplitH(vp, view.Fixed("search", 3), view.Dynamic("body", 3), view.Fixed("help", 1))
 		search, body, help := layout["search"], layout["body"], layout["help"]
+
+		search = view.CenterV(search, view.Dynamic("search", 1))
 
 		draw.Box(search, draw.BoxBorderThin, screen.DefaultStyle.Fg(screen.ColorGreen))
 		draw.Line(search.Offset(1), "Type ...", screen.DefaultStyle.Fg(screen.ColorHex(0x0F0F0F)))
 
 		draw.Box(body, draw.BoxBorderDouble, screen.DefaultStyle)
 
-		if processList == nil {
-			draw.Line(body.Offset(1), "waiting...", screen.DefaultStyle)
+		if len(processList) == 0 {
+			vp := view.Center(body, view.Dynamic("w", 1), view.Dynamic("h", 1))
+			draw.Line(vp, "waiting...", screen.DefaultStyle)
 		} else {
 			drawLine := func(vp view.Port, pid draw.TextChunk, name draw.TextChunk, kernel draw.TextChunk, user draw.TextChunk) {
 				layout := view.SplitV(vp,
@@ -109,31 +122,30 @@ func main() {
 				drawLine(vp,
 					draw.TextChunk{
 						Text:  strconv.FormatInt(int64(info.PID), 10),
-						Style: screen.DefaultStyle.Fg(screen.ColorYellow),
+						Style: screen.DefaultStyle,
 					},
 					draw.TextChunk{
 						Text:  info.Name,
-						Style: screen.DefaultStyle.Fg(screen.ColorCyan),
+						Style: screen.DefaultStyle,
 					},
 					draw.TextChunk{
 						Text:  info.KernelTime.String(),
-						Style: screen.DefaultStyle.Fg(screen.ColorBlue),
+						Style: screen.DefaultStyle,
 					},
 					draw.TextChunk{
 						Text:  info.UserTime.String(),
-						Style: screen.DefaultStyle.Fg(screen.ColorRed),
+						Style: screen.DefaultStyle,
 					})
 			}
 
 			headerStyle := screen.DefaultStyle.
-				Fg(screen.ColorGreen).
 				Attr(screen.AttrUnderline)
 
 			drawLine(body.Offset(1, 0, 0, 1),
 				draw.TextChunk{"PID", headerStyle},
 				draw.TextChunk{"Name", headerStyle},
 				draw.TextChunk{"Kernel", headerStyle},
-				draw.TextChunk{"User", headerStyle})
+				draw.TextChunk{"[User]", headerStyle.Fg(screen.ColorGreen)})
 
 			vp := body.Offset(2, 0, 0, 1)
 			w, h := vp.Size()
