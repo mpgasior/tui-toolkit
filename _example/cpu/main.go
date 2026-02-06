@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mpgasior/tui-toolkit/_example/cpu/process"
 	"github.com/mpgasior/tui-toolkit/draw"
 	"github.com/mpgasior/tui-toolkit/screen"
 	"github.com/mpgasior/tui-toolkit/termx"
@@ -43,8 +44,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var processList []ProcessInfo
-	processListCh := make(chan []ProcessInfo)
+	var processList []process.ProcessInfo
+	processListCh := make(chan []process.ProcessInfo)
 
 	var wg sync.WaitGroup
 	wg.Go(func() { eventsF(ctx) })
@@ -55,7 +56,7 @@ func main() {
 		case <-time.After(2 * time.Second):
 		}
 		for {
-			list, err := ListProcesses()
+			list, err := process.List()
 			if err != nil {
 				break
 			}
@@ -118,7 +119,7 @@ func main() {
 				draw.Text(layout["user"], user)
 			}
 
-			drawInfo := func(vp view.Port, info ProcessInfo) {
+			drawInfo := func(vp view.Port, info process.ProcessInfo) {
 				drawLine(vp,
 					draw.TextChunk{
 						Text:  strconv.FormatInt(int64(info.PID), 10),

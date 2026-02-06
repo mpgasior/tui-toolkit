@@ -1,4 +1,4 @@
-package main
+package process
 
 import (
 	"sort"
@@ -37,7 +37,7 @@ func getProcessInfo(entry windows.ProcessEntry32) ProcessInfo {
 	return info
 }
 
-func ListProcesses() ([]ProcessInfo, error) {
+func List() ([]ProcessInfo, error) {
 	var processList []ProcessInfo
 
 	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)

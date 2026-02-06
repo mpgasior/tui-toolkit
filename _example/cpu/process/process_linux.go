@@ -1,4 +1,4 @@
-package main
+package process
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ func getProcessInfo(pid int) (ProcessInfo, error) {
 	}, nil
 }
 
-func ListProcesses() ([]ProcessInfo, error) {
+func List() ([]ProcessInfo, error) {
 	var processList []ProcessInfo
 
 	files, err := os.ReadDir("/proc")
