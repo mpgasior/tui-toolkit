@@ -26,8 +26,13 @@ func (s *SearchInput) Update(e vt.KeyEvent) {
 	}
 }
 
-func (s *SearchInput) Draw(v view.Port) {
-	draw.Box(v, draw.BoxBorderThin, screen.DefaultStyle)
+func (s *SearchInput) Draw(v view.Port, focused bool) {
+	boxStyle := screen.DefaultStyle
+	if focused {
+		boxStyle = boxStyle.Fg(screen.ColorGreen)
+	}
+
+	draw.Box(v, draw.BoxBorderThin, boxStyle)
 
 	body := v.Offset(1)
 	if len(s.Term) == 0 {

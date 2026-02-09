@@ -84,7 +84,7 @@ func main() {
 				if k.IsKey(vt.KeyCtrlC, vt.KeyQ, vt.KeyEsc) {
 					cancel()
 				}
-				u.Update(k)
+				u.HandleKey(k)
 			}
 		}
 	}

@@ -13,8 +13,16 @@ type ProcessTable struct {
 	Rows []process.ProcessInfo
 }
 
-func (pl *ProcessTable) Draw(v view.Port) {
+func (pl *ProcessTable) Draw(v view.Port, focused bool) {
 	draw.Clear(v, screen.DefaultStyle)
+	boxStyle := screen.DefaultStyle
+	if focused {
+		boxStyle = boxStyle.Fg(screen.ColorGreen)
+	}
+
+	draw.Box(v, draw.BoxBorderDouble, boxStyle)
+
+	v = v.Offset(1)
 
 	if len(pl.Rows) == 0 {
 		body := view.Center(v, view.Dynamic("w", 1), view.Dynamic("h", 1))
