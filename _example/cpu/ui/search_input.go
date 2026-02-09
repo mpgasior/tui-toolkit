@@ -24,7 +24,6 @@ func (s *SearchInput) Update(e vt.KeyEvent) {
 	if e.Rune != utf8.RuneError {
 		s.Term = append(s.Term, e.Rune)
 	}
-
 }
 
 func (s *SearchInput) Draw(v view.Port) {

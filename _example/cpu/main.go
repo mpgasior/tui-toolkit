@@ -8,10 +8,8 @@ import (
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/process"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/ui"
-	"github.com/mpgasior/tui-toolkit/draw"
 	"github.com/mpgasior/tui-toolkit/screen"
 	"github.com/mpgasior/tui-toolkit/termx"
-	"github.com/mpgasior/tui-toolkit/view"
 	"github.com/mpgasior/tui-toolkit/vt"
 )
 
@@ -44,37 +42,14 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var procTable ui.ProcessTable
-	var searchInput ui.SearchInput
+	u := ui.New()
 
 	processListCh := make(chan []process.ProcessInfo)
 
 	var wg sync.WaitGroup
 	wg.Go(func() { eventsF(ctx) })
 	wg.Go(func() {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(2 * time.Second):
-		}
-		for {
-			list, err := process.List()
-			if err != nil {
-				break
-			}
-
-			select {
-			case <-ctx.Done():
-				return
-			case processListCh <- list:
-			}
-
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(time.Second):
-			}
-		}
+		process.RefreshLoop(ctx, processListCh, time.Second)
 	})
 
 	buf := screen.New(w, h)
@@ -85,22 +60,13 @@ func main() {
 	defer restore()
 
 	for {
-		vp := view.NewPort(buf)
 		screen.DefaultStyle = screen.DefaultStyle.
 			Bg(screen.ColorHex(0x2B2D42)).
 			Fg(screen.ColorHex(0xEDF2F4)).
 			Fg(screen.ColorHex(0xEF233C)).
 			Fg(screen.ColorHex(0x8D99AE))
 
-		draw.Clear(vp, screen.DefaultStyle)
-
-		layout := view.SplitH(vp, view.Fixed("search", 3), view.Dynamic("body", 3), view.Fixed("help", 1))
-		search, body, help := layout["search"], layout["body"], layout["help"]
-
-		searchInput.Draw(search)
-		procTable.Draw(body)
-
-		draw.Line(help, "[Q]uit", screen.DefaultStyle)
+		u.Draw(buf)
 
 		buf.WriteTo(terminal)
 
@@ -108,7 +74,7 @@ func main() {
 		case <-ctx.Done():
 			return
 		case snapshot := <-processListCh:
-			procTable.Rows = snapshot
+			u.OnNewRows(snapshot)
 		case <-terminal.ResizeC():
 			w, h, _ = terminal.GetSize()
 			buf.Resize(w, h)
@@ -118,7 +84,7 @@ func main() {
 				if k.IsKey(vt.KeyCtrlC, vt.KeyQ, vt.KeyEsc) {
 					cancel()
 				}
-				searchInput.Update(k)
+				u.Update(k)
 			}
 		}
 	}
