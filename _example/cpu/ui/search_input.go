@@ -14,6 +14,10 @@ type SearchInput struct {
 }
 
 func (s *SearchInput) Update(e vt.KeyEvent) {
+	if e.IsKey(vt.KeyEsc) {
+		s.Term = nil
+		return
+	}
 	if e.IsKey(vt.KeyBackspace) {
 		if len(s.Term) > 0 {
 			s.Term = s.Term[:len(s.Term)-1]

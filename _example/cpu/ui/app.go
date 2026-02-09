@@ -28,6 +28,10 @@ func New() *App {
 	}
 }
 
+func (a *App) Term() string {
+	return string(a.input.Term)
+}
+
 func (a *App) HandleKey(e vt.KeyEvent) {
 	if e.IsKey(vt.KeyTab) {
 		a.focusedElement = FocusTable
@@ -57,5 +61,5 @@ func (a *App) Draw(m screen.Mutator) {
 	a.input.Draw(search, a.focusedElement == FocusSearch)
 	a.table.Draw(body, a.focusedElement == FocusTable)
 
-	draw.Line(help, "[Q]uit", screen.DefaultStyle)
+	draw.Line(help, "[ctrl+c] Quit", screen.DefaultStyle)
 }

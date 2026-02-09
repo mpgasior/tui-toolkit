@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,11 +46,34 @@ func main() {
 	u := ui.New()
 
 	processListCh := make(chan []process.ProcessInfo)
+	filterCh := make(chan []process.ProcessInfo)
 
 	var wg sync.WaitGroup
 	wg.Go(func() { eventsF(ctx) })
 	wg.Go(func() {
 		process.RefreshLoop(ctx, processListCh, time.Second)
+	})
+	wg.Go(func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case snapshot := <-processListCh:
+				var filtered []process.ProcessInfo
+
+				for _, p := range snapshot {
+					if strings.Contains(p.Name, u.Term()) {
+						filtered = append(filtered, p)
+					}
+				}
+
+				select {
+				case <-ctx.Done():
+					return
+				case filterCh <- filtered:
+				}
+			}
+		}
 	})
 
 	buf := screen.New(w, h)
@@ -73,7 +97,7 @@ func main() {
 		select {
 		case <-ctx.Done():
 			return
-		case snapshot := <-processListCh:
+		case snapshot := <-filterCh:
 			u.OnNewRows(snapshot)
 		case <-terminal.ResizeC():
 			w, h, _ = terminal.GetSize()
@@ -81,7 +105,7 @@ func main() {
 			buf.Flush(terminal)
 		case e := <-eventsCh:
 			if k, ok := e.(vt.KeyEvent); ok {
-				if k.IsKey(vt.KeyCtrlC, vt.KeyQ, vt.KeyEsc) {
+				if k.IsKey(vt.KeyCtrlC) {
 					cancel()
 				}
 				u.HandleKey(k)
