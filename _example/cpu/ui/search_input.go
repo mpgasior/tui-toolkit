@@ -4,8 +4,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/mpgasior/tui-toolkit/draw"
+	"github.com/mpgasior/tui-toolkit/mvu"
 	"github.com/mpgasior/tui-toolkit/screen"
-	"github.com/mpgasior/tui-toolkit/view"
 	"github.com/mpgasior/tui-toolkit/vt"
 )
 
@@ -13,26 +13,36 @@ type SearchInput struct {
 	Term []rune
 }
 
-func (s *SearchInput) Update(e vt.KeyEvent) {
-	if e.IsKey(vt.KeyEsc) {
-		s.Term = nil
-		return
-	}
-	if e.IsKey(vt.KeyBackspace) {
-		if len(s.Term) > 0 {
-			s.Term = s.Term[:len(s.Term)-1]
-		}
-		return
-	}
-
-	if e.Rune != utf8.RuneError {
-		s.Term = append(s.Term, e.Rune)
-	}
+func (s *SearchInput) Init() mvu.Task {
+	return mvu.TaskNone
 }
 
-func (s *SearchInput) Draw(v view.Port, focused bool) {
+func (s *SearchInput) Update(e mvu.Event) mvu.Task {
+	if key, ok := e.(vt.KeyEvent); ok {
+		if key.IsKey(vt.KeyEsc) {
+			s.Term = nil
+			return mvu.TaskNone
+		}
+
+		if key.IsKey(vt.KeyBackspace) {
+			if len(s.Term) > 0 {
+				s.Term = s.Term[:len(s.Term)-1]
+			}
+			return mvu.TaskNone
+		}
+
+		if key.Rune != utf8.RuneError {
+			s.Term = append(s.Term, key.Rune)
+		}
+	}
+
+	return mvu.TaskNone
+}
+
+func (s *SearchInput) Render(ctx mvu.RenderContext) {
+	v := ctx.View
 	boxStyle := screen.DefaultStyle
-	if focused {
+	if ctx.Focused {
 		boxStyle = boxStyle.Fg(screen.ColorGreen)
 	}
 
@@ -40,8 +50,7 @@ func (s *SearchInput) Draw(v view.Port, focused bool) {
 
 	body := v.Offset(1)
 	if len(s.Term) == 0 {
-		style := screen.DefaultStyle.
-			Fg(screen.ColorHex(0x0F0F0F))
+		style := screen.DefaultStyle.Fg(screen.ColorBlue)
 		draw.Line(body, "Search...", style)
 		body.SetCursorPos(-1, -1)
 		return

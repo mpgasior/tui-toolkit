@@ -40,7 +40,7 @@ func (r *Runtime) Start(ctx context.Context) (dispatch func(Task), shutdown func
 			t.Execute(tCtx, r.events)
 			select {
 			case quitCh <- t.ID:
-			case <-tCtx.Done():
+			case <-ctx.Done():
 			}
 		})
 	}

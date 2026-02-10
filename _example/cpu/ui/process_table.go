@@ -5,6 +5,7 @@ import (
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/process"
 	"github.com/mpgasior/tui-toolkit/draw"
+	"github.com/mpgasior/tui-toolkit/mvu"
 	"github.com/mpgasior/tui-toolkit/screen"
 	"github.com/mpgasior/tui-toolkit/view"
 )
@@ -13,10 +14,23 @@ type ProcessTable struct {
 	Rows []process.ProcessInfo
 }
 
-func (pl *ProcessTable) Draw(v view.Port, focused bool) {
+func (t *ProcessTable) Init() mvu.Task {
+	return mvu.TaskNone
+}
+
+func (t *ProcessTable) Update(e mvu.Event) mvu.Task {
+	if snapshot, ok := e.(ProcessSnapshotEvent); ok {
+		t.Rows = snapshot.Rows
+	}
+
+	return mvu.TaskNone
+}
+
+func (t *ProcessTable) Render(ctx mvu.RenderContext) {
+	v := ctx.View
 	draw.Clear(v, screen.DefaultStyle)
 	boxStyle := screen.DefaultStyle
-	if focused {
+	if ctx.Focused {
 		boxStyle = boxStyle.Fg(screen.ColorGreen)
 	}
 
@@ -24,7 +38,7 @@ func (pl *ProcessTable) Draw(v view.Port, focused bool) {
 
 	v = v.Offset(1)
 
-	if len(pl.Rows) == 0 {
+	if len(t.Rows) == 0 {
 		body := view.Center(v, view.Dynamic("w", 1), view.Dynamic("h", 1))
 		draw.Line(body, "waiting...", screen.DefaultStyle)
 		return
@@ -43,7 +57,7 @@ func (pl *ProcessTable) Draw(v view.Port, focused bool) {
 	tBody := v.Offset(2, 0, 0, 1)
 	w, h := v.Size()
 
-	for idx, info := range pl.Rows {
+	for idx, info := range t.Rows {
 		if idx >= h-1 {
 			break
 		}
