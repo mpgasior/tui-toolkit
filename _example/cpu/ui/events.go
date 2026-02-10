@@ -3,15 +3,31 @@ package ui
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/process"
 	"github.com/mpgasior/tui-toolkit/mvu"
 )
 
+type ProcessStore struct {
+	mu   sync.RWMutex
+	data []process.ProcessInfo
+}
+
 type ProcessSnapshotEvent struct {
 	ID   int
 	Rows []process.ProcessInfo
+}
+
+type DataRefreshedEvent struct{}
+
+func TaskFetchProcesses(store *ProcessStore) mvu.Task {
+	return mvu.TaskNone
+}
+
+func TaskSearch(store *ProcessStore, term string) mvu.Task {
+	return mvu.TaskNone
 }
 
 func TaskRefresh(id int, term []rune) mvu.Task {
