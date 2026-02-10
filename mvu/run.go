@@ -1,10 +1,12 @@
-package tui
+package mvu
 
 import (
 	"bytes"
 	"context"
 
+	"github.com/mpgasior/tui-toolkit/screen"
 	"github.com/mpgasior/tui-toolkit/termx"
+	"github.com/mpgasior/tui-toolkit/view"
 )
 
 func Run(c Component) error {
@@ -37,16 +39,15 @@ func Run(c Component) error {
 		return err
 	}
 
-	renderer := NewRenderer(w, h)
+	scr := screen.New(w, h)
 
 	for {
 		c.Render(RenderContext{
-			Viewport: NewViewport(renderer.Back),
-			Focused:  true,
+			View:    view.NewPort(scr),
+			Focused: true,
 		})
 
-		renderer.SwapBuffers()
-		renderer.WriteTo(terminal)
+		scr.WriteTo(terminal)
 
 		select {
 		case <-ctx.Done():
@@ -58,7 +59,7 @@ func Run(c Component) error {
 			}
 
 			if resize, ok := ev.(ResizeEvent); ok {
-				renderer.Resize(resize.Width, resize.Height)
+				scr = screen.New(resize.Width, resize.Height)
 				continue
 			}
 
@@ -86,7 +87,9 @@ func Run(c Component) error {
 					session.Dispatch(t)
 				}
 
-				renderer.ForceRedraw()
+				if _, err := scr.Flush(terminal); err != nil {
+					return err
+				}
 				continue
 			}
 

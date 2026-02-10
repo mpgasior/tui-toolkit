@@ -1,4 +1,4 @@
-package tui
+package mvu
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package tui
+package mvu
 
 import (
 	"context"
@@ -24,6 +24,10 @@ func TaskF(f func(ctx context.Context, ch chan<- Event)) Task {
 	return Task{
 		Execute: f,
 	}
+}
+
+func TaskCancel(id string) Task {
+	return Task{ID: id}
 }
 
 var TaskNone = Task{}
