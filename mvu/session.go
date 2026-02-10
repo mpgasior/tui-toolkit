@@ -42,10 +42,10 @@ func (s *Session) Start(ctx context.Context) error {
 		return err
 	}
 
-	eventF, eventCh := vt.Events(s.terminal)
+	vtEventWorker, vtCh := vt.Events(s.terminal)
 
 	dispatch(TaskF(func(ctx context.Context, ch chan<- Event) {
-		eventF(ctx)
+		vtEventWorker(ctx)
 	}))
 
 	dispatch(TaskF(func(ctx context.Context, ch chan<- Event) {
@@ -53,7 +53,7 @@ func (s *Session) Start(ctx context.Context) error {
 			select {
 			case <-ctx.Done():
 				return
-			case ev := <-eventCh:
+			case ev := <-vtCh:
 				select {
 				case <-ctx.Done():
 					return

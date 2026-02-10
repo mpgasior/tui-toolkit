@@ -31,7 +31,9 @@ func Lines(m screen.Mutator, text string, style screen.Style) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		Line(m, line, style)
+		for idx, r := range []rune(line) {
+			Rune(m, idx, row, r, style)
+		}
 
 		row += 1
 	}
