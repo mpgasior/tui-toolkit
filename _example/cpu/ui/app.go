@@ -1,9 +1,6 @@
 package ui
 
 import (
-	"context"
-	"time"
-
 	"github.com/mpgasior/tui-toolkit/_example/cpu/process"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/worker"
 	"github.com/mpgasior/tui-toolkit/draw"
@@ -23,9 +20,9 @@ const (
 type App struct {
 	focusedElement Focus
 	input          *SearchInput
+	spinner        *Spinner
 	table          *ProcessTable
 	store          *process.ProcessStore
-	spinnerFrame   int
 	querying       bool
 }
 
@@ -33,35 +30,12 @@ func New() *App {
 	return &App{
 		input: &SearchInput{},
 		table: &ProcessTable{},
+		spinner: &Spinner{
+			ID:    "spinner",
+			Frame: draw.SpinnerBraille,
+		},
 		store: &process.ProcessStore{},
 	}
-}
-
-type TickEvent struct{}
-
-func TaskTick() mvu.Task {
-	return mvu.Task{
-		ID: "tick",
-		Execute: func(ctx context.Context, ch chan<- mvu.Event) {
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-time.After(80 * time.Millisecond):
-				}
-
-				select {
-				case <-ctx.Done():
-					return
-				case ch <- TickEvent{}:
-				}
-			}
-		},
-	}
-}
-
-func TaskCancelTick() mvu.Task {
-	return mvu.TaskCancel("tick")
 }
 
 func (a *App) Init() mvu.Task {
@@ -75,66 +49,72 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		}
 
 		if key.IsKey(vt.KeyTab) {
-			a.focusedElement = FocusTable
+			a.focusedElement = (a.focusedElement + 1) % 2
+			return mvu.TaskNone
 		} else if key.IsKey(vt.KeyShiftTab) {
-			a.focusedElement = FocusSearch
+			a.focusedElement = (a.focusedElement - 1 + 2) % 2
+			return mvu.TaskNone
 		}
 
 		switch a.focusedElement {
 		case FocusSearch:
 			a.input.Update(e)
-			a.querying = true
-			return mvu.TaskN(
-				TaskTick(),
-				worker.TaskQuery(a.store, string(a.input.Term)),
-			)
+			return a.QueryTask()
 		case FocusTable:
 		}
 
 		return mvu.TaskNone
 	}
 
-	if _, ok := e.(TickEvent); ok {
-		a.spinnerFrame += 1
+	if t, ok := e.(SpinnerTickEvent); ok {
+		a.spinner.OnTick(t)
 		return mvu.TaskNone
 	}
 
 	if r, ok := e.(worker.QueryResultEvent); ok {
-		a.spinnerFrame = 0
 		a.querying = false
 		a.table.Rows = r.Rows
-		return TaskCancelTick()
+		return a.spinner.CancelTask()
 	}
 
 	if _, ok := e.(worker.DataRefreshedEvent); ok {
-		a.querying = true
-		return mvu.TaskN(
-			TaskTick(),
-			worker.TaskQuery(a.store, string(a.input.Term)),
-		)
+		return a.QueryTask()
 	}
 
 	return mvu.TaskNone
 }
 
-func (a *App) Render(ctx mvu.RenderContext) {
-	vp := ctx.View
-	draw.Clear(vp, screen.DefaultStyle)
+func (a *App) QueryTask() mvu.Task {
+	a.querying = true
+	return mvu.TaskN(
+		a.spinner.StartTask(),
+		worker.TaskQuery(a.store, string(a.input.Term)),
+	)
+}
 
-	layout := view.SplitH(vp, view.Fixed("search", 3), view.Dynamic("body", 3), view.Fixed("help", 1))
+func (a *App) Render(ctx mvu.RenderContext) {
+	draw.Clear(ctx.View, screen.DefaultStyle)
+
+	layout := view.SplitH(ctx.View,
+		view.Fixed("search", 3),
+		view.Dynamic("body", 3),
+		view.Fixed("help", 1))
 	search, body, help := layout["search"], layout["body"], layout["help"]
 
 	a.input.Render(mvu.RenderContext{
 		View:    search,
 		Focused: a.focusedElement == FocusSearch,
 	})
+
 	a.table.Render(mvu.RenderContext{
 		View:    body,
 		Focused: a.focusedElement == FocusTable,
 	})
 
+	w, _ := ctx.View.Size()
+
 	if a.querying {
-		draw.Spinner(search.Offset(1, 0, 0, 10), a.spinnerFrame, draw.SpinnerBraille, screen.DefaultStyle)
+		a.spinner.Render(search.Offset(1, 0, 0, w-2))
 	}
 
 	draw.Line(help, "[ctrl+c] Quit", screen.DefaultStyle)
