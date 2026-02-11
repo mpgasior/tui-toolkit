@@ -41,7 +41,7 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 		draw.TextChunk{"Kernel", headerStyle},
 		draw.TextChunk{"[User]", headerStyle.Fg(screen.ColorGreen)})
 
-	tBody := body.Offset(1, 0, 0, 1)
+	tBody := body.Offset(1, 0, 0, 0)
 	w, h := body.Size()
 
 	for idx, info := range t.Rows {
