@@ -14,18 +14,6 @@ type ProcessTable struct {
 	Rows []process.ProcessInfo
 }
 
-func (t *ProcessTable) Init() mvu.Task {
-	return mvu.TaskNone
-}
-
-func (t *ProcessTable) Update(e mvu.Event) mvu.Task {
-	if snapshot, ok := e.(ProcessSnapshotEvent); ok {
-		t.Rows = snapshot.Rows
-	}
-
-	return mvu.TaskNone
-}
-
 func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 	v := ctx.View
 	draw.Clear(v, screen.DefaultStyle)

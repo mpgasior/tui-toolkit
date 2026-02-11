@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func getProcessInfo(entry windows.ProcessEntry32) ProcessInfo {
+func GetProcessInfo(entry windows.ProcessEntry32) ProcessInfo {
 	info := ProcessInfo{
 		PID:  entry.ProcessID,
 		Name: windows.UTF16ToString(entry.ExeFile[:]),
@@ -37,7 +37,7 @@ func getProcessInfo(entry windows.ProcessEntry32) ProcessInfo {
 	return info
 }
 
-func List() ([]ProcessInfo, error) {
+func GetAll() ([]ProcessInfo, error) {
 	var processList []ProcessInfo
 
 	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
@@ -53,7 +53,7 @@ func List() ([]ProcessInfo, error) {
 	}
 
 	for {
-		processList = append(processList, getProcessInfo(entry))
+		processList = append(processList, GetProcessInfo(entry))
 
 		if err := windows.Process32Next(snapshot, &entry); err != nil {
 			break

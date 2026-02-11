@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func getProcessInfo(pid int) (ProcessInfo, error) {
+func GetProcessInfo(pid int) (ProcessInfo, error) {
 	data, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
 	if err != nil {
 		return ProcessInfo{}, err
@@ -37,7 +37,7 @@ func getProcessInfo(pid int) (ProcessInfo, error) {
 	}, nil
 }
 
-func List() ([]ProcessInfo, error) {
+func GetAll() ([]ProcessInfo, error) {
 	var processList []ProcessInfo
 
 	files, err := os.ReadDir("/proc")
@@ -51,7 +51,7 @@ func List() ([]ProcessInfo, error) {
 			continue
 		}
 
-		info, err := getProcessInfo(pid)
+		info, err := GetProcessInfo(pid)
 		if err == nil {
 			processList = append(processList, info)
 		}

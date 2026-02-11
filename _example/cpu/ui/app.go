@@ -2,6 +2,7 @@ package ui
 
 import (
 	"github.com/mpgasior/tui-toolkit/_example/cpu/process"
+	"github.com/mpgasior/tui-toolkit/_example/cpu/worker"
 	"github.com/mpgasior/tui-toolkit/draw"
 	"github.com/mpgasior/tui-toolkit/mvu"
 	"github.com/mpgasior/tui-toolkit/screen"
@@ -21,17 +22,19 @@ type App struct {
 	input          *SearchInput
 	table          *ProcessTable
 	snapshotID     int
+	store          *process.ProcessStore
 }
 
 func New() *App {
 	return &App{
 		input: &SearchInput{},
 		table: &ProcessTable{},
+		store: &process.ProcessStore{},
 	}
 }
 
 func (a *App) Init() mvu.Task {
-	return TaskRefresh(a.snapshotID, a.input.Term)
+	return worker.TaskRefresh(a.store)
 }
 
 func (a *App) Update(e mvu.Event) mvu.Task {
@@ -50,14 +53,22 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		case FocusSearch:
 			a.input.Update(e)
 			a.snapshotID += 1
-			return TaskRefresh(a.snapshotID, a.input.Term)
+			return worker.TaskQuery(a.store, string(a.input.Term))
 		case FocusTable:
 		}
 
 		return mvu.TaskNone
 	}
 
-	return a.table.Update(e)
+	if r, ok := e.(worker.QueryResultEvent); ok {
+		a.table.Rows = r.Rows
+	}
+
+	if _, ok := e.(worker.DataRefreshedEvent); ok {
+		return worker.TaskQuery(a.store, string(a.input.Term))
+	}
+
+	return mvu.TaskNone
 }
 
 func (a *App) Render(ctx mvu.RenderContext) {
@@ -77,8 +88,4 @@ func (a *App) Render(ctx mvu.RenderContext) {
 	})
 
 	draw.Line(help, "[ctrl+c] Quit", screen.DefaultStyle)
-}
-
-func (a *App) OnNewRows(r []process.ProcessInfo) {
-	a.table.Rows = r
 }
