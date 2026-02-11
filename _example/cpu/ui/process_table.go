@@ -15,35 +15,34 @@ type ProcessTable struct {
 }
 
 func (t *ProcessTable) Render(ctx mvu.RenderContext) {
-	v := ctx.View
-	draw.Clear(v, screen.DefaultStyle)
+	draw.Clear(ctx.View, screen.DefaultStyle)
+
 	boxStyle := screen.DefaultStyle
 	if ctx.Focused {
 		boxStyle = boxStyle.Fg(screen.ColorGreen)
 	}
+	draw.Box(ctx.View, draw.BoxBorderThin, boxStyle)
 
-	draw.Box(v, draw.BoxBorderDouble, boxStyle)
-
-	v = v.Offset(1)
+	body := ctx.View.Offset(1)
 
 	if len(t.Rows) == 0 {
-		body := view.Center(v, view.Dynamic("w", 1), view.Dynamic("h", 1))
-		draw.Line(body, "waiting...", screen.DefaultStyle)
+		center := view.Center(body, view.Dynamic("w", 1), view.Dynamic("h", 1))
+		draw.Line(center, "waiting...", screen.DefaultStyle)
 		return
 	}
 
 	headerStyle := screen.DefaultStyle.
 		Attr(screen.AttrUnderline)
 
-	drawLine(v.Offset(1, 0, 0, 1),
+	drawLine(body,
 		draw.TextChunk{"", headerStyle},
 		draw.TextChunk{"PID", headerStyle},
 		draw.TextChunk{"Name", headerStyle},
 		draw.TextChunk{"Kernel", headerStyle},
 		draw.TextChunk{"[User]", headerStyle.Fg(screen.ColorGreen)})
 
-	tBody := v.Offset(2, 0, 0, 1)
-	w, h := v.Size()
+	tBody := body.Offset(1, 0, 0, 1)
+	w, h := body.Size()
 
 	for idx, info := range t.Rows {
 		if idx >= h-1 {

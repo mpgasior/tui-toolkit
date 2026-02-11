@@ -13,10 +13,6 @@ type SearchInput struct {
 	Term []rune
 }
 
-func (s *SearchInput) Init() mvu.Task {
-	return mvu.TaskNone
-}
-
 func (s *SearchInput) Update(e mvu.Event) mvu.Task {
 	if key, ok := e.(vt.KeyEvent); ok {
 		if key.IsKey(vt.KeyEsc) {
@@ -40,19 +36,17 @@ func (s *SearchInput) Update(e mvu.Event) mvu.Task {
 }
 
 func (s *SearchInput) Render(ctx mvu.RenderContext) {
-	v := ctx.View
 	boxStyle := screen.DefaultStyle
 	if ctx.Focused {
 		boxStyle = boxStyle.Fg(screen.ColorGreen)
 	}
+	draw.Box(ctx.View, draw.BoxBorderThin, boxStyle)
 
-	draw.Box(v, draw.BoxBorderThin, boxStyle)
-
-	body := v.Offset(1)
+	body := ctx.View.Offset(1)
 	if len(s.Term) == 0 {
 		style := screen.DefaultStyle.Fg(screen.ColorBlue)
 		draw.Line(body, "Search...", style)
-		body.SetCursorPos(-1, -1)
+		body.SetCursorPos(0, 0)
 		return
 	}
 

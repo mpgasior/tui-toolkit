@@ -15,12 +15,18 @@ type QueryResultEvent struct {
 	Rows []process.ProcessInfo
 }
 
-func TaskQuery(s *process.ProcessStore, term string) mvu.Task {
+func TaskQuery(store *process.ProcessStore, term string) mvu.Task {
 	execute := func(ctx context.Context, ch chan<- mvu.Event) {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(80 * time.Millisecond):
+		}
+
 		var filtered []process.ProcessInfo
 
 		term = strings.ToLower(term)
-		list := s.GetAll()
+		list := store.GetAll()
 
 		for _, p := range list {
 			name := strings.ToLower(p.Name)

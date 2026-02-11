@@ -7,8 +7,12 @@ type BoxBorder struct {
 }
 
 var (
-	BoxBorderThin   = BoxBorder{'┌', '─', '┐', '│', '┘', '─', '└', '│'}
-	BoxBorderDouble = BoxBorder{'╔', '═', '╗', '║', '╝', '═', '╚', '║'}
+	BoxBorderThin    = BoxBorder{'┌', '─', '┐', '│', '┘', '─', '└', '│'}
+	BoxBorderDouble  = BoxBorder{'╔', '═', '╗', '║', '╝', '═', '╚', '║'}
+	BoxBorderHeavy   = BoxBorder{'┏', '━', '┓', '┃', '┛', '━', '┗', '┃'}
+	BoxBorderRounded = BoxBorder{'╭', '─', '╮', '│', '╯', '─', '╰', '│'}
+	BoxBorderASCII   = BoxBorder{'+', '-', '+', '|', '+', '-', '+', '|'}
+	BoxBorderCorners = BoxBorder{'┌', ' ', '┐', ' ', '┘', ' ', '└', ' '}
 )
 
 func Box(m screen.Mutator, border BoxBorder, style screen.Style) {
