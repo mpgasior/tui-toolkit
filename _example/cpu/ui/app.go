@@ -72,9 +72,8 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 	}
 
 	if r, ok := e.(worker.QueryResultEvent); ok {
-		a.querying = false
 		a.table.Rows = r.Rows
-		return a.spinner.CancelTask()
+		return a.StopSpinnerTask()
 	}
 
 	if _, ok := e.(worker.DataRefreshedEvent); ok {
@@ -90,6 +89,11 @@ func (a *App) QueryTask() mvu.Task {
 		a.spinner.StartTask(),
 		worker.TaskQuery(a.store, string(a.input.Term)),
 	)
+}
+
+func (a *App) StopSpinnerTask() mvu.Task {
+	a.querying = false
+	return a.spinner.CancelTask()
 }
 
 func (a *App) Render(ctx mvu.RenderContext) {
@@ -111,9 +115,8 @@ func (a *App) Render(ctx mvu.RenderContext) {
 		Focused: a.focusedElement == FocusTable,
 	})
 
-	w, _ := ctx.View.Size()
-
 	if a.querying {
+		w, _ := search.Size()
 		a.spinner.Render(search.Offset(1, 0, 0, w-2))
 	}
 

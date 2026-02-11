@@ -34,22 +34,24 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 	headerStyle := screen.DefaultStyle.
 		Attr(screen.AttrUnderline)
 
-	drawLine(body,
+	layout := view.SplitH(body, view.Fixed("th", 1), view.Dynamic("tb", 1))
+	tHead, tBody := layout["th"], layout["tb"]
+
+	drawLine(tHead,
 		draw.TextChunk{"", headerStyle},
 		draw.TextChunk{"PID", headerStyle},
 		draw.TextChunk{"Name", headerStyle},
 		draw.TextChunk{"Kernel", headerStyle},
 		draw.TextChunk{"[User]", headerStyle.Fg(screen.ColorGreen)})
 
-	tBody := body.Offset(1, 0, 0, 0)
-	w, h := body.Size()
+	_, h := tBody.Size()
 
 	for idx, info := range t.Rows {
-		if idx >= h-1 {
+		if idx >= h {
 			break
 		}
 
-		row := tBody.Offset(idx, 0, 0, 0).Slice(0, 0, w, 1)
+		row := tBody.Offset(idx, 0, 0, 0)
 
 		drawInfo(row, info)
 	}

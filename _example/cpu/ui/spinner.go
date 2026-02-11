@@ -43,7 +43,7 @@ func (s *Spinner) StartTask() mvu.Task {
 				select {
 				case <-ctx.Done():
 					return
-				case ch <- SpinnerTickEvent{}:
+				case ch <- SpinnerTickEvent{ID: s.ID}:
 				}
 			}
 		},
