@@ -19,3 +19,7 @@ type LaunchEvent struct {
 type ResizeEvent struct {
 	Width, Height int
 }
+
+type BatchTaskEvent struct {
+	Tasks []Task
+}

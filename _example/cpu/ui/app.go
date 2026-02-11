@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"context"
+	"time"
+
 	"github.com/mpgasior/tui-toolkit/_example/cpu/process"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/worker"
 	"github.com/mpgasior/tui-toolkit/draw"
@@ -21,8 +24,9 @@ type App struct {
 	focusedElement Focus
 	input          *SearchInput
 	table          *ProcessTable
-	snapshotID     int
 	store          *process.ProcessStore
+	spinnerFrame   int
+	querying       bool
 }
 
 func New() *App {
@@ -31,6 +35,33 @@ func New() *App {
 		table: &ProcessTable{},
 		store: &process.ProcessStore{},
 	}
+}
+
+type TickEvent struct{}
+
+func TaskTick() mvu.Task {
+	return mvu.Task{
+		ID: "tick",
+		Execute: func(ctx context.Context, ch chan<- mvu.Event) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(80 * time.Millisecond):
+				}
+
+				select {
+				case <-ctx.Done():
+					return
+				case ch <- TickEvent{}:
+				}
+			}
+		},
+	}
+}
+
+func TaskCancelTick() mvu.Task {
+	return mvu.TaskCancel("tick")
 }
 
 func (a *App) Init() mvu.Task {
@@ -52,20 +83,35 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		switch a.focusedElement {
 		case FocusSearch:
 			a.input.Update(e)
-			a.snapshotID += 1
-			return worker.TaskQuery(a.store, string(a.input.Term))
+			a.querying = true
+			return mvu.TaskN(
+				TaskTick(),
+				worker.TaskQuery(a.store, string(a.input.Term)),
+			)
 		case FocusTable:
 		}
 
 		return mvu.TaskNone
 	}
 
+	if _, ok := e.(TickEvent); ok {
+		a.spinnerFrame += 1
+		return mvu.TaskNone
+	}
+
 	if r, ok := e.(worker.QueryResultEvent); ok {
+		a.spinnerFrame = 0
+		a.querying = false
 		a.table.Rows = r.Rows
+		return TaskCancelTick()
 	}
 
 	if _, ok := e.(worker.DataRefreshedEvent); ok {
-		return worker.TaskQuery(a.store, string(a.input.Term))
+		a.querying = true
+		return mvu.TaskN(
+			TaskTick(),
+			worker.TaskQuery(a.store, string(a.input.Term)),
+		)
 	}
 
 	return mvu.TaskNone
@@ -86,6 +132,10 @@ func (a *App) Render(ctx mvu.RenderContext) {
 		View:    body,
 		Focused: a.focusedElement == FocusTable,
 	})
+
+	if a.querying {
+		draw.Spinner(search.Offset(1, 0, 0, 10), a.spinnerFrame, draw.SpinnerBraille, screen.DefaultStyle)
+	}
 
 	draw.Line(help, "[ctrl+c] Quit", screen.DefaultStyle)
 }

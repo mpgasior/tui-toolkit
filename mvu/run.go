@@ -60,6 +60,14 @@ func Run(c Component) error {
 
 			if resize, ok := ev.(ResizeEvent); ok {
 				scr = screen.New(resize.Width, resize.Height)
+				scr.Flush(terminal)
+				continue
+			}
+
+			if batch, ok := ev.(BatchTaskEvent); ok {
+				for _, t := range batch.Tasks {
+					session.Dispatch(t)
+				}
 				continue
 			}
 
