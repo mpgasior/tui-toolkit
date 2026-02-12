@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"fmt"
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/process"
 	"github.com/mpgasior/tui-toolkit/draw"
@@ -55,6 +57,13 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 
 		drawInfo(row, info)
 	}
+
+	w, h := ctx.View.Size()
+	text := fmt.Sprintf("%d of %d", 0, len(t.Rows))
+
+	pos := w - 1 - utf8.RuneCountInString(text)
+
+	draw.Line(ctx.View.Slice(pos, h-1, w, h), text, screen.DefaultStyle)
 }
 
 func drawLine(vp view.Port,
