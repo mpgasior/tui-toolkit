@@ -1,44 +1,52 @@
 package process
 
 import (
-	"sort"
 	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
 
-func GetProcessInfo(entry windows.ProcessEntry32) ProcessInfo {
-	info := ProcessInfo{
-		PID:  entry.ProcessID,
-		Name: windows.UTF16ToString(entry.ExeFile[:]),
+func GetInfo(entry windows.ProcessEntry32) (Info, error) {
+	info := Info{
+		PID:       entry.ProcessID,
+		ParentPID: entry.ParentProcessID,
+		Name:      windows.UTF16ToString(entry.ExeFile[:]),
 	}
 
 	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.ProcessID)
 	if err != nil {
-		return info
+		return info, err
 	}
 	defer windows.CloseHandle(handle)
 
 	var creationTime, exitTime, kernelTime, userTime windows.Filetime
 
 	if err := windows.GetProcessTimes(handle, &creationTime, &exitTime, &kernelTime, &userTime); err != nil {
-		return info
+		return info, err
 	}
 
 	toDuration := func(ft windows.Filetime) time.Duration {
-		ns := (int64(ft.HighDateTime) << 32) + int64(ft.LowDateTime)
-		return time.Duration(ns * 100)
+		return time.Duration(uint64(ft.HighDateTime)<<32|uint64(ft.LowDateTime)) * 100
 	}
 
-	info.KernelTime = toDuration(kernelTime)
-	info.UserTime = toDuration(userTime)
+	info.Stats = &Sample{
+		KernelTime: toDuration(kernelTime),
+		UserTime:   toDuration(userTime),
+		SampleTime: time.Now().UTC(),
+	}
 
-	return info
+	info.CreationTime = time.Unix(0, creationTime.Nanoseconds())
+	if exitTime.HighDateTime != 0 && exitTime.LowDateTime != 0 {
+		exit := time.Unix(0, exitTime.Nanoseconds())
+		info.ExitTime = &exit
+	}
+
+	return info, nil
 }
 
-func GetAll() ([]ProcessInfo, error) {
-	var processList []ProcessInfo
+func GetAll() ([]Info, error) {
+	var processList []Info
 
 	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
@@ -53,16 +61,13 @@ func GetAll() ([]ProcessInfo, error) {
 	}
 
 	for {
-		processList = append(processList, GetProcessInfo(entry))
+		info, _ := GetInfo(entry)
+		processList = append(processList, info)
 
 		if err := windows.Process32Next(snapshot, &entry); err != nil {
 			break
 		}
 	}
-
-	sort.Slice(processList, func(i, j int) bool {
-		return processList[i].UserTime > processList[j].UserTime
-	})
 
 	return processList, nil
 }

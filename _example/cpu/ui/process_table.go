@@ -13,7 +13,7 @@ import (
 )
 
 type ProcessTable struct {
-	Rows []process.ProcessInfo
+	Rows []process.Profile
 }
 
 func (t *ProcessTable) Render(ctx mvu.RenderContext) {
@@ -75,7 +75,7 @@ func drawLine(vp view.Port,
 	layout := view.SplitV(vp,
 		view.Fixed("selected", 4),
 		view.Fixed("pid", 7),
-		view.Dynamic("name", 25),
+		view.Dynamic("name", 15),
 		view.Dynamic("kernel", 5),
 		view.Dynamic("user", 5))
 
@@ -86,26 +86,36 @@ func drawLine(vp view.Port,
 	draw.Text(layout["user"], user)
 }
 
-func drawInfo(vp view.Port, info process.ProcessInfo) {
+func drawInfo(vp view.Port, p process.Profile) {
 	drawLine(vp,
 		draw.TextChunk{
 			Text:  "[ ]",
 			Style: screen.DefaultStyle,
 		},
 		draw.TextChunk{
-			Text:  strconv.FormatInt(int64(info.PID), 10),
+			Text:  strconv.FormatInt(int64(p.Info.PID), 10),
 			Style: screen.DefaultStyle,
 		},
 		draw.TextChunk{
-			Text:  info.Name,
+			Text:  p.Info.Name,
 			Style: screen.DefaultStyle,
 		},
 		draw.TextChunk{
-			Text:  info.KernelTime.String(),
+			Text: func() string {
+				if p.Info.Stats == nil {
+					return ""
+				}
+				return p.Info.Stats.KernelTime.String()
+			}(),
 			Style: screen.DefaultStyle,
 		},
 		draw.TextChunk{
-			Text:  info.UserTime.String(),
+			Text: func() string {
+				if p.History == nil {
+					return ""
+				}
+				return fmt.Sprintf("%.2f%%", p.History.AvgCPU()*100)
+			}(),
 			Style: screen.DefaultStyle,
 		})
 }

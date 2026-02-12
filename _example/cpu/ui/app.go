@@ -22,7 +22,7 @@ type App struct {
 	input          *SearchInput
 	spinner        *Spinner
 	table          *ProcessTable
-	store          *process.ProcessStore
+	store          *process.Store
 	querying       bool
 }
 
@@ -34,7 +34,7 @@ func New() *App {
 			ID:    "spinner",
 			Frame: draw.SpinnerBraille,
 		},
-		store: &process.ProcessStore{},
+		store: process.NewStore(),
 	}
 }
 

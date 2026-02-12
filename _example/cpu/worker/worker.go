@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"time"
 
@@ -12,10 +13,10 @@ import (
 type DataRefreshedEvent struct{}
 
 type QueryResultEvent struct {
-	Rows []process.ProcessInfo
+	Rows []process.Profile
 }
 
-func TaskQuery(store *process.ProcessStore, term string) mvu.Task {
+func TaskQuery(store *process.Store, term string) mvu.Task {
 	execute := func(ctx context.Context, ch chan<- mvu.Event) {
 		select {
 		case <-ctx.Done():
@@ -23,17 +24,23 @@ func TaskQuery(store *process.ProcessStore, term string) mvu.Task {
 		case <-time.After(80 * time.Millisecond):
 		}
 
-		var filtered []process.ProcessInfo
+		var filtered []process.Profile
 
 		term = strings.ToLower(term)
-		list := store.GetAll()
+		profiles := store.GetAll()
 
-		for _, p := range list {
-			name := strings.ToLower(p.Name)
+		for _, p := range profiles {
+			name := strings.ToLower(p.Info.Name)
 			if term == "" || strings.Contains(name, term) {
 				filtered = append(filtered, p)
 			}
 		}
+
+		sort.Slice(filtered, func(i, j int) bool {
+			left, right := filtered[i], filtered[j]
+
+			return left.History.AvgCPU() > right.History.AvgCPU()
+		})
 
 		ev := QueryResultEvent{
 			Rows: filtered,
@@ -52,15 +59,15 @@ func TaskQuery(store *process.ProcessStore, term string) mvu.Task {
 	}
 }
 
-func TaskRefresh(s *process.ProcessStore) mvu.Task {
+func TaskRefresh(s *process.Store) mvu.Task {
 	execute := func(ctx context.Context, ch chan<- mvu.Event) {
 		for {
-			list, err := process.GetAll()
+			snapshot, err := process.GetAll()
 			if err != nil {
 				continue
 			}
 
-			s.Update(list)
+			s.Sync(snapshot)
 
 			select {
 			case <-ctx.Done():

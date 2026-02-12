@@ -4,9 +4,11 @@ import (
 	"time"
 )
 
-type ProcessInfo struct {
-	PID        uint32
-	Name       string
-	UserTime   time.Duration
-	KernelTime time.Duration
+type Info struct {
+	PID          uint32
+	ParentPID    uint32
+	Name         string
+	CreationTime time.Time
+	ExitTime     *time.Time
+	Stats        *Sample
 }
