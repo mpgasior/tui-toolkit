@@ -43,23 +43,23 @@ func (s *SearchInput) Render(ctx mvu.RenderContext) {
 	draw.Box(ctx.View, draw.BoxBorderThin, boxStyle)
 
 	body := ctx.View.Offset(1)
+	w, _ := body.Size()
+	cursorXPos := 0
 	if len(s.Term) == 0 {
 		style := screen.DefaultStyle.Fg(screen.ColorBlue)
 		draw.Line(body, "Search...", style)
-		body.SetCursorPos(0, 0)
-		return
-	}
-
-	w, _ := body.Size()
-	if len(s.Term) >= w {
+	} else if len(s.Term) >= w {
 		start := len(s.Term) - w + 1
 		runes := s.Term[start:len(s.Term)]
 
 		draw.Line(body, string(runes), screen.DefaultStyle)
-		body.SetCursorPos(len(runes), 0)
-		return
+		cursorXPos = len(runes)
+	} else {
+		draw.Line(body, string(s.Term), screen.DefaultStyle)
+		cursorXPos = len(s.Term)
 	}
 
-	draw.Line(body, string(s.Term), screen.DefaultStyle)
-	body.SetCursorPos(len(s.Term), 0)
+	if ctx.Focused {
+		body.SetCursorPos(cursorXPos, 0)
+	}
 }

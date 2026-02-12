@@ -97,6 +97,7 @@ func (a *App) StopSpinnerTask() mvu.Task {
 }
 
 func (a *App) Render(ctx mvu.RenderContext) {
+	ctx.View.SetCursorPos(-1, -1)
 	draw.Clear(ctx.View, screen.DefaultStyle)
 
 	layout := view.SplitH(ctx.View,
