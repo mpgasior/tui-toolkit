@@ -1,0 +1,28 @@
+package model
+
+import "slices"
+
+var sorters = map[string]func(a, b QueryResult) int{
+	"PID":          func(a, b QueryResult) int { return cmp.Compare(a.PID, b.PID) },
+	"Name":         func(a, b QueryResult) int { return strings.Compare(a.Name, b.Name) },
+	"CreationTime": func(a, b QueryResult) int { return a.CreationTime.Compare(a.CreationTime) },
+	"AvgCPU":       func(a, b QueryResult) int { return cmp.Compare(a.AvgCPU, b.AvgCPU) },
+	"RecentCPU":    func(a, b QueryResult) int { return cmp.Compare(a.RecentCPU, b.RecentCPU) },
+}
+
+func SortResults(rows []QueryResult, sortBy SortBy, order SortOrder) {
+	fn, ok := sorters[sortBy]
+	if !ok {
+		return
+	}
+
+	slices.SortFunc(rows, func(a QueryResult, b QueryResult) int {
+		result := fn(a, b)
+
+		if order == SortOrderDescending {
+			return -result
+		}
+
+		return result
+	})
+}
