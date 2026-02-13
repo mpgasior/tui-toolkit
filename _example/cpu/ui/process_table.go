@@ -43,7 +43,7 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 		draw.TextChunk{Text: "", Style: headerStyle},
 		draw.TextChunk{Text: "PID", Style: headerStyle},
 		draw.TextChunk{Text: "Name", Style: headerStyle},
-		draw.TextChunk{Text: "CPU% (Avg)", Style: headerStyle, Alignment: draw.TextAlignmentRight},
+		draw.TextChunk{Text: "CPU% (Avg 1m)", Style: headerStyle, Alignment: draw.TextAlignmentRight},
 		draw.TextChunk{Text: "CPU% (Now)", Style: headerStyle.Fg(screen.ColorGreen)})
 
 	_, h := tBody.Size()
@@ -75,7 +75,7 @@ func drawLine(vp view.Port,
 	layout := view.SplitV(vp,
 		view.Fixed("selected", 4),
 		view.Fixed("pid", 7),
-		view.Fixed("avg-cpu", 10),
+		view.Fixed("avg-cpu", 13),
 		view.Fixed("", 2),
 		view.Fixed("recent-cpu", 10),
 		view.Fixed("", 2),
