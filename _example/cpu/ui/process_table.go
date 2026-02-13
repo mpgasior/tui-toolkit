@@ -34,7 +34,7 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 	}
 
 	headerStyle := screen.DefaultStyle.
-		Attr(screen.AttrUnderline)
+		Attr(screen.AttrUnderline | screen.AttrBold)
 
 	layout := view.SplitH(body, view.Fixed("th", 1), view.Dynamic("tb", 1))
 	tHead, tBody := layout["th"], layout["tb"]
@@ -43,8 +43,8 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 		draw.TextChunk{"", headerStyle},
 		draw.TextChunk{"PID", headerStyle},
 		draw.TextChunk{"Name", headerStyle},
-		draw.TextChunk{"Kernel", headerStyle},
-		draw.TextChunk{"[User]", headerStyle.Fg(screen.ColorGreen)})
+		draw.TextChunk{"avg CPU%", headerStyle},
+		draw.TextChunk{" CPU%", headerStyle.Fg(screen.ColorGreen)})
 
 	_, h := tBody.Size()
 
@@ -75,9 +75,11 @@ func drawLine(vp view.Port,
 	layout := view.SplitV(vp,
 		view.Fixed("selected", 4),
 		view.Fixed("pid", 7),
-		view.Dynamic("name", 15),
-		view.Dynamic("kernel", 5),
-		view.Dynamic("user", 5))
+		view.Fixed("kernel", 8),
+		view.Fixed("", 2),
+		view.Fixed("user", 5),
+		view.Fixed("", 2),
+		view.Dynamic("name", 15))
 
 	draw.Text(layout["selected"], selected)
 	draw.Text(layout["pid"], pid)
@@ -87,6 +89,8 @@ func drawLine(vp view.Port,
 }
 
 func drawInfo(vp view.Port, p process.Profile) {
+	stats := p.History.Stats()
+
 	drawLine(vp,
 		draw.TextChunk{
 			Text:  "[ ]",
@@ -102,19 +106,19 @@ func drawInfo(vp view.Port, p process.Profile) {
 		},
 		draw.TextChunk{
 			Text: func() string {
-				if p.Info.Stats == nil {
+				if p.History == nil || p.History.Len() < 2 {
 					return ""
 				}
-				return p.Info.Stats.KernelTime.String()
+				return fmt.Sprintf("%5.2f%%", stats.AvgCPU*100)
 			}(),
 			Style: screen.DefaultStyle,
 		},
 		draw.TextChunk{
 			Text: func() string {
-				if p.History == nil {
+				if p.History == nil || p.History.Len() < 2 {
 					return ""
 				}
-				return fmt.Sprintf("%.2f%%", p.History.AvgCPU()*100)
+				return fmt.Sprintf("%5.2f%%", p.History.RecentCPU()*100)
 			}(),
 			Style: screen.DefaultStyle,
 		})

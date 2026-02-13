@@ -11,6 +11,11 @@ type Sample struct {
 	SampleTime time.Time
 }
 
+type Stats struct {
+	AvgCPU    float64
+	RecentCPU float64
+}
+
 type History struct {
 	Samples    []Sample
 	MaxSamples int
@@ -23,6 +28,10 @@ func NewHistory(maxSamples int) *History {
 	}
 }
 
+func (h *History) Len() int {
+	return len(h.Samples)
+}
+
 func (h *History) AddSample(s Sample) {
 	if len(h.Samples) >= h.MaxSamples {
 		copy(h.Samples, h.Samples[1:])
@@ -31,6 +40,13 @@ func (h *History) AddSample(s Sample) {
 	}
 
 	h.Samples = append(h.Samples, s)
+}
+
+func (h *History) Stats() Stats {
+	return Stats{
+		AvgCPU:    h.AvgCPU(),
+		RecentCPU: h.RecentCPU(),
+	}
 }
 
 func (h *History) AvgCPU() float64 {
