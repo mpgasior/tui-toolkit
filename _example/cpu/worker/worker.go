@@ -1,8 +1,9 @@
 package worker
 
 import (
+	"cmp"
 	"context"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -10,13 +11,34 @@ import (
 	"github.com/mpgasior/tui-toolkit/mvu"
 )
 
+type Query struct {
+	Term   string
+	SortBy string
+}
+
+type QueryResult struct {
+	PID          uint32
+	Name         string
+	CreationTime time.Time
+	AvgCPU       float64
+	RecentCPU    float64
+}
+
+var sorters = map[string]func(a, b QueryResult) int{
+	"PID":          func(a, b QueryResult) int { return cmp.Compare(b.PID, a.PID) },
+	"Name":         func(a, b QueryResult) int { return strings.Compare(b.Name, a.Name) },
+	"CreationTime": func(a, b QueryResult) int { return b.CreationTime.Compare(a.CreationTime) },
+	"AvgCPU":       func(a, b QueryResult) int { return cmp.Compare(b.AvgCPU, a.AvgCPU) },
+	"RecentCPU":    func(a, b QueryResult) int { return cmp.Compare(b.RecentCPU, a.RecentCPU) },
+}
+
 type DataRefreshedEvent struct{}
 
 type QueryResultEvent struct {
-	Rows []process.Profile
+	Rows []QueryResult
 }
 
-func TaskQuery(store *process.Store, term string) mvu.Task {
+func TaskQuery(store *process.Store, query Query) mvu.Task {
 	execute := func(ctx context.Context, ch chan<- mvu.Event) {
 		select {
 		case <-ctx.Done():
@@ -24,23 +46,26 @@ func TaskQuery(store *process.Store, term string) mvu.Task {
 		case <-time.After(80 * time.Millisecond):
 		}
 
-		var filtered []process.Profile
+		var filtered []QueryResult
 
-		term = strings.ToLower(term)
+		term := strings.ToLower(query.Term)
 		profiles := store.GetAll()
 
 		for _, p := range profiles {
 			name := strings.ToLower(p.Info.Name)
-			if term == "" || strings.Contains(name, term) {
-				filtered = append(filtered, p)
+			if query.Term == "" || strings.Contains(name, term) {
+				stats := p.History.Stats()
+				filtered = append(filtered, QueryResult{
+					PID:          p.Info.PID,
+					Name:         p.Info.Name,
+					CreationTime: p.Info.CreationTime,
+					AvgCPU:       stats.AvgCPU,
+					RecentCPU:    stats.RecentCPU,
+				})
 			}
 		}
 
-		sort.Slice(filtered, func(i, j int) bool {
-			left, right := filtered[i], filtered[j]
-
-			return left.History.RecentCPU() > right.History.RecentCPU()
-		})
+		slices.SortFunc(filtered, sorters[query.SortBy])
 
 		ev := QueryResultEvent{
 			Rows: filtered,

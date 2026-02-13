@@ -21,15 +21,17 @@ type App struct {
 	focusedElement Focus
 	input          *SearchInput
 	spinner        *Spinner
-	table          *ProcessTable
 	store          *process.Store
 	querying       bool
+	rows           []worker.QueryResult
+	sortByIndex    int
 }
+
+var columns = []string{"RecentCPU", "PID", "AvgCPU", "Name"}
 
 func New() *App {
 	return &App{
 		input: &SearchInput{},
-		table: &ProcessTable{},
 		spinner: &Spinner{
 			ID:    "spinner",
 			Frame: draw.SpinnerBraille,
@@ -46,6 +48,11 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 	if key, ok := e.(vt.KeyEvent); ok {
 		if key.IsKey(vt.KeyCtrlC) {
 			return mvu.TaskShutdown
+		}
+
+		if key.IsKey(vt.KeyF4) {
+			a.sortByIndex = (a.sortByIndex + 1) % len(columns)
+			return a.QueryTask()
 		}
 
 		if key.IsKey(vt.KeyTab) {
@@ -72,7 +79,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 	}
 
 	if r, ok := e.(worker.QueryResultEvent); ok {
-		a.table.Rows = r.Rows
+		a.rows = r.Rows
 		return a.StopSpinnerTask()
 	}
 
@@ -85,9 +92,14 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 
 func (a *App) QueryTask() mvu.Task {
 	a.querying = true
+
+	query := worker.Query{
+		Term:   string(a.input.Term),
+		SortBy: columns[a.sortByIndex],
+	}
 	return mvu.TaskN(
 		a.spinner.StartTask(),
-		worker.TaskQuery(a.store, string(a.input.Term)),
+		worker.TaskQuery(a.store, query),
 	)
 }
 
@@ -111,10 +123,11 @@ func (a *App) Render(ctx mvu.RenderContext) {
 		Focused: a.focusedElement == FocusSearch,
 	})
 
-	a.table.Render(mvu.RenderContext{
+	RenderProcessTable(mvu.RenderContext{
 		View:    body,
-		Focused: a.focusedElement == FocusTable,
-	})
+		Focused: a.focusedElement == FocusTable},
+		a.rows,
+		columns[a.sortByIndex])
 
 	if a.querying {
 		w, _ := search.Size()

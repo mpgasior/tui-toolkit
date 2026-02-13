@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/mpgasior/tui-toolkit/_example/cpu/process"
+	"github.com/mpgasior/tui-toolkit/_example/cpu/worker"
 	"github.com/mpgasior/tui-toolkit/draw"
 	"github.com/mpgasior/tui-toolkit/mvu"
 	"github.com/mpgasior/tui-toolkit/screen"
@@ -13,10 +13,13 @@ import (
 )
 
 type ProcessTable struct {
-	Rows []process.Profile
+	Rows []worker.QueryResult
 }
 
-func (t *ProcessTable) Render(ctx mvu.RenderContext) {
+func RenderProcessTable(
+	ctx mvu.RenderContext,
+	rows []worker.QueryResult,
+	sortBy string) {
 	draw.Clear(ctx.View, screen.DefaultStyle)
 
 	boxStyle := screen.DefaultStyle
@@ -27,7 +30,7 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 
 	body := ctx.View.Offset(1)
 
-	if len(t.Rows) == 0 {
+	if len(rows) == 0 {
 		center := view.Center(body, view.Dynamic("w", 1), view.Dynamic("h", 1))
 		draw.Line(center, "waiting...", screen.DefaultStyle)
 		return
@@ -39,16 +42,27 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 	layout := view.SplitH(body, view.Fixed("th", 1), view.Dynamic("tb", 1))
 	tHead, tBody := layout["th"], layout["tb"]
 
+	m := map[string]*draw.TextChunk{
+		"PID":       &draw.TextChunk{Text: "PID", Style: headerStyle},
+		"Name":      &draw.TextChunk{Text: "Name", Style: headerStyle},
+		"AvgCPU":    &draw.TextChunk{Text: "CPU% (Avg 1m)", Style: headerStyle},
+		"RecentCPU": &draw.TextChunk{Text: "CPU% (Now)", Style: headerStyle},
+		"Memory":    &draw.TextChunk{Text: "Memory", Style: headerStyle},
+	}
+
+	style := m[sortBy].Style
+	m[sortBy].Style = style.Fg(screen.ColorGreen)
+
 	drawLine(tHead,
 		draw.TextChunk{Text: "", Style: headerStyle},
-		draw.TextChunk{Text: "PID", Style: headerStyle},
-		draw.TextChunk{Text: "Name", Style: headerStyle},
-		draw.TextChunk{Text: "CPU% (Avg 1m)", Style: headerStyle, Alignment: draw.TextAlignmentRight},
-		draw.TextChunk{Text: "CPU% (Now)", Style: headerStyle.Fg(screen.ColorGreen)})
-
+		*m["PID"],
+		*m["Name"],
+		*m["AvgCPU"],
+		*m["RecentCPU"],
+		*m["Memory"])
 	_, h := tBody.Size()
 
-	for idx, info := range t.Rows {
+	for idx, info := range rows {
 		if idx >= h {
 			break
 		}
@@ -59,7 +73,7 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 	}
 
 	w, h := ctx.View.Size()
-	text := fmt.Sprintf("%d of %d", 0, len(t.Rows))
+	text := fmt.Sprintf("%d of %d", 0, len(rows))
 
 	pos := w - 1 - utf8.RuneCountInString(text)
 
@@ -71,7 +85,8 @@ func drawLine(vp view.Port,
 	pid draw.TextChunk,
 	name draw.TextChunk,
 	cpuAvg draw.TextChunk,
-	cpuRecent draw.TextChunk) {
+	cpuRecent draw.TextChunk,
+	memory draw.TextChunk) {
 	layout := view.SplitV(vp,
 		view.Fixed("selected", 4),
 		view.Fixed("pid", 7),
@@ -79,48 +94,44 @@ func drawLine(vp view.Port,
 		view.Fixed("", 2),
 		view.Fixed("recent-cpu", 10),
 		view.Fixed("", 2),
+		view.Fixed("memory", 10),
+		view.Fixed("", 2),
 		view.Dynamic("name", 15))
 
 	draw.Text(layout["selected"], selected)
 	draw.Text(layout["pid"], pid)
-	draw.Text(layout["name"], name)
 	draw.Text(layout["avg-cpu"], cpuAvg)
 	draw.Text(layout["recent-cpu"], cpuRecent)
+	draw.Text(layout["memory"], memory)
+	draw.Text(layout["name"], name)
 }
 
-func drawInfo(vp view.Port, p process.Profile) {
-	stats := p.History.Stats()
-
+func drawInfo(vp view.Port, r worker.QueryResult) {
 	drawLine(vp,
 		draw.TextChunk{
 			Text:  "[ ]",
 			Style: screen.DefaultStyle,
 		},
 		draw.TextChunk{
-			Text:  strconv.FormatInt(int64(p.Info.PID), 10),
+			Text:  strconv.FormatInt(int64(r.PID), 10),
 			Style: screen.DefaultStyle,
 		},
 		draw.TextChunk{
-			Text:  p.Info.Name,
+			Text:  r.Name,
 			Style: screen.DefaultStyle,
 		},
 		draw.TextChunk{
-			Text: func() string {
-				if p.History == nil || p.History.Len() < 2 {
-					return ""
-				}
-				return fmt.Sprintf("%5.2f%%", stats.AvgCPU*100)
-			}(),
+			Text:      fmt.Sprintf("%5.2f%%", r.AvgCPU*100),
 			Style:     screen.DefaultStyle,
 			Alignment: draw.TextAlignmentRight,
 		},
 		draw.TextChunk{
-			Text: func() string {
-				if p.History == nil || p.History.Len() < 2 {
-					return ""
-				}
-				return fmt.Sprintf("%5.2f%%", stats.RecentCPU*100)
-			}(),
+			Text:      fmt.Sprintf("%5.2f%%", r.RecentCPU*100),
+			Style:     screen.DefaultStyle,
+			Alignment: draw.TextAlignmentRight,
+		},
+		draw.TextChunk{
+			Text:      "?? MB",
 			Style:     screen.DefaultStyle,
 			Alignment: draw.TextAlignmentRight,
 		})
