@@ -39,7 +39,7 @@ func TaskQuery(store *process.Store, term string) mvu.Task {
 		sort.Slice(filtered, func(i, j int) bool {
 			left, right := filtered[i], filtered[j]
 
-			return left.History.AvgCPU() > right.History.AvgCPU()
+			return left.History.RecentCPU() > right.History.RecentCPU()
 		})
 
 		ev := QueryResultEvent{
