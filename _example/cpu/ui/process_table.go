@@ -43,8 +43,8 @@ func (t *ProcessTable) Render(ctx mvu.RenderContext) {
 		draw.TextChunk{Text: "", Style: headerStyle},
 		draw.TextChunk{Text: "PID", Style: headerStyle},
 		draw.TextChunk{Text: "Name", Style: headerStyle},
-		draw.TextChunk{Text: "avg CPU%", Style: headerStyle},
-		draw.TextChunk{Text: " CPU%", Style: headerStyle.Fg(screen.ColorGreen)})
+		draw.TextChunk{Text: "CPU% (Avg)", Style: headerStyle, Alignment: draw.TextAlignmentRight},
+		draw.TextChunk{Text: "CPU% (Now)", Style: headerStyle.Fg(screen.ColorGreen)})
 
 	_, h := tBody.Size()
 
@@ -70,22 +70,22 @@ func drawLine(vp view.Port,
 	selected draw.TextChunk,
 	pid draw.TextChunk,
 	name draw.TextChunk,
-	kernel draw.TextChunk,
-	user draw.TextChunk) {
+	cpuAvg draw.TextChunk,
+	cpuRecent draw.TextChunk) {
 	layout := view.SplitV(vp,
 		view.Fixed("selected", 4),
 		view.Fixed("pid", 7),
-		view.Fixed("kernel", 8),
+		view.Fixed("avg-cpu", 10),
 		view.Fixed("", 2),
-		view.Fixed("user", 5),
+		view.Fixed("recent-cpu", 10),
 		view.Fixed("", 2),
 		view.Dynamic("name", 15))
 
 	draw.Text(layout["selected"], selected)
 	draw.Text(layout["pid"], pid)
 	draw.Text(layout["name"], name)
-	draw.Text(layout["kernel"], kernel)
-	draw.Text(layout["user"], user)
+	draw.Text(layout["avg-cpu"], cpuAvg)
+	draw.Text(layout["recent-cpu"], cpuRecent)
 }
 
 func drawInfo(vp view.Port, p process.Profile) {
@@ -119,7 +119,7 @@ func drawInfo(vp view.Port, p process.Profile) {
 				if p.History == nil || p.History.Len() < 2 {
 					return ""
 				}
-				return fmt.Sprintf("%5.2f%%", p.History.RecentCPU()*100)
+				return fmt.Sprintf("%5.2f%%", stats.RecentCPU*100)
 			}(),
 			Style:     screen.DefaultStyle,
 			Alignment: draw.TextAlignmentRight,
