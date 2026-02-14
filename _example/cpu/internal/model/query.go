@@ -29,6 +29,8 @@ type QueryResult struct {
 	PID          uint32
 	Name         string
 	CreationTime time.Time
-	AvgCPU       float64
-	RecentCPU    float64
+
+	IsReady   bool
+	AvgCPU    float64
+	RecentCPU float64
 }

@@ -4,11 +4,6 @@ import (
 	"sync"
 )
 
-type Profile struct {
-	Info    *Info
-	History *History
-}
-
 type Store struct {
 	mu       sync.RWMutex
 	profiles map[uint32]*Profile
@@ -37,9 +32,9 @@ func (s *Store) Sync(snapshot []Info) {
 			}
 		}
 
-		if info.Stats != nil {
-			s.profiles[info.PID].History.AddSample(*info.Stats)
-			s.profiles[info.PID].Info.Stats = info.Stats
+		if info.LastSample != nil {
+			s.profiles[info.PID].History.AddSample(*info.LastSample)
+			s.profiles[info.PID].Info.LastSample = info.LastSample
 		}
 	}
 
@@ -50,26 +45,23 @@ func (s *Store) Sync(snapshot []Info) {
 	}
 }
 
-func (s *Store) GetAll() []Profile {
+func (s *Store) GetAll() []Snapshot {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	profiles := make([]Profile, 0, len(s.profiles))
+	snapshots := make([]Snapshot, 0, len(s.profiles))
 
 	for _, profile := range s.profiles {
-		info := *profile.Info
-		history := &History{
-			MaxSamples: profile.History.MaxSamples,
-			Samples:    make([]Sample, len(profile.History.Samples)),
+		stats, computed := profile.History.Stats()
+		snapshot := Snapshot{
+			Info:      *profile.Info,
+			AvgCPU:    stats.AvgCPU,
+			RecentCPU: stats.RecentCPU,
+			IsReady:   computed,
 		}
 
-		copy(history.Samples, profile.History.Samples)
-
-		profiles = append(profiles, Profile{
-			Info:    &info,
-			History: history,
-		})
+		snapshots = append(snapshots, snapshot)
 	}
 
-	return profiles
+	return snapshots
 }
