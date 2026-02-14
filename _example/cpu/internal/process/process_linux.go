@@ -3,21 +3,20 @@ package process
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func GetProcessInfo(pid int) (ProcessInfo, error) {
+func GetInfo(pid int) (Info, error) {
 	data, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
 	if err != nil {
-		return ProcessInfo{}, err
+		return Info{}, err
 	}
 
 	fields := strings.Fields(string(data))
 	if len(fields) < 15 {
-		return ProcessInfo{}, fmt.Errorf("insufficient data")
+		return Info{}, fmt.Errorf("insufficient data")
 	}
 
 	rawName := fields[1]
@@ -29,16 +28,19 @@ func GetProcessInfo(pid int) (ProcessInfo, error) {
 	const clockTicksPerSec = 100
 	tickDuration := time.Second / clockTicksPerSec
 
-	return ProcessInfo{
-		PID:        uint32(pid),
-		Name:       name,
-		UserTime:   time.Duration(utime) * tickDuration,
-		KernelTime: time.Duration(stime) * tickDuration,
+	return Info{
+		PID:  uint32(pid),
+		Name: name,
+		Stats: &Sample{
+			UserTime:   time.Duration(utime) * tickDuration,
+			KernelTime: time.Duration(stime) * tickDuration,
+			SampleTime: time.Now().UTC(),
+		},
 	}, nil
 }
 
-func GetAll() ([]ProcessInfo, error) {
-	var processList []ProcessInfo
+func GetAll() ([]Info, error) {
+	var processList []Info
 
 	files, err := os.ReadDir("/proc")
 	if err != nil {
@@ -51,15 +53,11 @@ func GetAll() ([]ProcessInfo, error) {
 			continue
 		}
 
-		info, err := GetProcessInfo(pid)
+		info, err := GetInfo(pid)
 		if err == nil {
 			processList = append(processList, info)
 		}
 	}
-
-	sort.Slice(processList, func(i, j int) bool {
-		return processList[i].UserTime > processList[j].UserTime
-	})
 
 	return processList, nil
 }
