@@ -16,6 +16,7 @@ const (
 	SortByRecentCPU
 	SortByAvgCPU
 	SortByName
+	SortByCreationTime
 	SortByRecentMemory
 )
 

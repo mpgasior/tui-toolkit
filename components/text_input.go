@@ -1,8 +1,6 @@
 package components
 
 import (
-	"unicode/utf8"
-
 	"github.com/mpgasior/tui-toolkit/vt"
 )
 
@@ -16,6 +14,7 @@ func (t *TextInput) Update(key vt.KeyEvent) (consumed bool) {
 	case vt.KeyBackspace:
 		if t.cursor > 0 {
 			t.buffer = append(t.buffer[:t.cursor-1], t.buffer[t.cursor:]...)
+			t.cursor -= 1
 			return true
 		}
 	case vt.KeyLeft:
@@ -30,7 +29,7 @@ func (t *TextInput) Update(key vt.KeyEvent) (consumed bool) {
 		}
 	default:
 		if key.Rune != 0 {
-			t.buffer = append(t.buffer[:t.cursor], key.Rune, t.buffer[t.cursor:]...)
+			t.buffer = append(t.buffer[:t.cursor], append([]rune{key.Rune}, t.buffer[t.cursor:]...)...)
 			t.cursor += 1
 			return true
 		}
@@ -41,6 +40,24 @@ func (t *TextInput) Update(key vt.KeyEvent) (consumed bool) {
 
 func (t *TextInput) String() string {
 	return string(t.buffer)
+}
+
+func (t *TextInput) Slice(width int) ([]rune, int) {
+	length := len(t.buffer)
+
+	if length <= width {
+		return t.buffer, t.cursor
+	}
+
+	start := max(t.cursor-width+1, 0)
+
+	end := start + width
+	if end > length {
+		end = length
+		start = end - width
+	}
+
+	return t.buffer[start:end], t.cursor - start
 }
 
 func (t *TextInput) Clear() {

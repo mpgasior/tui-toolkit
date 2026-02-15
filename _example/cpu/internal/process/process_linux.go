@@ -31,7 +31,7 @@ func GetInfo(pid int) (Info, error) {
 	return Info{
 		PID:  uint32(pid),
 		Name: name,
-		Stats: &Sample{
+		LastSample: &Sample{
 			UserTime:   time.Duration(utime) * tickDuration,
 			KernelTime: time.Duration(stime) * tickDuration,
 			SampleTime: time.Now().UTC(),

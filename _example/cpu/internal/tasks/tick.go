@@ -1,8 +1,10 @@
 package tasks
 
 import (
-	"github.com/mpgasior/tui-toolkit/mvu"
+	"context"
 	"time"
+
+	"github.com/mpgasior/tui-toolkit/mvu"
 )
 
 type TickEvent struct {
@@ -23,7 +25,7 @@ func TaskTick(id string, interval time.Duration) mvu.Task {
 				select {
 				case <-ctx.Done():
 					return
-				case ch <- TickEvent{ID: s.ID}:
+				case ch <- TickEvent{ID: id}:
 				}
 			}
 		},

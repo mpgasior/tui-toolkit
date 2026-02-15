@@ -1,10 +1,5 @@
 package process
 
-import (
-	"runtime"
-	"time"
-)
-
 type Stats struct {
 	RecentCPU float64
 	AvgCPU    float64

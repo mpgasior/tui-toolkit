@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"time"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
@@ -9,7 +10,7 @@ import (
 )
 
 type QueryResultEvent struct {
-	Data []QueryResult
+	Data []model.QueryResult
 }
 
 func TaskQuery(store *process.Store, query model.Query) mvu.Task {
@@ -25,7 +26,7 @@ func TaskQuery(store *process.Store, query model.Query) mvu.Task {
 			snapshot := store.GetAll()
 			results := make([]model.QueryResult, 0, len(snapshot))
 
-			for idx, s := range snapshot {
+			for _, s := range snapshot {
 				results = append(results, model.QueryResult{
 					PID:          s.Info.PID,
 					Name:         s.Info.Name,
