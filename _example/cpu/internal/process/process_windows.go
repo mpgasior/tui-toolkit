@@ -30,7 +30,7 @@ func GetInfo(entry windows.ProcessEntry32) (Info, error) {
 		return time.Duration(uint64(ft.HighDateTime)<<32|uint64(ft.LowDateTime)) * 100
 	}
 
-	info.Stats = &Sample{
+	info.LastSample = &Sample{
 		KernelTime: toDuration(kernelTime),
 		UserTime:   toDuration(userTime),
 		SampleTime: time.Now().UTC(),
@@ -39,7 +39,7 @@ func GetInfo(entry windows.ProcessEntry32) (Info, error) {
 	info.CreationTime = time.Unix(0, creationTime.Nanoseconds())
 	if exitTime.HighDateTime != 0 && exitTime.LowDateTime != 0 {
 		exit := time.Unix(0, exitTime.Nanoseconds())
-		info.ExitTime = &exit
+		info.ExitTime = exit
 	}
 
 	return info, nil
