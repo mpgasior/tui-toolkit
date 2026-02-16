@@ -11,6 +11,13 @@ type TextInput struct {
 
 func (t *TextInput) Update(key vt.KeyEvent) (consumed bool) {
 	switch key.Key {
+	case vt.KeyEsc:
+		if t.cursor > 0 {
+			t.cursor = 0
+			t.buffer = append(t.buffer[:0], t.buffer[:0]...)
+
+			return true
+		}
 	case vt.KeyBackspace:
 		if t.cursor > 0 {
 			t.buffer = append(t.buffer[:t.cursor-1], t.buffer[t.cursor:]...)

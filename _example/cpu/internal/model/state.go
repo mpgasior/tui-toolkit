@@ -10,7 +10,7 @@ type State struct {
 	SortBy     SortBy
 	SortOrder  SortOrder
 
-	isPaused   bool
+	IsPaused   bool
 	LastUpdate time.Time
 }
 
@@ -23,11 +23,11 @@ func (s *State) CurrentQuery() Query {
 }
 
 func (s *State) PauseRefresh(pause bool) {
-	s.isPaused = pause
+	s.IsPaused = pause
 }
 
 func (s *State) Sync(rows []QueryResult) (synced bool) {
-	if !s.isPaused {
+	if s.IsPaused {
 		return false
 	}
 	s.Rows = rows

@@ -22,6 +22,10 @@ type App struct {
 
 func New() *App {
 	return &App{
+		state: model.State{
+			SortBy:    model.SortByRecentCPU,
+			SortOrder: model.SortOrderDescending,
+		},
 		store: process.NewStore(),
 		ui:    ui.New(),
 	}
@@ -35,8 +39,21 @@ func (a *App) Init() mvu.Task {
 func (a *App) Update(e mvu.Event) mvu.Task {
 	switch e.(type) {
 	case tasks.DataRefreshedEvent:
+		a.ui.SetSearching(true)
+		return mvu.TaskN(
+			tasks.TaskTick(a.ui.Search.Spinner.ID, 80*time.Millisecond),
+			tasks.TaskQuery(a.store, a.state.CurrentQuery()),
+		)
 	case tasks.QueryResultEvent:
+		a.ui.SetSearching(false)
+		data := e.(tasks.QueryResultEvent).Data
+		if synced := a.state.Sync(data); synced {
+			a.ui.Table.Rows = data
+		}
+		return mvu.TaskCancel(a.ui.Search.Spinner.ID)
 	case tasks.TickEvent:
+		a.ui.Search.Spinner.Next()
+		return mvu.TaskNone
 	}
 
 	if key, ok := e.(vt.KeyEvent); ok {
@@ -71,9 +88,10 @@ func (a *App) Render(ctx mvu.RenderContext) {
 		view.Fixed("search", 3),
 		view.Dynamic("body", 3),
 		view.Fixed("help", 1))
-	search, _, help := layout["search"], layout["body"], layout["help"]
+	search, table, help := layout["search"], layout["body"], layout["help"]
 
 	a.ui.Search.Draw(search, a.ui.CurrentFocus == ui.FocusSearch)
+	a.ui.Table.Draw(table, a.ui.CurrentFocus == ui.FocusTable)
 
 	draw.Line(help, "[ctrl+c] Quit", screen.DefaultStyle)
 }

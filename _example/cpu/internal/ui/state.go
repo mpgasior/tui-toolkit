@@ -11,7 +11,8 @@ const (
 type ViewState struct {
 	CurrentFocus Focus
 	Search       Search
-	searching    bool
+	Searching    bool
+	Table        Table
 }
 
 func New() ViewState {
@@ -34,6 +35,6 @@ func (s *ViewState) PrevFocus() {
 }
 
 func (s *ViewState) SetSearching(searching bool) {
-	s.searching = searching
+	s.Searching = searching
 	s.Search.SetSearching(searching)
 }
