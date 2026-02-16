@@ -68,6 +68,10 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 
 		switch a.ui.CurrentFocus {
 		case ui.FocusSearch:
+			if key.IsKey(vt.KeyEnter) {
+				a.ui.CurrentFocus = ui.FocusTable
+				return mvu.TaskNone
+			}
 			if consumed := a.ui.Search.Update(key); consumed {
 				a.state.SearchTerm = a.ui.Search.String()
 				return a.TaskQuery()

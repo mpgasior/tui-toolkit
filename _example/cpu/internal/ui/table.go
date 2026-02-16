@@ -123,4 +123,10 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 			Alignment: draw.TextAlignmentRight,
 		})
 	}
+
+	draw.Text(cell("name", h-1).Offset(0, 2), draw.TextChunk{
+		Text:      "Total: " + strconv.FormatInt(int64(len(t.Rows)), 10),
+		Style:     boxStyle,
+		Alignment: draw.TextAlignmentRight,
+	})
 }
