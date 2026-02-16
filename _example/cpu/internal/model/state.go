@@ -8,7 +8,29 @@ type State struct {
 	IsLoading  bool
 	SearchTerm string
 	SortBy     SortBy
+	SortOrder  SortOrder
 
-	IsPaused   bool
+	isPaused   bool
 	LastUpdate time.Time
+}
+
+func (s *State) CurrentQuery() Query {
+	return Query{
+		Term:      s.SearchTerm,
+		SortBy:    s.SortBy,
+		Direction: s.SortOrder,
+	}
+}
+
+func (s *State) PauseRefresh(pause bool) {
+	s.isPaused = pause
+}
+
+func (s *State) Sync(rows []QueryResult) (synced bool) {
+	if !s.isPaused {
+		return false
+	}
+	s.Rows = rows
+	s.LastUpdate = time.Now()
+	return true
 }

@@ -1,3 +1,3 @@
-package components
+package ui
 
 type Table struct{}

@@ -12,7 +12,7 @@ func Filter(rows []QueryResult, term string) []QueryResult {
 	var filtered []QueryResult
 	for _, row := range rows {
 		name := strings.ToLower(row.Name)
-		if term == "" || strings.Contains(name, term) {
+		if strings.Contains(name, term) {
 			filtered = append(filtered, row)
 		}
 	}

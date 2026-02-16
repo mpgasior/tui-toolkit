@@ -28,6 +28,7 @@ func New() *App {
 }
 
 func (a *App) Init() mvu.Task {
+	a.ui.SetSearching(true)
 	return tasks.TaskRefresh(a.store, time.Second)
 }
 
@@ -46,13 +47,15 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		switch key.Key {
 		case vt.KeyTab:
 			a.ui.NextFocus()
+			return mvu.TaskNone
 		case vt.KeyShiftTab:
 			a.ui.PrevFocus()
+			return mvu.TaskNone
 		}
 
-		if a.ui.CurrentFocus == ui.FocusSearch {
-			if consumed := a.ui.TextInput.Update(key); consumed {
-				a.state.SearchTerm = a.ui.TextInput.String()
+		if a.ui.IsFocused(ui.FocusSearch) {
+			if consumed := a.ui.Search.Update(key); consumed {
+				a.state.SearchTerm = a.ui.Search.String()
 			}
 		}
 	}
@@ -70,39 +73,7 @@ func (a *App) Render(ctx mvu.RenderContext) {
 		view.Fixed("help", 1))
 	search, _, help := layout["search"], layout["body"], layout["help"]
 
-	a.renderSearch(search)
+	a.ui.Search.Draw(search, a.ui.CurrentFocus == ui.FocusSearch)
 
 	draw.Line(help, "[ctrl+c] Quit", screen.DefaultStyle)
-}
-
-func (a *App) renderSearch(vp view.Port) {
-	boxStyle := screen.DefaultStyle
-	if a.ui.CurrentFocus == ui.FocusSearch {
-		boxStyle = boxStyle.Fg(screen.ColorGreen)
-	}
-	draw.Box(vp, draw.BoxBorderRounded, boxStyle)
-
-	layout := view.SplitV(vp.Offset(1),
-		view.Dynamic("input", 1),
-		view.Fixed("spinner", 1),
-	)
-
-	inputView, spinnerView := layout["input"], layout["spinner"]
-
-	w, _ := inputView.Size()
-	text, cursor := a.ui.TextInput.Slice(w)
-	if len(text) == 0 {
-		draw.Line(inputView, "Search...", screen.DefaultStyle.Fg(screen.ColorBlue))
-	} else {
-		draw.Line(inputView, string(text), screen.DefaultStyle)
-	}
-
-	if a.ui.CurrentFocus == ui.FocusSearch {
-		inputView.SetCursorPos(cursor, 0)
-	}
-
-	if a.state.IsLoading {
-		r := a.ui.Spinner.Frame()
-		draw.Rune(spinnerView, 0, 0, r, screen.DefaultStyle)
-	}
 }

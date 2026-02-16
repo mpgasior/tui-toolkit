@@ -1,7 +1,5 @@
 package ui
 
-import "github.com/mpgasior/tui-toolkit/components"
-
 type Focus int
 
 const (
@@ -12,15 +10,19 @@ const (
 
 type ViewState struct {
 	CurrentFocus Focus
-	Spinner      *components.Spinner
-	TextInput    *components.TextInput
+	Search       Search
+	searching    bool
 }
 
 func New() ViewState {
 	return ViewState{
-		Spinner:   components.NewSpinner("spinner"),
-		TextInput: &components.TextInput{},
+		CurrentFocus: FocusSearch,
+		Search:       NewSearch(),
 	}
+}
+
+func (s *ViewState) IsFocused(f Focus) bool {
+	return s.CurrentFocus == f
 }
 
 func (s *ViewState) NextFocus() {
@@ -29,4 +31,9 @@ func (s *ViewState) NextFocus() {
 
 func (s *ViewState) PrevFocus() {
 	s.CurrentFocus = (s.CurrentFocus - 1 + focusSentinel) % focusSentinel
+}
+
+func (s *ViewState) SetSearching(searching bool) {
+	s.searching = searching
+	s.Search.SetSearching(searching)
 }
