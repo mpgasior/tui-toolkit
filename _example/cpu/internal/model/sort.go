@@ -9,7 +9,7 @@ import (
 var sorters = map[SortBy]func(a, b QueryResult) int{
 	SortByPID:          func(a, b QueryResult) int { return cmp.Compare(a.PID, b.PID) },
 	SortByName:         func(a, b QueryResult) int { return strings.Compare(a.Name, b.Name) },
-	SortByCreationTime: func(a, b QueryResult) int { return a.CreationTime.Compare(a.CreationTime) },
+	SortByCreationTime: func(a, b QueryResult) int { return a.CreationTime.Compare(b.CreationTime) },
 	SortByAvgCPU:       func(a, b QueryResult) int { return cmp.Compare(a.AvgCPU, b.AvgCPU) },
 	SortByRecentCPU:    func(a, b QueryResult) int { return cmp.Compare(a.RecentCPU, b.RecentCPU) },
 }

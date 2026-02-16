@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
 	"github.com/mpgasior/tui-toolkit/draw"
@@ -14,6 +15,7 @@ var TableColumnOrder = []model.SortBy{
 	model.SortByPID,
 	model.SortByAvgCPU,
 	model.SortByRecentCPU,
+	model.SortByCreationTime,
 	model.SortByName,
 }
 
@@ -59,6 +61,8 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		view.Fixed("", 2),
 		view.Fixed("memory", 10),
 		view.Fixed("", 2),
+		view.Fixed("age", 10),
+		view.Fixed("", 2),
 		view.Dynamic("name", 15))
 
 	cell := func(key string, row int) view.Port {
@@ -97,6 +101,7 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 	drawHeader("name", "Name", model.SortByName)
 	drawHeader("avg-cpu", "CPU% (Avg 1m)", model.SortByAvgCPU)
 	drawHeader("recent-cpu", "CPU% (Now)", model.SortByRecentCPU)
+	drawHeader("age", "Age", model.SortByCreationTime)
 
 	_, h := vp.Size()
 
@@ -110,6 +115,10 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		})
 		draw.Text(cell("name", idx+1), draw.TextChunk{
 			Text:  row.Name,
+			Style: screen.DefaultStyle,
+		})
+		draw.Text(cell("age", idx+1), draw.TextChunk{
+			Text:  formatCompact(row.CreationTime),
 			Style: screen.DefaultStyle,
 		})
 		draw.Text(cell("avg-cpu", idx+1), draw.TextChunk{
@@ -129,4 +138,20 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		Style:     boxStyle,
 		Alignment: draw.TextAlignmentRight,
 	})
+}
+
+func formatCompact(startTime time.Time) string {
+	if startTime.IsZero() {
+		return "N/A"
+	}
+
+	d := time.Since(startTime)
+
+	if d.Hours() >= 24 {
+		days := int(d.Hours() / 24)
+		hours := int(d.Hours()) % 24
+		return fmt.Sprintf("%dd %dh", days, hours)
+	}
+
+	return d.Round(time.Second).String()
 }
