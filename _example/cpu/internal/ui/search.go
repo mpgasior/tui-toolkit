@@ -30,7 +30,7 @@ func (s *Search) Draw(vp view.Port, focused bool) {
 	if focused {
 		boxStyle = boxStyle.Fg(screen.ColorGreen)
 	}
-	draw.Box(vp, draw.BoxBorderRounded, boxStyle)
+	draw.Box(vp, draw.BoxBorderThin, boxStyle)
 
 	layout := view.SplitV(vp.Offset(1),
 		view.Dynamic("input", 1),

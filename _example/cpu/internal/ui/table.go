@@ -10,8 +10,36 @@ import (
 	"github.com/mpgasior/tui-toolkit/view"
 )
 
+var TableColumnOrder = []model.SortBy{
+	model.SortByPID,
+	model.SortByAvgCPU,
+	model.SortByRecentCPU,
+	model.SortByName,
+}
+
+func NextSortBy(current model.SortBy) model.SortBy {
+	for i, sort := range TableColumnOrder {
+		if sort == current {
+			return TableColumnOrder[(i+1)%len(TableColumnOrder)]
+		}
+	}
+	return TableColumnOrder[0]
+}
+
+func PrevSortBy(current model.SortBy) model.SortBy {
+	n := len(TableColumnOrder)
+	for i, sort := range TableColumnOrder {
+		if sort == current {
+			return TableColumnOrder[(i-1+n)%n]
+		}
+	}
+	return TableColumnOrder[n-1]
+}
+
 type Table struct {
-	Rows []model.QueryResult
+	Rows      []model.QueryResult
+	SortBy    model.SortBy
+	SortOrder model.SortOrder
 }
 
 func (t *Table) Draw(vp view.Port, focused bool) {
@@ -20,11 +48,7 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		boxStyle = boxStyle.Fg(screen.ColorGreen)
 	}
 	draw.Box(vp, draw.BoxBorderThin, boxStyle)
-
-	if len(t.Rows) == 0 {
-		draw.Line(vp, "work in progress", screen.DefaultStyle)
-		return
-	}
+	draw.Clear(vp.Offset(0, 2, 1, 2), boxStyle)
 
 	layout := view.SplitV(vp,
 		view.Fixed("selected", 4),
@@ -37,36 +61,47 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		view.Fixed("", 2),
 		view.Dynamic("name", 15))
 
-	cell := func(n string, row int) view.Port {
-		col := layout[n]
+	cell := func(key string, row int) view.Port {
+		col := layout[key]
 		w, _ := col.Size()
 		return col.Slice(0, row, w, 1)
 	}
 
-	headerStyle := screen.DefaultStyle.
-		Attr(screen.AttrBold | screen.AttrUnderline)
+	drawHeader := func(key, label string, sortBy model.SortBy) {
+		style := screen.DefaultStyle.
+			Attr(screen.AttrBold | screen.AttrUnderline)
 
-	draw.Text(cell("pid", 0), draw.TextChunk{
-		Text:  "PID",
-		Style: headerStyle,
-	})
-	draw.Text(cell("name", 0), draw.TextChunk{
-		Text:  "Name",
-		Style: headerStyle,
-	})
-	draw.Text(cell("avg-cpu", 0), draw.TextChunk{
-		Text:  "CPU% (Avg 1m)",
-		Style: headerStyle,
-	})
-	draw.Text(cell("recent-cpu", 0), draw.TextChunk{
-		Text:  "CPU% (Now)",
-		Style: headerStyle.Fg(screen.ColorGreen),
-	})
+		if sortBy == t.SortBy {
+			style = style.Fg(screen.ColorGreen)
+			r := '↑'
+			if t.SortOrder == model.SortOrderDescending {
+				r = '↓'
+			}
+
+			v := cell(key, 0)
+			draw.RuneWide(v, 0, 0, r, 1, style)
+			draw.Text(v.Offset(0, 0, 0, 1), draw.TextChunk{
+				Text:  label,
+				Style: style,
+			})
+			return
+		}
+
+		draw.Text(cell(key, 0), draw.TextChunk{
+			Text:  label,
+			Style: style,
+		})
+	}
+
+	drawHeader("pid", "PID", model.SortByPID)
+	drawHeader("name", "Name", model.SortByName)
+	drawHeader("avg-cpu", "CPU% (Avg 1m)", model.SortByAvgCPU)
+	drawHeader("recent-cpu", "CPU% (Now)", model.SortByRecentCPU)
 
 	_, h := vp.Size()
 
 	for idx, row := range t.Rows {
-		if idx >= h {
+		if idx >= h-2 {
 			break
 		}
 		draw.Text(cell("pid", idx+1), draw.TextChunk{
@@ -83,7 +118,7 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 			Alignment: draw.TextAlignmentRight,
 		})
 		draw.Text(cell("recent-cpu", idx+1), draw.TextChunk{
-			Text:      fmt.Sprintf("%5.2f%%", row.AvgCPU),
+			Text:      fmt.Sprintf("%5.2f%%", row.RecentCPU),
 			Style:     screen.DefaultStyle,
 			Alignment: draw.TextAlignmentRight,
 		})

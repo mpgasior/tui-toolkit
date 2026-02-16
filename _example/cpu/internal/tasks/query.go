@@ -10,7 +10,8 @@ import (
 )
 
 type QueryResultEvent struct {
-	Data []model.QueryResult
+	Query model.Query
+	Data  []model.QueryResult
 }
 
 func TaskQuery(store *process.Store, query model.Query) mvu.Task {
@@ -42,7 +43,8 @@ func TaskQuery(store *process.Store, query model.Query) mvu.Task {
 			model.SortResults(results, query.SortBy, query.Direction)
 
 			e := QueryResultEvent{
-				Data: results,
+				Query: query,
+				Data:  results,
 			}
 
 			select {

@@ -32,25 +32,21 @@ func New() *App {
 }
 
 func (a *App) Init() mvu.Task {
-	a.ui.SetSearching(true)
 	return tasks.TaskRefresh(a.store, time.Second)
 }
 
 func (a *App) Update(e mvu.Event) mvu.Task {
 	switch e.(type) {
 	case tasks.DataRefreshedEvent:
-		a.ui.SetSearching(true)
-		return mvu.TaskN(
-			tasks.TaskTick(a.ui.Search.Spinner.ID, 80*time.Millisecond),
-			tasks.TaskQuery(a.store, a.state.CurrentQuery()),
-		)
+		return a.TaskQuery()
 	case tasks.QueryResultEvent:
-		a.ui.SetSearching(false)
-		data := e.(tasks.QueryResultEvent).Data
-		if synced := a.state.Sync(data); synced {
-			a.ui.Table.Rows = data
+		result := e.(tasks.QueryResultEvent)
+		if synced := a.state.Sync(result.Data); synced {
+			a.ui.Table.SortBy = result.Query.SortBy
+			a.ui.Table.SortOrder = result.Query.Direction
+			a.ui.Table.Rows = result.Data
 		}
-		return mvu.TaskCancel(a.ui.Search.Spinner.ID)
+		return a.TaskStopQuery()
 	case tasks.TickEvent:
 		a.ui.Search.Spinner.Next()
 		return mvu.TaskNone
@@ -70,14 +66,41 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 			return mvu.TaskNone
 		}
 
-		if a.ui.IsFocused(ui.FocusSearch) {
+		switch a.ui.CurrentFocus {
+		case ui.FocusSearch:
 			if consumed := a.ui.Search.Update(key); consumed {
 				a.state.SearchTerm = a.ui.Search.String()
+				return a.TaskQuery()
+			}
+		case ui.FocusTable:
+			switch key.Rune {
+			case 's':
+				a.state.SortOrder = (a.state.SortOrder + 1) % 2
+				return a.TaskQuery()
+			case 'h':
+				a.state.SortBy = ui.PrevSortBy(a.state.SortBy)
+				return a.TaskQuery()
+			case 'l':
+				a.state.SortBy = ui.NextSortBy(a.state.SortBy)
+				return a.TaskQuery()
 			}
 		}
 	}
 
 	return mvu.TaskNone
+}
+
+func (a *App) TaskQuery() mvu.Task {
+	a.ui.SetSearching(true)
+	return mvu.TaskN(
+		tasks.TaskTick(a.ui.Search.Spinner.ID, 80*time.Millisecond),
+		tasks.TaskQuery(a.store, a.state.CurrentQuery()),
+	)
+}
+
+func (a *App) TaskStopQuery() mvu.Task {
+	a.ui.SetSearching(false)
+	return mvu.TaskCancel(a.ui.Search.Spinner.ID)
 }
 
 func (a *App) Render(ctx mvu.RenderContext) {
@@ -93,5 +116,5 @@ func (a *App) Render(ctx mvu.RenderContext) {
 	a.ui.Search.Draw(search, a.ui.CurrentFocus == ui.FocusSearch)
 	a.ui.Table.Draw(table, a.ui.CurrentFocus == ui.FocusTable)
 
-	draw.Line(help, "[ctrl+c] Quit", screen.DefaultStyle)
+	draw.Line(help, "Quit: ctrl+c | Focus: [Shift]Tab | Sort Order: s | Sort By: [h][l]", screen.DefaultStyle.Fg(screen.ColorBlue))
 }
