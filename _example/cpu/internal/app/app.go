@@ -42,9 +42,9 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 	case task.QueryResultEvent:
 		result := e.(task.QueryResultEvent)
 		if synced := a.state.Sync(result.Data); synced {
-			a.ui.Table.SortBy = result.Query.SortBy
-			a.ui.Table.SortOrder = result.Query.Direction
-			a.ui.Table.Rows = result.Data
+			a.ui.Table.SortBy = a.state.SortBy
+			a.ui.Table.SortOrder = a.state.SortOrder
+			a.ui.Table.Rows = a.state.Rows
 		}
 		return a.TaskStopQuery()
 	case task.TickEvent:
