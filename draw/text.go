@@ -48,12 +48,12 @@ func Text(m screen.Mutator, chunks ...TextChunk) {
 	}
 
 	for _, chunk := range chunks {
-		localOffset := 0
-		for idx, r := range chunk.Text {
+		idx := 0
+		for _, r := range chunk.Text {
 			Rune(m, offset+idx, 0, r, chunk.Style)
-			localOffset += 1
+			idx += 1
 		}
-		offset += localOffset
+		offset += idx
 	}
 }
 
@@ -64,8 +64,10 @@ func Lines(m screen.Mutator, text string, style screen.Style) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		for idx, r := range line {
+		idx := 0
+		for _, r := range line {
 			Rune(m, idx, row, r, style)
+			idx += 1
 		}
 
 		row += 1
@@ -73,7 +75,9 @@ func Lines(m screen.Mutator, text string, style screen.Style) {
 }
 
 func Line(m screen.Mutator, line string, style screen.Style) {
-	for idx, r := range line {
+	idx := 0
+	for _, r := range line {
 		Rune(m, idx, 0, r, style)
+		idx += 1
 	}
 }

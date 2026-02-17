@@ -77,15 +77,9 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 				return a.TaskQuery()
 			}
 		case ui.FocusTable:
-			switch key.Rune {
-			case 's':
-				a.state.SortOrder = (a.state.SortOrder + 1) % 2
-				return a.TaskQuery()
-			case 'h':
-				a.state.SortBy = ui.PrevSortBy(a.state.SortBy)
-				return a.TaskQuery()
-			case 'l':
-				a.state.SortBy = ui.NextSortBy(a.state.SortBy)
+			if didUpdate := a.ui.Table.Update(key); didUpdate {
+				a.state.SortBy = a.ui.Table.SortBy
+				a.state.SortOrder = a.ui.Table.SortOrder
 				return a.TaskQuery()
 			}
 		}
@@ -113,12 +107,12 @@ func (a *App) Render(ctx mvu.RenderContext) {
 
 	layout := view.SplitH(ctx.View,
 		view.Fixed("search", 3),
-		view.Dynamic("body", 3),
-		view.Fixed("help", 1))
-	search, table, help := layout["search"], layout["body"], layout["help"]
+		view.Dynamic("table", 1),
+		view.Fixed("help", 1),
+	)
 
-	a.ui.Search.Draw(search, a.ui.CurrentFocus == ui.FocusSearch)
-	a.ui.Table.Draw(table, a.ui.CurrentFocus == ui.FocusTable)
+	a.ui.Search.Draw(layout["search"], a.ui.CurrentFocus == ui.FocusSearch)
+	a.ui.Table.Draw(layout["table"], a.ui.CurrentFocus == ui.FocusTable)
 
-	draw.Line(help, "Quit: ctrl+c | Focus: [Shift]Tab | Sort Order: s | Sort By: [h][l]", screen.DefaultStyle.Fg(screen.ColorBlue))
+	draw.Line(layout["help"], "Quit: ctrl+c | Focus: [Shift]Tab | Sort Order: s | Sort By: [h][l]", screen.DefaultStyle.Fg(screen.ColorBlue))
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/mpgasior/tui-toolkit/draw"
 	"github.com/mpgasior/tui-toolkit/screen"
 	"github.com/mpgasior/tui-toolkit/view"
+	"github.com/mpgasior/tui-toolkit/vt"
 )
 
 var TableColumnOrder = []model.SortBy{
@@ -44,6 +45,22 @@ type Table struct {
 	SortOrder model.SortOrder
 }
 
+func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
+	switch key.Rune {
+	case 's':
+		t.SortOrder = (t.SortOrder + 1) % 2
+		return true
+	case 'h':
+		t.SortBy = PrevSortBy(t.SortBy)
+		return true
+	case 'l':
+		t.SortBy = NextSortBy(t.SortBy)
+		return true
+	}
+
+	return false
+}
+
 func (t *Table) Draw(vp view.Port, focused bool) {
 	boxStyle := screen.DefaultStyle
 	if focused {
@@ -63,7 +80,8 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		view.Fixed("", 2),
 		view.Fixed("age", 10),
 		view.Fixed("", 2),
-		view.Dynamic("name", 15))
+		view.Dynamic("name", 15),
+	)
 
 	cell := func(key string, row int) view.Port {
 		col := layout[key]
@@ -82,12 +100,7 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 				r = '↓'
 			}
 
-			v := cell(key, 0)
-			draw.RuneWide(v, 0, 0, r, 1, style)
-			draw.Text(v.Offset(0, 0, 0, 1), draw.TextChunk{
-				Text:  label,
-				Style: style,
-			})
+			draw.Line(cell(key, 0), string(r)+label, style)
 			return
 		}
 
