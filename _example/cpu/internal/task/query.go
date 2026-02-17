@@ -1,4 +1,4 @@
-package tasks
+package task
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type QueryResultEvent struct {
 	Data  []model.QueryResult
 }
 
-func TaskQuery(store *process.Store, query model.Query) mvu.Task {
+func Query(store *process.Store, query model.Query) mvu.Task {
 	return mvu.Task{
 		ID: "query",
 		Execute: func(ctx context.Context, ch chan<- mvu.Event) {

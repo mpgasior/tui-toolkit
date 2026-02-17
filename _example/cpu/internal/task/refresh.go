@@ -1,4 +1,4 @@
-package tasks
+package task
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 type DataRefreshedEvent struct{}
 
-func TaskRefresh(store *process.Store, interval time.Duration) mvu.Task {
+func Refresh(store *process.Store, interval time.Duration) mvu.Task {
 	return mvu.Task{
 		ID: "refresh",
 		Execute: func(ctx context.Context, ch chan<- mvu.Event) {

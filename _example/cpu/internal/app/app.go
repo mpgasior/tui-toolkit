@@ -5,7 +5,7 @@ import (
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
-	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/tasks"
+	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/task"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/ui"
 	"github.com/mpgasior/tui-toolkit/draw"
 	"github.com/mpgasior/tui-toolkit/mvu"
@@ -32,22 +32,22 @@ func New() *App {
 }
 
 func (a *App) Init() mvu.Task {
-	return tasks.TaskRefresh(a.store, time.Second)
+	return task.Refresh(a.store, time.Second)
 }
 
 func (a *App) Update(e mvu.Event) mvu.Task {
 	switch e.(type) {
-	case tasks.DataRefreshedEvent:
+	case task.DataRefreshedEvent:
 		return a.TaskQuery()
-	case tasks.QueryResultEvent:
-		result := e.(tasks.QueryResultEvent)
+	case task.QueryResultEvent:
+		result := e.(task.QueryResultEvent)
 		if synced := a.state.Sync(result.Data); synced {
 			a.ui.Table.SortBy = result.Query.SortBy
 			a.ui.Table.SortOrder = result.Query.Direction
 			a.ui.Table.Rows = result.Data
 		}
 		return a.TaskStopQuery()
-	case tasks.TickEvent:
+	case task.TickEvent:
 		a.ui.Search.Spinner.Next()
 		return mvu.TaskNone
 	}
@@ -97,8 +97,8 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 func (a *App) TaskQuery() mvu.Task {
 	a.ui.SetSearching(true)
 	return mvu.TaskN(
-		tasks.TaskTick(a.ui.Search.Spinner.ID, 80*time.Millisecond),
-		tasks.TaskQuery(a.store, a.state.CurrentQuery()),
+		task.Tick(a.ui.Search.Spinner.ID, 80*time.Millisecond),
+		task.Query(a.store, a.state.CurrentQuery()),
 	)
 }
 

@@ -1,4 +1,4 @@
-package tasks
+package task
 
 import (
 	"context"
@@ -11,7 +11,7 @@ type TickEvent struct {
 	ID string
 }
 
-func TaskTick(id string, interval time.Duration) mvu.Task {
+func Tick(id string, interval time.Duration) mvu.Task {
 	return mvu.Task{
 		ID: id,
 		Execute: func(ctx context.Context, ch chan<- mvu.Event) {
