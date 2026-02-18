@@ -59,41 +59,44 @@ func NewTable() Table {
 func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 	switch key.Rune {
 	case 's':
+		if t.IsBusy {
+			return false
+		}
 		t.SortOrder = (t.SortOrder + 1) % 2
 		return true
 	case 'h':
+		if t.IsBusy {
+			return false
+		}
 		t.SortBy = PrevSortBy(t.SortBy)
 		return true
 	case 'l':
+		if t.IsBusy {
+			return false
+		}
 		t.SortBy = NextSortBy(t.SortBy)
-		return true
-	case 'j':
-		t.Scroll.Index += 1
-		t.IsBusy = true
-		return true
-	case 'k':
-		t.Scroll.Index -= 1
-		t.IsBusy = true
-		return true
-	case 'g':
-		t.Scroll.Index = 0
-		t.IsBusy = true
-		return true
-	case 'G':
-		t.Scroll.Index = len(t.Rows) - 1
-		t.IsBusy = true
 		return true
 	}
 
 	switch key.Key {
+	case vt.KeyJ:
+		t.Scroll.Move(1)
+	case vt.KeyK:
+		t.Scroll.Move(-1)
+	case vt.KeyG:
+		t.Scroll.Jump(0)
+	case vt.KeyShiftG:
+		t.Scroll.Jump(len(t.Rows) - 1)
 	case vt.KeyCtrlU:
-		t.Scroll.Index -= 10
-		t.IsBusy = true
-		return true
+		t.Scroll.Move(-10)
 	case vt.KeyCtrlD:
-		t.Scroll.Index += 10
+		t.Scroll.Move(10)
+	}
+
+	if t.Scroll.Index != 0 {
 		t.IsBusy = true
-		return true
+	} else {
+		t.IsBusy = false
 	}
 
 	return false
@@ -101,7 +104,7 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 
 func (t *Table) ResetBusy() {
 	t.IsBusy = false
-	t.Scroll.Index = -1
+	t.Scroll.Jump(0)
 }
 
 func (t *Table) Draw(vp view.Port, focused bool) {

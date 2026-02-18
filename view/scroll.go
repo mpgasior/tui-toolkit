@@ -6,9 +6,17 @@ type Scroll struct {
 	Margin int
 }
 
+func (s *Scroll) Move(delta int) {
+	s.Index += delta
+}
+
+func (s *Scroll) Jump(index int) {
+	s.Index = index
+}
+
 func (s *Scroll) Update(size, total int) (start, end int) {
 	if total == 0 {
-		s.Index = -1
+		s.Index = 0
 		s.Offset = 0
 		return 0, 0
 	}
