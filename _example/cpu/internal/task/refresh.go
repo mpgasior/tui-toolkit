@@ -10,6 +10,10 @@ import (
 
 type DataRefreshedEvent struct{}
 
+func CancelRefresh() mvu.Task {
+	return mvu.TaskCancel("refresh")
+}
+
 func Refresh(store *process.Store, interval time.Duration) mvu.Task {
 	return mvu.Task{
 		ID: "refresh",

@@ -12,45 +12,25 @@ import (
 	"github.com/mpgasior/tui-toolkit/vt"
 )
 
-var TableColumnOrder = []model.SortBy{
+var tableColumnOrder = []model.SortBy{
 	model.SortByPID,
 	model.SortByAvgCPU,
 	model.SortByRecentCPU,
-	model.SortByCreationTime,
+	model.SortByAge,
 	model.SortByName,
-}
-
-func NextSortBy(current model.SortBy) model.SortBy {
-	for i, sort := range TableColumnOrder {
-		if sort == current {
-			return TableColumnOrder[(i+1)%len(TableColumnOrder)]
-		}
-	}
-	return TableColumnOrder[0]
-}
-
-func PrevSortBy(current model.SortBy) model.SortBy {
-	n := len(TableColumnOrder)
-	for i, sort := range TableColumnOrder {
-		if sort == current {
-			return TableColumnOrder[(i-1+n)%n]
-		}
-	}
-	return TableColumnOrder[n-1]
 }
 
 type Table struct {
 	Rows      []model.QueryResult
 	SortBy    model.SortBy
 	SortOrder model.SortOrder
-	IsBusy    bool
+	IsPaused  bool
 	Scroll    view.Scroll
 }
 
 func NewTable() Table {
 	return Table{
 		Scroll: view.Scroll{
-			Index:  -1,
 			Margin: 2,
 		},
 	}
@@ -59,22 +39,13 @@ func NewTable() Table {
 func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 	switch key.Rune {
 	case 's':
-		if t.IsBusy {
-			return false
-		}
-		t.SortOrder = (t.SortOrder + 1) % 2
+		t.NextSortOrder()
 		return true
 	case 'h':
-		if t.IsBusy {
-			return false
-		}
-		t.SortBy = PrevSortBy(t.SortBy)
+		t.PrevSortBy()
 		return true
 	case 'l':
-		if t.IsBusy {
-			return false
-		}
-		t.SortBy = NextSortBy(t.SortBy)
+		t.NextSortBy()
 		return true
 	}
 
@@ -88,22 +59,39 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 	case vt.KeyShiftG:
 		t.Scroll.Jump(len(t.Rows) - 1)
 	case vt.KeyCtrlU:
-		t.Scroll.Move(-10)
+		t.Scroll.Move(-5)
 	case vt.KeyCtrlD:
-		t.Scroll.Move(10)
-	}
-
-	if t.Scroll.Index != 0 {
-		t.IsBusy = true
-	} else {
-		t.IsBusy = false
+		t.Scroll.Move(5)
 	}
 
 	return false
 }
 
+func (t *Table) NextSortOrder() {
+	t.SortOrder = (t.SortOrder + 1) % 2
+}
+
+func (t *Table) NextSortBy() {
+	for i, sort := range tableColumnOrder {
+		if sort == t.SortBy {
+			t.SortBy = tableColumnOrder[(i+1)%len(tableColumnOrder)]
+			break
+		}
+	}
+}
+
+func (t *Table) PrevSortBy() {
+	n := len(tableColumnOrder)
+	for i, sort := range tableColumnOrder {
+		if sort == t.SortBy {
+			t.SortBy = tableColumnOrder[(i-1+n)%n]
+			break
+		}
+	}
+}
+
 func (t *Table) ResetBusy() {
-	t.IsBusy = false
+	t.IsPaused = false
 	t.Scroll.Jump(0)
 }
 
@@ -160,7 +148,7 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 	drawHeader("name", "Name", model.SortByName)
 	drawHeader("avg-cpu", "CPU% (Avg 1m)", model.SortByAvgCPU)
 	drawHeader("recent-cpu", "CPU% (Now)", model.SortByRecentCPU)
-	drawHeader("age", "Age", model.SortByCreationTime)
+	drawHeader("age", "Age", model.SortByAge)
 
 	_, h := vp.Size()
 
@@ -192,7 +180,7 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 			Style: rowStyle,
 		})
 		draw.Text(cell("age", rowIdx), draw.TextChunk{
-			Text:  formatCompact(row.CreationTime),
+			Text:  formatAge(row.Age),
 			Style: rowStyle,
 		})
 		draw.Text(cell("avg-cpu", rowIdx), draw.TextChunk{
@@ -209,19 +197,26 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		rowIdx += 1
 	}
 
+	text := "Total: " + strconv.FormatInt(int64(len(t.Rows)), 10)
+	if focused {
+		text = strconv.FormatInt(int64(t.Scroll.Index+1), 10) + " of " + strconv.FormatInt(int64(len(t.Rows)), 10)
+	}
+
+	if t.IsPaused {
+		text = "[Paused] " + text
+	}
+
 	draw.Text(cell("name", h-1).Offset(0, 2), draw.TextChunk{
-		Text:      "Total: " + strconv.FormatInt(int64(len(t.Rows)), 10),
+		Text:      text,
 		Style:     boxStyle,
 		Alignment: draw.TextAlignmentRight,
 	})
 }
 
-func formatCompact(startTime time.Time) string {
-	if startTime.IsZero() {
+func formatAge(d time.Duration) string {
+	if d == 0 {
 		return "N/A"
 	}
-
-	d := time.Since(startTime)
 
 	if d.Hours() >= 24 {
 		days := int(d.Hours() / 24)

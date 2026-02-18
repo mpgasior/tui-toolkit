@@ -31,6 +31,7 @@ const (
 	KeyShiftRight
 	KeyShiftLeft
 
+	KeySpace
 	KeyEnter
 	KeyBackspace
 	KeyPause
@@ -237,6 +238,7 @@ var SequenceToKey = map[string]Key{
 	CSI + "1;2C": KeyShiftRight,
 	CSI + "1;2D": KeyShiftLeft,
 
+	" ":        KeySpace,
 	"\x0d":     KeyEnter,
 	"\x7f":     KeyBackspace,
 	"\x1a":     KeyPause,

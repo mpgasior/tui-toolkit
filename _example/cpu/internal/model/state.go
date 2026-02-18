@@ -9,6 +9,7 @@ import (
 type State struct {
 	Store *process.Store
 
+	IsPaused   bool
 	Filtered   []QueryResult
 	LastUpdate time.Time
 
@@ -21,6 +22,11 @@ func NewState() *State {
 	return &State{
 		Store: process.NewStore(),
 	}
+}
+
+func (s *State) TogglePause() bool {
+	s.IsPaused = !s.IsPaused
+	return s.IsPaused
 }
 
 func (s *State) CurrentQuery() Query {

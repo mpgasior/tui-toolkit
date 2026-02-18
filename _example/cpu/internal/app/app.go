@@ -40,13 +40,13 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		return a.TaskQuery()
 	case task.QueryResultEvent:
 		result := e.(task.QueryResultEvent)
+
 		a.state.Sync(result.Data)
 
-		if !a.ui.Table.IsBusy {
-			a.ui.Table.SortBy = a.state.SortBy
-			a.ui.Table.SortOrder = a.state.SortOrder
-			a.ui.Table.Rows = a.state.Filtered
-		}
+		a.ui.Table.SortBy = a.state.SortBy
+		a.ui.Table.SortOrder = a.state.SortOrder
+		a.ui.Table.Rows = a.state.Filtered
+
 		return a.TaskStopQuery()
 	case task.TickEvent:
 		a.ui.Search.Spinner.Next()
@@ -69,6 +69,14 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 
 		switch a.ui.CurrentFocus {
 		case ui.FocusSearch:
+			if key.IsKey(vt.KeyCtrlP) {
+				isPaused := a.state.TogglePause()
+				a.ui.Table.IsPaused = isPaused
+				if isPaused {
+					return task.CancelRefresh()
+				}
+				return task.Refresh(a.state.Store, time.Second)
+			}
 			if key.IsKey(vt.KeyEnter) {
 				a.ui.CurrentFocus = ui.FocusTable
 				return mvu.TaskNone

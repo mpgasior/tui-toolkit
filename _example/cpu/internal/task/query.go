@@ -29,9 +29,9 @@ func Query(store *process.Store, query model.Query) mvu.Task {
 
 			for _, s := range snapshot {
 				results = append(results, model.QueryResult{
-					PID:          s.Info.PID,
-					Name:         s.Info.Name,
-					CreationTime: s.Info.CreationTime,
+					PID:  s.Info.PID,
+					Name: s.Info.Name,
+					Age:  time.Since(s.Info.CreationTime),
 
 					IsReady:   s.IsReady,
 					AvgCPU:    s.AvgCPU,

@@ -21,8 +21,8 @@ func (s *Scroll) Update(size, total int) (start, end int) {
 		return 0, 0
 	}
 
-	if s.Index < -1 {
-		s.Index = -1
+	if s.Index < 0 {
+		s.Index = 0
 	} else if s.Index >= total {
 		s.Index = total - 1
 	}

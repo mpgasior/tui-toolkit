@@ -16,7 +16,7 @@ const (
 	SortByRecentCPU
 	SortByAvgCPU
 	SortByName
-	SortByCreationTime
+	SortByAge
 	SortByRecentMemory
 )
 
@@ -27,9 +27,9 @@ type Query struct {
 }
 
 type QueryResult struct {
-	PID          uint32
-	Name         string
-	CreationTime time.Time
+	PID  uint32
+	Name string
+	Age  time.Duration
 
 	IsReady   bool
 	AvgCPU    float64
