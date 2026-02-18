@@ -151,8 +151,9 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 	drawHeader("age", "Age", model.SortByAge)
 
 	_, h := vp.Size()
+	t.drawFooter(focused, cell, h, boxStyle)
 
-	if len(t.Rows) == 0 {
+	if t.Rows == nil {
 		return
 	}
 
@@ -196,7 +197,9 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 
 		rowIdx += 1
 	}
+}
 
+func (t *Table) drawFooter(focused bool, cell func(key string, row int) view.Port, h int, boxStyle screen.Style) {
 	text := "Total: " + strconv.FormatInt(int64(len(t.Rows)), 10)
 	if focused {
 		text = strconv.FormatInt(int64(t.Scroll.Index+1), 10) + " of " + strconv.FormatInt(int64(len(t.Rows)), 10)

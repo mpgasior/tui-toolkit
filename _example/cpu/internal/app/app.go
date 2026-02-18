@@ -53,6 +53,13 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		return mvu.TaskNone
 	}
 
+	if _, ok := e.(vt.PasteEvent); ok && a.ui.IsFocused(ui.FocusSearch) {
+		if didUpdate := a.ui.Search.Update(e); didUpdate {
+			a.state.SearchTerm = a.ui.Search.String()
+			return a.TaskQuery()
+		}
+	}
+
 	if key, ok := e.(vt.KeyEvent); ok {
 		if key.IsKey(vt.KeyCtrlC) {
 			return mvu.TaskShutdown
@@ -65,23 +72,22 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		case vt.KeyShiftTab:
 			a.ui.PrevFocus()
 			return mvu.TaskNone
+		case vt.KeyCtrlP:
+			isPaused := a.state.TogglePause()
+			a.ui.Table.IsPaused = isPaused
+			if isPaused {
+				return task.CancelRefresh()
+			}
+			return task.Refresh(a.state.Store, time.Second)
 		}
 
 		switch a.ui.CurrentFocus {
 		case ui.FocusSearch:
-			if key.IsKey(vt.KeyCtrlP) {
-				isPaused := a.state.TogglePause()
-				a.ui.Table.IsPaused = isPaused
-				if isPaused {
-					return task.CancelRefresh()
-				}
-				return task.Refresh(a.state.Store, time.Second)
-			}
 			if key.IsKey(vt.KeyEnter) {
 				a.ui.CurrentFocus = ui.FocusTable
 				return mvu.TaskNone
 			}
-			if didUpdate := a.ui.Search.Update(key); didUpdate {
+			if didUpdate := a.ui.Search.Update(e); didUpdate {
 				a.state.SearchTerm = a.ui.Search.String()
 				return a.TaskQuery()
 			}
