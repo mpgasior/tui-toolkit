@@ -40,9 +40,17 @@ func PrevSortBy(current model.SortBy) model.SortBy {
 }
 
 type Table struct {
-	Rows      []model.QueryResult
-	SortBy    model.SortBy
-	SortOrder model.SortOrder
+	Rows          []model.QueryResult
+	SortBy        model.SortBy
+	SortOrder     model.SortOrder
+	IsBusy        bool
+	SelectedIndex int
+}
+
+func NewTable() Table {
+	return Table{
+		SelectedIndex: -1,
+	}
 }
 
 func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
@@ -56,9 +64,22 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 	case 'l':
 		t.SortBy = NextSortBy(t.SortBy)
 		return true
+	case 'j':
+		t.SelectedIndex += 1
+		t.IsBusy = true
+		return true
+	case 'k':
+		t.SelectedIndex -= 1
+		t.IsBusy = true
+		return true
 	}
 
 	return false
+}
+
+func (t *Table) ResetBusy() {
+	t.IsBusy = false
+	t.SelectedIndex = -1
 }
 
 func (t *Table) Draw(vp view.Port, focused bool) {
@@ -118,32 +139,53 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 
 	_, h := vp.Size()
 
-	for idx, row := range t.Rows {
-		if idx >= h-2 {
+	pageSize := h - 2
+	scrollGap := 10
+	start := 0
+	if t.SelectedIndex >= pageSize-scrollGap {
+		start = t.SelectedIndex + pageSize - 1
+	}
+
+	rowIdx := 1
+	for idx := start; idx < len(t.Rows); idx += 1 {
+		if rowIdx > pageSize {
 			break
 		}
-		draw.Text(cell("pid", idx+1), draw.TextChunk{
+		row := t.Rows[idx]
+		rowStyle := screen.DefaultStyle
+		if idx == t.SelectedIndex {
+			rowStyle = rowStyle.Fg(screen.ColorCyan)
+			draw.Text(cell("selected", rowIdx), draw.TextChunk{
+				Text:      "┃",
+				Style:     screen.DefaultStyle.Fg(screen.ColorRed),
+				Alignment: draw.TextAlignmentCenter,
+			})
+		}
+
+		draw.Text(cell("pid", rowIdx), draw.TextChunk{
 			Text:  strconv.FormatInt(int64(row.PID), 10),
-			Style: screen.DefaultStyle,
+			Style: rowStyle,
 		})
-		draw.Text(cell("name", idx+1), draw.TextChunk{
+		draw.Text(cell("name", rowIdx), draw.TextChunk{
 			Text:  row.Name,
-			Style: screen.DefaultStyle,
+			Style: rowStyle,
 		})
-		draw.Text(cell("age", idx+1), draw.TextChunk{
+		draw.Text(cell("age", rowIdx), draw.TextChunk{
 			Text:  formatCompact(row.CreationTime),
-			Style: screen.DefaultStyle,
+			Style: rowStyle,
 		})
-		draw.Text(cell("avg-cpu", idx+1), draw.TextChunk{
+		draw.Text(cell("avg-cpu", rowIdx), draw.TextChunk{
 			Text:      fmt.Sprintf("%5.2f%%", row.AvgCPU),
-			Style:     screen.DefaultStyle,
+			Style:     rowStyle,
 			Alignment: draw.TextAlignmentRight,
 		})
-		draw.Text(cell("recent-cpu", idx+1), draw.TextChunk{
+		draw.Text(cell("recent-cpu", rowIdx), draw.TextChunk{
 			Text:      fmt.Sprintf("%5.2f%%", row.RecentCPU),
-			Style:     screen.DefaultStyle,
+			Style:     rowStyle,
 			Alignment: draw.TextAlignmentRight,
 		})
+
+		rowIdx += 1
 	}
 
 	draw.Text(cell("name", h-1).Offset(0, 2), draw.TextChunk{

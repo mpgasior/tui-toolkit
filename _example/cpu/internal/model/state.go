@@ -1,17 +1,26 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
+)
 
 type State struct {
-	Rows []QueryResult
+	Store *process.Store
 
-	IsLoading  bool
+	Filtered   []QueryResult
+	LastUpdate time.Time
+
 	SearchTerm string
 	SortBy     SortBy
 	SortOrder  SortOrder
+}
 
-	IsPaused   bool
-	LastUpdate time.Time
+func NewState() *State {
+	return &State{
+		Store: process.NewStore(),
+	}
 }
 
 func (s *State) CurrentQuery() Query {
@@ -22,15 +31,7 @@ func (s *State) CurrentQuery() Query {
 	}
 }
 
-func (s *State) PauseRefresh(pause bool) {
-	s.IsPaused = pause
-}
-
-func (s *State) Sync(rows []QueryResult) (synced bool) {
-	if s.IsPaused {
-		return false
-	}
-	s.Rows = rows
+func (s *State) Sync(results []QueryResult) {
+	s.Filtered = results
 	s.LastUpdate = time.Now()
-	return true
 }

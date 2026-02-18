@@ -9,7 +9,7 @@ type TextInput struct {
 	cursor int
 }
 
-func (t *TextInput) Update(key vt.KeyEvent) (consumed bool) {
+func (t *TextInput) Update(key vt.KeyEvent) bool {
 	switch key.Key {
 	case vt.KeyEsc:
 		if t.cursor > 0 {

@@ -17,22 +17,21 @@ import (
 type App struct {
 	state model.State
 	ui    ui.ViewState
-	store *process.Store
 }
 
 func New() *App {
 	return &App{
 		state: model.State{
+			Store:     process.NewStore(),
 			SortBy:    model.SortByRecentCPU,
 			SortOrder: model.SortOrderDescending,
 		},
-		store: process.NewStore(),
-		ui:    ui.New(),
+		ui: ui.New(),
 	}
 }
 
 func (a *App) Init() mvu.Task {
-	return task.Refresh(a.store, time.Second)
+	return task.Refresh(a.state.Store, time.Second)
 }
 
 func (a *App) Update(e mvu.Event) mvu.Task {
@@ -41,10 +40,12 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		return a.TaskQuery()
 	case task.QueryResultEvent:
 		result := e.(task.QueryResultEvent)
-		if synced := a.state.Sync(result.Data); synced {
+		a.state.Sync(result.Data)
+
+		if !a.ui.Table.IsBusy {
 			a.ui.Table.SortBy = a.state.SortBy
 			a.ui.Table.SortOrder = a.state.SortOrder
-			a.ui.Table.Rows = a.state.Rows
+			a.ui.Table.Rows = a.state.Filtered
 		}
 		return a.TaskStopQuery()
 	case task.TickEvent:
@@ -72,11 +73,15 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 				a.ui.CurrentFocus = ui.FocusTable
 				return mvu.TaskNone
 			}
-			if consumed := a.ui.Search.Update(key); consumed {
+			if didUpdate := a.ui.Search.Update(key); didUpdate {
 				a.state.SearchTerm = a.ui.Search.String()
 				return a.TaskQuery()
 			}
 		case ui.FocusTable:
+			if key.IsKey(vt.KeyEsc) {
+				a.ui.Table.ResetBusy()
+				a.ui.CurrentFocus = ui.FocusSearch
+			}
 			if didUpdate := a.ui.Table.Update(key); didUpdate {
 				a.state.SortBy = a.ui.Table.SortBy
 				a.state.SortOrder = a.ui.Table.SortOrder
@@ -92,7 +97,7 @@ func (a *App) TaskQuery() mvu.Task {
 	a.ui.SetSearching(true)
 	return mvu.TaskN(
 		task.Tick(a.ui.Search.Spinner.ID, 80*time.Millisecond),
-		task.Query(a.store, a.state.CurrentQuery()),
+		task.Query(a.state.Store, a.state.CurrentQuery()),
 	)
 }
 

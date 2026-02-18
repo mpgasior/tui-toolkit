@@ -19,6 +19,7 @@ func New() ViewState {
 	return ViewState{
 		CurrentFocus: FocusSearch,
 		Search:       NewSearch(),
+		Table:        NewTable(),
 	}
 }
 
