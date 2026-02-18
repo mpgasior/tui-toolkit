@@ -40,16 +40,19 @@ func PrevSortBy(current model.SortBy) model.SortBy {
 }
 
 type Table struct {
-	Rows          []model.QueryResult
-	SortBy        model.SortBy
-	SortOrder     model.SortOrder
-	IsBusy        bool
-	SelectedIndex int
+	Rows      []model.QueryResult
+	SortBy    model.SortBy
+	SortOrder model.SortOrder
+	IsBusy    bool
+	Scroll    view.Scroll
 }
 
 func NewTable() Table {
 	return Table{
-		SelectedIndex: -1,
+		Scroll: view.Scroll{
+			Index:  -1,
+			Margin: 2,
+		},
 	}
 }
 
@@ -65,11 +68,30 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 		t.SortBy = NextSortBy(t.SortBy)
 		return true
 	case 'j':
-		t.SelectedIndex += 1
+		t.Scroll.Index += 1
 		t.IsBusy = true
 		return true
 	case 'k':
-		t.SelectedIndex -= 1
+		t.Scroll.Index -= 1
+		t.IsBusy = true
+		return true
+	case 'g':
+		t.Scroll.Index = 0
+		t.IsBusy = true
+		return true
+	case 'G':
+		t.Scroll.Index = len(t.Rows) - 1
+		t.IsBusy = true
+		return true
+	}
+
+	switch key.Key {
+	case vt.KeyCtrlU:
+		t.Scroll.Index -= 10
+		t.IsBusy = true
+		return true
+	case vt.KeyCtrlD:
+		t.Scroll.Index += 10
 		t.IsBusy = true
 		return true
 	}
@@ -79,7 +101,7 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 
 func (t *Table) ResetBusy() {
 	t.IsBusy = false
-	t.SelectedIndex = -1
+	t.Scroll.Index = -1
 }
 
 func (t *Table) Draw(vp view.Port, focused bool) {
@@ -139,21 +161,17 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 
 	_, h := vp.Size()
 
-	pageSize := h - 2
-	scrollGap := 10
-	start := 0
-	if t.SelectedIndex >= pageSize-scrollGap {
-		start = t.SelectedIndex + pageSize - 1
+	if len(t.Rows) == 0 {
+		return
 	}
 
+	start, end := t.Scroll.Update(h-2, len(t.Rows))
+	rows := t.Rows[start:end]
+
 	rowIdx := 1
-	for idx := start; idx < len(t.Rows); idx += 1 {
-		if rowIdx > pageSize {
-			break
-		}
-		row := t.Rows[idx]
+	for idx, row := range rows {
 		rowStyle := screen.DefaultStyle
-		if idx == t.SelectedIndex {
+		if idx+t.Scroll.Offset == t.Scroll.Index {
 			rowStyle = rowStyle.Fg(screen.ColorCyan)
 			draw.Text(cell("selected", rowIdx), draw.TextChunk{
 				Text:      "┃",
