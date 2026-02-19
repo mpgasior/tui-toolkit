@@ -38,6 +38,10 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 	switch e.(type) {
 	case task.DataRefreshedEvent:
 		return a.TaskQuery()
+	case task.QuerySingleResultEvent:
+		result := e.(task.QuerySingleResultEvent).Result
+		a.ui.Popup.Result = result
+		return mvu.TaskNone
 	case task.QueryResultEvent:
 		result := e.(task.QueryResultEvent)
 
@@ -99,6 +103,12 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 			if didUpdate := a.ui.Table.Update(key); didUpdate {
 				a.state.SortBy = a.ui.Table.SortBy
 				a.state.SortOrder = a.ui.Table.SortOrder
+				a.state.PID = a.ui.Table.PID
+
+				if a.state.PID != 0 {
+					a.ui.CurrentFocus = ui.FocusPopup
+					return task.QuerySingle(a.state.Store, a.state.PID)
+				}
 				return a.TaskQuery()
 			}
 		}
@@ -132,6 +142,9 @@ func (a *App) Render(ctx mvu.RenderContext) {
 
 	a.ui.Search.Draw(layout["search"], a.ui.CurrentFocus == ui.FocusSearch)
 	a.ui.Table.Draw(layout["table"], a.ui.CurrentFocus == ui.FocusTable)
+	if a.ui.IsFocused(ui.FocusPopup) {
+		a.ui.Popup.Draw(ctx.View.Offset(5, 10, 5, 10))
+	}
 
 	ui.DrawHelp(layout["help"], a.ui.CurrentFocus)
 }

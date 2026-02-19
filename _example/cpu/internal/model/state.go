@@ -9,6 +9,8 @@ import (
 type State struct {
 	Store *process.Store
 
+	PID uint32
+
 	IsPaused   bool
 	Filtered   []QueryResult
 	LastUpdate time.Time

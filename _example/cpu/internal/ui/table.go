@@ -25,6 +25,7 @@ type Table struct {
 	Rows      []model.QueryResult
 	SortBy    model.SortBy
 	SortOrder model.SortOrder
+	PID       uint32
 	IsPaused  bool
 	Scroll    view.Scroll
 }
@@ -51,6 +52,12 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 	}
 
 	switch key.Key {
+	case vt.KeyEnter:
+		count := len(t.Rows)
+		if count > 0 && t.Scroll.Index < count {
+			t.PID = t.Rows[t.Scroll.Index].PID
+			return true
+		}
 	case vt.KeyJ:
 		t.Scroll.Move(1)
 	case vt.KeyK:

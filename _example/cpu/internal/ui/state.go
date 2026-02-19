@@ -6,6 +6,7 @@ const (
 	FocusSearch Focus = iota
 	FocusTable
 	focusSentinel
+	FocusPopup
 )
 
 type ViewState struct {
@@ -13,6 +14,7 @@ type ViewState struct {
 	Search       Search
 	Searching    bool
 	Table        Table
+	Popup        Popup
 }
 
 func New() ViewState {
