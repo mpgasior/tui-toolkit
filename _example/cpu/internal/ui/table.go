@@ -218,7 +218,14 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 func (t *Table) drawFooter(focused bool, cell func(key string, row int) view.Port, h int, boxStyle screen.Style) {
 	text := "Total: " + strconv.FormatInt(int64(len(t.Rows)), 10)
 	if focused {
-		text = strconv.FormatInt(int64(t.Scroll.Index+1), 10) + " of " + strconv.FormatInt(int64(len(t.Rows)), 10)
+		scrollIndex := t.Scroll.Index + 1
+		if scrollIndex < 0 {
+			scrollIndex = 0
+		}
+		if scrollIndex > len(t.Rows) {
+			scrollIndex = len(t.Rows)
+		}
+		text = strconv.FormatInt(int64(scrollIndex), 10) + " of " + strconv.FormatInt(int64(len(t.Rows)), 10)
 	}
 
 	if t.IsPaused {
