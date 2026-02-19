@@ -133,5 +133,5 @@ func (a *App) Render(ctx mvu.RenderContext) {
 	a.ui.Search.Draw(layout["search"], a.ui.CurrentFocus == ui.FocusSearch)
 	a.ui.Table.Draw(layout["table"], a.ui.CurrentFocus == ui.FocusTable)
 
-	draw.Line(layout["help"], "Quit: ctrl+c | Focus: [Shift]Tab | Sort Order: s | Sort By: [h][l]", screen.DefaultStyle.Fg(screen.ColorBlue))
+	ui.DrawHelp(layout["help"], a.ui.CurrentFocus)
 }

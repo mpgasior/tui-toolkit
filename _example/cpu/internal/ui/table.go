@@ -241,7 +241,7 @@ func (t *Table) drawScroll(vp view.Port, style screen.Style) {
 
 	scrollBar := vp.Slice(w-1, 0, 1, h).Offset(1, 0, 1, 0)
 	for idx := 0; idx < thumbHeight; idx += 1 {
-		draw.Rune(scrollBar, 0, startPos+idx, '█', style)
+		draw.Rune(scrollBar, 0, startPos+idx, '▐', style)
 	}
 }
 
