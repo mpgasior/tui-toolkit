@@ -54,10 +54,12 @@ func (s *Store) GetAll() []Snapshot {
 	for _, profile := range s.profiles {
 		stats, computed := profile.History.Stats()
 		snapshot := Snapshot{
-			Info:      *profile.Info,
-			AvgCPU:    stats.AvgCPU,
-			RecentCPU: stats.RecentCPU,
-			IsReady:   computed,
+			Info:           *profile.Info,
+			AvgCPU:         stats.AvgCPU,
+			RecentCPU:      stats.RecentCPU,
+			IsReady:        computed,
+			WorkingSet:     stats.WorkingSet,
+			PeakWorkingSet: stats.PeakWorkingSet,
 		}
 
 		snapshots = append(snapshots, snapshot)

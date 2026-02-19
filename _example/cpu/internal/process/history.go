@@ -1,8 +1,10 @@
 package process
 
 type Stats struct {
-	RecentCPU float64
-	AvgCPU    float64
+	RecentCPU      float64
+	AvgCPU         float64
+	WorkingSet     uint64
+	PeakWorkingSet uint64
 }
 
 type History struct {
@@ -40,10 +42,28 @@ func (h *History) Stats() (stats Stats, ok bool) {
 		return stats, false
 	}
 	stats = Stats{
-		AvgCPU:    h.calculateAverage(),
-		RecentCPU: h.calculateRecent(),
+		AvgCPU:         h.calculateAverage(),
+		RecentCPU:      h.calculateRecent(),
+		WorkingSet:     h.getLastWorkingSet(),
+		PeakWorkingSet: h.getLastPeakWorkingSet(),
 	}
 	return stats, true
+}
+
+func (h *History) getLastWorkingSet() uint64 {
+	if h.Len() == 0 {
+		return 0
+	}
+
+	return h.Get(h.Len() - 1).WorkingSet
+}
+
+func (h *History) getLastPeakWorkingSet() uint64 {
+	if h.Len() == 0 {
+		return 0
+	}
+
+	return h.Get(h.Len() - 1).PeakWorkingSet
 }
 
 func (h *History) calculateAverage() float64 {

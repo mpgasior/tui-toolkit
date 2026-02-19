@@ -38,9 +38,11 @@ func Query(store *process.Store, query model.Query) mvu.Task {
 					Name: s.Info.Name,
 					Age:  age,
 
-					IsReady:   s.IsReady,
-					AvgCPU:    s.AvgCPU,
-					RecentCPU: s.RecentCPU,
+					IsReady:        s.IsReady,
+					AvgCPU:         s.AvgCPU,
+					RecentCPU:      s.RecentCPU,
+					WorkingSet:     s.WorkingSet,
+					PeakWorkingSet: s.PeakWorkingSet,
 				})
 			}
 

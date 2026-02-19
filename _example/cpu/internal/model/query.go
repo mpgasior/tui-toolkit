@@ -17,7 +17,8 @@ const (
 	SortByAvgCPU
 	SortByName
 	SortByAge
-	SortByRecentMemory
+	SortByWorkingSet
+	SortByPeakWorkingSet
 )
 
 type Query struct {
@@ -31,7 +32,9 @@ type QueryResult struct {
 	Name string
 	Age  time.Duration
 
-	IsReady   bool
-	AvgCPU    float64
-	RecentCPU float64
+	IsReady        bool
+	AvgCPU         float64
+	RecentCPU      float64
+	WorkingSet     uint64
+	PeakWorkingSet uint64
 }

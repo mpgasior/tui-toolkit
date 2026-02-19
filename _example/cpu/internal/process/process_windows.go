@@ -1,11 +1,47 @@
 package process
 
 import (
+	"syscall"
 	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
+
+type ProcessMemoryCounters struct {
+	CB                         uint32
+	PageFaultCount             uint32
+	PeakWorkingSetSize         uintptr
+	WorkingSetSize             uintptr
+	QuotaPeakPagedPoolUsage    uintptr
+	QuotaPagedPoolUsage        uintptr
+	QuotaPeakNonPagedPoolUsage uintptr
+	QuotaNonPagedPoolUsage     uintptr
+	PagefileUsage              uintptr
+	PeakPagefileUsage          uintptr
+}
+
+var (
+	psapi                = syscall.NewLazyDLL("psapi.dll")
+	getProcessMemoryInfo = psapi.NewProc("GetProcessMemoryInfo")
+)
+
+func getMemoryInfo(process windows.Handle) (ProcessMemoryCounters, error) {
+	var counters ProcessMemoryCounters
+	counters.CB = uint32(unsafe.Sizeof(counters))
+
+	ok, _, err := getProcessMemoryInfo.Call(
+		uintptr(process),
+		uintptr(unsafe.Pointer(&counters)),
+		uintptr(counters.CB),
+	)
+
+	if ok == 0 {
+		return counters, err
+	}
+
+	return counters, nil
+}
 
 func GetInfo(entry windows.ProcessEntry32) (Info, error) {
 	info := Info{
@@ -26,14 +62,22 @@ func GetInfo(entry windows.ProcessEntry32) (Info, error) {
 		return info, err
 	}
 
+	counters, err := getMemoryInfo(handle)
+	if err != nil {
+		return info, err
+	}
+
 	toDuration := func(ft windows.Filetime) time.Duration {
 		return time.Duration(uint64(ft.HighDateTime)<<32|uint64(ft.LowDateTime)) * 100
 	}
 
 	info.LastSample = &Sample{
-		KernelTime: toDuration(kernelTime),
-		UserTime:   toDuration(userTime),
-		SampleTime: time.Now().UTC(),
+		KernelTime:     toDuration(kernelTime),
+		UserTime:       toDuration(userTime),
+		SampleTime:     time.Now().UTC(),
+		WorkingSet:     uint64(counters.WorkingSetSize),
+		VirtualSize:    uint64(counters.PagefileUsage),
+		PeakWorkingSet: uint64(counters.PeakWorkingSetSize),
 	}
 
 	info.CreationTime = time.Unix(0, creationTime.Nanoseconds())

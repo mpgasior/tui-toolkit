@@ -16,6 +16,8 @@ var tableColumnOrder = []model.SortBy{
 	model.SortByPID,
 	model.SortByAvgCPU,
 	model.SortByRecentCPU,
+	model.SortByWorkingSet,
+	model.SortByPeakWorkingSet,
 	model.SortByAge,
 	model.SortByName,
 }
@@ -110,7 +112,9 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		view.Fixed("", 2),
 		view.Fixed("recent-cpu", 10),
 		view.Fixed("", 2),
-		view.Fixed("memory", 10),
+		view.Fixed("working-set", 10),
+		view.Fixed("", 2),
+		view.Fixed("peak-working-set", 10),
 		view.Fixed("", 2),
 		view.Fixed("age", 10),
 		view.Fixed("", 2),
@@ -148,6 +152,8 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 	drawHeader("name", "Name", model.SortByName)
 	drawHeader("avg-cpu", "CPU% (Avg 1m)", model.SortByAvgCPU)
 	drawHeader("recent-cpu", "CPU% (Now)", model.SortByRecentCPU)
+	drawHeader("working-set", "MEM (Now)", model.SortByWorkingSet)
+	drawHeader("peak-working-set", "MEM (Peak)", model.SortByPeakWorkingSet)
 	drawHeader("age", "Age", model.SortByAge)
 
 	_, h := vp.Size()
@@ -183,6 +189,16 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		draw.Text(cell("age", rowIdx), draw.TextChunk{
 			Text:  formatAge(row.Age),
 			Style: rowStyle,
+		})
+		draw.Text(cell("peak-working-set", rowIdx), draw.TextChunk{
+			Text:      workingSetString(row.PeakWorkingSet),
+			Style:     rowStyle,
+			Alignment: draw.TextAlignmentRight,
+		})
+		draw.Text(cell("working-set", rowIdx), draw.TextChunk{
+			Text:      workingSetString(row.WorkingSet),
+			Style:     rowStyle,
+			Alignment: draw.TextAlignmentRight,
 		})
 		draw.Text(cell("avg-cpu", rowIdx), draw.TextChunk{
 			Text:      fmt.Sprintf("%5.2f%%", row.AvgCPU),
@@ -228,4 +244,20 @@ func formatAge(d time.Duration) string {
 	}
 
 	return d.Round(time.Second).String()
+}
+
+func workingSetString(workingSet uint64) string {
+	b := float64(workingSet)
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", workingSet)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+
+	suffix := []string{"KB", "MB", "GB", "TB"}[exp]
+	return fmt.Sprintf("%.2f %s", b/float64(div), suffix)
 }

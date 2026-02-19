@@ -7,11 +7,13 @@ import (
 )
 
 var sorters = map[SortBy]func(a, b QueryResult) int{
-	SortByPID:       func(a, b QueryResult) int { return cmp.Compare(a.PID, b.PID) },
-	SortByName:      func(a, b QueryResult) int { return strings.Compare(a.Name, b.Name) },
-	SortByAge:       func(a, b QueryResult) int { return cmp.Compare(a.Age, b.Age) },
-	SortByAvgCPU:    func(a, b QueryResult) int { return cmp.Compare(a.AvgCPU, b.AvgCPU) },
-	SortByRecentCPU: func(a, b QueryResult) int { return cmp.Compare(a.RecentCPU, b.RecentCPU) },
+	SortByPID:            func(a, b QueryResult) int { return cmp.Compare(a.PID, b.PID) },
+	SortByName:           func(a, b QueryResult) int { return strings.Compare(a.Name, b.Name) },
+	SortByAge:            func(a, b QueryResult) int { return cmp.Compare(a.Age, b.Age) },
+	SortByAvgCPU:         func(a, b QueryResult) int { return cmp.Compare(a.AvgCPU, b.AvgCPU) },
+	SortByRecentCPU:      func(a, b QueryResult) int { return cmp.Compare(a.RecentCPU, b.RecentCPU) },
+	SortByWorkingSet:     func(a, b QueryResult) int { return cmp.Compare(a.WorkingSet, b.WorkingSet) },
+	SortByPeakWorkingSet: func(a, b QueryResult) int { return cmp.Compare(a.PeakWorkingSet, b.PeakWorkingSet) },
 }
 
 func SortResults(rows []QueryResult, sortBy SortBy, order SortOrder) {
