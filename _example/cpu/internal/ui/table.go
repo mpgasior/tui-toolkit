@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
 	"github.com/mpgasior/tui-toolkit/draw"
@@ -189,16 +188,16 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 			Style: rowStyle,
 		})
 		draw.Text(cell("age", rowIdx), draw.TextChunk{
-			Text:  formatAge(row.Age),
+			Text:  formatDuration(row.Age),
 			Style: rowStyle,
 		})
 		draw.Text(cell("peak-working-set", rowIdx), draw.TextChunk{
-			Text:      workingSetString(row.PeakWorkingSet),
+			Text:      formatWorkingSet(row.PeakWorkingSet),
 			Style:     rowStyle,
 			Alignment: draw.TextAlignmentRight,
 		})
 		draw.Text(cell("working-set", rowIdx), draw.TextChunk{
-			Text:      workingSetString(row.WorkingSet),
+			Text:      formatWorkingSet(row.WorkingSet),
 			Style:     rowStyle,
 			Alignment: draw.TextAlignmentRight,
 		})
@@ -248,14 +247,9 @@ func (t *Table) drawScroll(vp view.Port, style screen.Style) {
 func (t *Table) drawFooter(vp view.Port, focused bool, style screen.Style) {
 	text := "Total: " + strconv.FormatInt(int64(len(t.Rows)), 10)
 	if focused {
-		scrollIndex := t.Scroll.Index + 1
-		if scrollIndex < 0 {
-			scrollIndex = 0
-		}
-		if scrollIndex > len(t.Rows) {
-			scrollIndex = len(t.Rows)
-		}
-		text = strconv.FormatInt(int64(scrollIndex), 10) + " of " + strconv.FormatInt(int64(len(t.Rows)), 10)
+		index := strconv.FormatInt(int64(t.Scroll.Index+1), 10)
+		total := strconv.FormatInt(int64(len(t.Rows)), 10)
+		text = index + " of " + total
 	}
 
 	if t.IsPaused {
@@ -267,34 +261,4 @@ func (t *Table) drawFooter(vp view.Port, focused bool, style screen.Style) {
 		Style:     style,
 		Alignment: draw.TextAlignmentRight,
 	})
-}
-
-func formatAge(d time.Duration) string {
-	if d == 0 {
-		return "N/A"
-	}
-
-	if d.Hours() >= 24 {
-		days := int(d.Hours() / 24)
-		hours := int(d.Hours()) % 24
-		return fmt.Sprintf("%dd %dh", days, hours)
-	}
-
-	return d.Round(time.Second).String()
-}
-
-func workingSetString(workingSet uint64) string {
-	b := float64(workingSet)
-	const unit = 1024
-	if b < unit {
-		return fmt.Sprintf("%d B", workingSet)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-
-	suffix := []string{"KB", "MB", "GB", "TB"}[exp]
-	return fmt.Sprintf("%.2f %s", b/float64(div), suffix)
 }
