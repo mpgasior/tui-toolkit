@@ -98,12 +98,12 @@ func (t *Table) ResetBusy() {
 }
 
 func (t *Table) Draw(vp view.Port, focused bool) {
-	boxStyle := screen.DefaultStyle
+	activeStyle := screen.DefaultStyle
 	if focused {
-		boxStyle = boxStyle.Fg(screen.ColorGreen)
+		activeStyle = activeStyle.Fg(screen.ColorGreen)
 	}
-	draw.Box(vp, draw.BoxBorderThin, boxStyle)
-	draw.Clear(vp.Offset(0, 2, 1, 2), boxStyle)
+	draw.Box(vp, draw.BoxBorderThin, activeStyle)
+	draw.Clear(vp.Offset(0, 2, 1, 2), activeStyle)
 
 	layout := view.SplitV(vp,
 		view.Fixed("selected", 4),
@@ -157,13 +157,15 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 	drawHeader("age", "Age", model.SortByAge)
 
 	_, h := vp.Size()
-	t.drawFooter(focused, cell, h, boxStyle)
+	start, end := t.Scroll.Update(h-2, len(t.Rows))
+
+	t.drawFooter(cell("name", h-1), focused, activeStyle)
+	t.drawScroll(vp, activeStyle)
 
 	if t.Rows == nil {
 		return
 	}
 
-	start, end := t.Scroll.Update(h-2, len(t.Rows))
 	rows := t.Rows[start:end]
 
 	rowIdx := 1
@@ -215,7 +217,35 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 	}
 }
 
-func (t *Table) drawFooter(focused bool, cell func(key string, row int) view.Port, h int, boxStyle screen.Style) {
+func (t *Table) drawScroll(vp view.Port, style screen.Style) {
+	w, h := vp.Size()
+	totalRows := len(t.Rows)
+	if totalRows == 0 {
+		return
+	}
+
+	trackHeight := h - 2
+	if trackHeight <= 0 {
+		return
+	}
+
+	thumbHeight := int(float64(trackHeight) * float64(trackHeight) / float64(totalRows))
+	if thumbHeight == 0 {
+		thumbHeight = 1
+	}
+
+	maxOffset := totalRows - trackHeight
+	scrollRatio := float64(t.Scroll.Offset) / float64(maxOffset)
+
+	startPos := int(scrollRatio * float64(trackHeight-thumbHeight))
+
+	scrollBar := vp.Slice(w-1, 0, 1, h).Offset(1, 0, 1, 0)
+	for idx := 0; idx < thumbHeight; idx += 1 {
+		draw.Rune(scrollBar, 0, startPos+idx, '█', style)
+	}
+}
+
+func (t *Table) drawFooter(vp view.Port, focused bool, style screen.Style) {
 	text := "Total: " + strconv.FormatInt(int64(len(t.Rows)), 10)
 	if focused {
 		scrollIndex := t.Scroll.Index + 1
@@ -232,9 +262,9 @@ func (t *Table) drawFooter(focused bool, cell func(key string, row int) view.Por
 		text = "[Paused] " + text
 	}
 
-	draw.Text(cell("name", h-1).Offset(0, 2), draw.TextChunk{
+	draw.Text(vp.Offset(0, 2), draw.TextChunk{
 		Text:      text,
-		Style:     boxStyle,
+		Style:     style,
 		Alignment: draw.TextAlignmentRight,
 	})
 }
