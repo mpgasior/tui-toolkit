@@ -11,6 +11,7 @@ import (
 
 type QuerySingleResultEvent struct {
 	PID    uint32
+	Found  bool
 	Result model.QueryResult
 }
 
@@ -24,14 +25,26 @@ func QuerySingle(store *process.Store, pid uint32) mvu.Task {
 				if s.Info.PID == pid {
 					ev := QuerySingleResultEvent{
 						PID:    pid,
+						Found:  true,
 						Result: toQueryResult(s),
 					}
 					select {
 					case <-ctx.Done():
 						return
 					case ch <- ev:
+						return
 					}
 				}
+			}
+
+			ev := QuerySingleResultEvent{
+				PID:   pid,
+				Found: false,
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- ev:
 			}
 		},
 	}

@@ -106,6 +106,8 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 				a.state.SortOrder = a.ui.Table.SortOrder
 				if pid, ok := a.ui.Table.GetPID(); ok {
 					a.state.PID = pid
+					a.ui.Popup.PID = a.state.PID
+
 					a.ui.CurrentFocus = ui.FocusPopup
 					return task.QuerySingle(a.state.Store, a.state.PID)
 				}
