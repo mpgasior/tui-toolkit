@@ -15,26 +15,34 @@ func NewStore() *Store {
 	}
 }
 
-func (s *Store) Sync(snapshot []Info) {
+func (s *Store) Sync(updates []Update) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	seenPIDs := make(map[uint32]bool)
-	for _, info := range snapshot {
-		seenPIDs[info.PID] = true
+	for _, u := range updates {
+		seenPIDs[u.Info.PID] = true
 
-		existing, found := s.profiles[info.PID]
+		existing, found := s.profiles[u.Info.PID]
 
-		if !found || !existing.Info.CreationTime.Equal(info.CreationTime) {
-			s.profiles[info.PID] = &Profile{
-				Info:    &info,
+		if !found || !existing.CreationTime.Equal(u.CreationTime) {
+			existing = &Profile{
+				Info:    u.Info,
 				History: NewHistory(60),
 			}
+			s.profiles[u.Info.PID] = existing
 		}
 
-		if info.LastSample != nil {
-			s.profiles[info.PID].History.AddSample(*info.LastSample)
-			s.profiles[info.PID].Info.LastSample = info.LastSample
+		if !u.CreationTime.IsZero() {
+			existing.CreationTime = u.CreationTime
+		}
+
+		if !u.ExitTime.IsZero() {
+			existing.ExitTime = u.ExitTime
+		}
+
+		if u.Sample != nil {
+			existing.History.AddSample(*u.Sample)
 		}
 	}
 
@@ -43,6 +51,18 @@ func (s *Store) Sync(snapshot []Info) {
 			delete(s.profiles, pid)
 		}
 	}
+}
+
+func (s *Store) GetProfile(pid uint32) (Profile, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	p, ok := s.profiles[pid]
+	if !ok {
+		return Profile{}, false
+	}
+
+	return p.Clone(), true
 }
 
 func (s *Store) GetAll() []Snapshot {
@@ -54,10 +74,12 @@ func (s *Store) GetAll() []Snapshot {
 	for _, profile := range s.profiles {
 		stats, computed := profile.History.Stats()
 		snapshot := Snapshot{
-			Info:           *profile.Info,
+			Info:           profile.Info,
+			CreationTime:   profile.CreationTime,
+			ExitTime:       profile.ExitTime,
 			AvgCPU:         stats.AvgCPU,
 			RecentCPU:      stats.RecentCPU,
-			IsReady:        computed,
+			Computed:       computed,
 			WorkingSet:     stats.WorkingSet,
 			PeakWorkingSet: stats.PeakWorkingSet,
 		}

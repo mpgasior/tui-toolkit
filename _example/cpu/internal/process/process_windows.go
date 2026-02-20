@@ -43,54 +43,56 @@ func getMemoryInfo(process windows.Handle) (ProcessMemoryCounters, error) {
 	return counters, nil
 }
 
-func GetInfo(entry windows.ProcessEntry32) (Info, error) {
-	info := Info{
-		PID:       entry.ProcessID,
-		ParentPID: entry.ParentProcessID,
-		Name:      windows.UTF16ToString(entry.ExeFile[:]),
+func GetUpdate(entry windows.ProcessEntry32) (Update, error) {
+	update := Update{
+		Info: Info{
+			PID:       entry.ProcessID,
+			ParentPID: entry.ParentProcessID,
+			Name:      windows.UTF16ToString(entry.ExeFile[:]),
+		},
 	}
 
 	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.ProcessID)
 	if err != nil {
-		return info, err
+		return update, err
 	}
 	defer windows.CloseHandle(handle)
 
 	var creationTime, exitTime, kernelTime, userTime windows.Filetime
 
 	if err := windows.GetProcessTimes(handle, &creationTime, &exitTime, &kernelTime, &userTime); err != nil {
-		return info, err
+		return update, err
 	}
 
 	counters, err := getMemoryInfo(handle)
 	if err != nil {
-		return info, err
+		return update, err
 	}
 
 	toDuration := func(ft windows.Filetime) time.Duration {
 		return time.Duration(uint64(ft.HighDateTime)<<32|uint64(ft.LowDateTime)) * 100
 	}
 
-	info.LastSample = &Sample{
+	update.Sample = &Sample{
+		SampleTime:     time.Now().UTC(),
 		KernelTime:     toDuration(kernelTime),
 		UserTime:       toDuration(userTime),
-		SampleTime:     time.Now().UTC(),
 		WorkingSet:     uint64(counters.WorkingSetSize),
 		VirtualSize:    uint64(counters.PagefileUsage),
 		PeakWorkingSet: uint64(counters.PeakWorkingSetSize),
 	}
 
-	info.CreationTime = time.Unix(0, creationTime.Nanoseconds())
+	update.CreationTime = time.Unix(0, creationTime.Nanoseconds())
 	if exitTime.HighDateTime != 0 && exitTime.LowDateTime != 0 {
 		exit := time.Unix(0, exitTime.Nanoseconds())
-		info.ExitTime = exit
+		update.ExitTime = exit
 	}
 
-	return info, nil
+	return update, nil
 }
 
-func GetAll() ([]Info, error) {
-	var processList []Info
+func GetAll() ([]Update, error) {
+	var updates []Update
 
 	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
@@ -105,13 +107,13 @@ func GetAll() ([]Info, error) {
 	}
 
 	for {
-		info, _ := GetInfo(entry)
-		processList = append(processList, info)
+		update, _ := GetUpdate(entry)
+		updates = append(updates, update)
 
 		if err := windows.Process32Next(snapshot, &entry); err != nil {
 			break
 		}
 	}
 
-	return processList, nil
+	return updates, nil
 }

@@ -91,8 +91,8 @@ func Query(store *process.Store, query model.Query) mvu.Task {
 
 func toQueryResult(s process.Snapshot) model.QueryResult {
 	age := time.Duration(0)
-	if !s.Info.CreationTime.IsZero() {
-		age = time.Since(s.Info.CreationTime)
+	if !s.CreationTime.IsZero() {
+		age = time.Since(s.CreationTime)
 	}
 
 	return model.QueryResult{
@@ -100,7 +100,7 @@ func toQueryResult(s process.Snapshot) model.QueryResult {
 		Name: s.Info.Name,
 		Age:  age,
 
-		IsReady:        s.IsReady,
+		IsReady:        s.Computed,
 		AvgCPU:         s.AvgCPU,
 		RecentCPU:      s.RecentCPU,
 		WorkingSet:     s.WorkingSet,

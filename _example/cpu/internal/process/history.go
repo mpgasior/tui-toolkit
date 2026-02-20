@@ -12,10 +12,20 @@ type History struct {
 	maxSamples int
 }
 
-func NewHistory(maxSamples int) *History {
-	return &History{
+func NewHistory(maxSamples int) History {
+	return History{
 		samples:    make([]Sample, 0, maxSamples),
 		maxSamples: maxSamples,
+	}
+}
+
+func (h *History) Clone() History {
+	newSamples := make([]Sample, len(h.samples))
+	copy(newSamples, h.samples)
+
+	return History{
+		samples:    newSamples,
+		maxSamples: h.maxSamples,
 	}
 }
 
