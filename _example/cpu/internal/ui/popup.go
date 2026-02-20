@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -44,13 +45,13 @@ func (p *Popup) Draw(vp view.Port) {
 		draw.Line(fieldLayout["value"], value, screen.DefaultStyle)
 	}
 
-	setField("pid", "PID: ", strconv.FormatInt(int64(p.Result.PID), 10))
-	setField("name", "Name: ", p.Result.Name)
-	setField("age", "Age: ", p.Result.Age.String())
-	setField("avg-cpu", "CPU% (Avg 1m): ", formatPercentage(p.Result.AvgCPU))
-	setField("recent-cpu", "CPU% (Now): ", formatPercentage(p.Result.RecentCPU))
-	setField("peak-mem", "MEM (Peak): ", formatWorkingSet(p.Result.PeakWorkingSet))
-	setField("recent-mem", "MEM (Now): ", formatWorkingSet(p.Result.WorkingSet))
+	setField("pid", "PID ", strconv.FormatInt(int64(p.Result.PID), 10))
+	setField("name", "Name ", p.Result.Name)
+	setField("age", "Age ", p.Result.Age.String())
+	setField("avg-cpu", "CPU% (Avg 1m) ", fmt.Sprintf("%.2f%%", p.Result.AvgCPU))
+	setField("recent-cpu", "CPU% (Now) ", fmt.Sprintf("%.2f%%", p.Result.RecentCPU))
+	setField("peak-mem", "MEM (Peak) ", formatWorkingSet(p.Result.PeakWorkingSet))
+	setField("recent-mem", "MEM (Now) ", formatWorkingSet(p.Result.WorkingSet))
 
 	draw.Line(vp.Offset(0, 0, 0, 5), p.Result.Name, screen.DefaultStyle)
 
