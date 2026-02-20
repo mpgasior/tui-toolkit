@@ -37,7 +37,7 @@ func (p *Popup) Draw(vp view.Port) {
 		view.Fixed("help", 1),
 	)
 
-	detailsForm := view.SplitH(mainLayout["details"],
+	detailsForm := view.SplitH(mainLayout["details"].Offset(0, 0, 0, 1),
 		view.Fixed("pid", 1),
 		view.Fixed("name", 1),
 		view.Fixed("age", 1),
@@ -65,7 +65,7 @@ func (p *Popup) Draw(vp view.Port) {
 	setField("peak-mem", "MEM (Peak) ", formatWorkingSet(p.Result.PeakWorkingSet))
 	setField("recent-mem", "MEM (Now) ", formatWorkingSet(p.Result.WorkingSet))
 
-	draw.Line(vp.Offset(0, 0, 0, 5), p.Result.Name, screen.DefaultStyle)
+	//draw.Line(vp.Offset(0, 0, 0, 5), p.Result.Name, screen.DefaultStyle)
 
 	items := []string{"Kill: k", "Interrupt: i", "Cancel: Esc"}
 	text := strings.Join(items, " • ")
