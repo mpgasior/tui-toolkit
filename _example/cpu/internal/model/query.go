@@ -32,7 +32,7 @@ type QueryResult struct {
 	Name string
 	Age  time.Duration
 
-	IsReady        bool
+	Computed       bool
 	AvgCPU         float64
 	RecentCPU      float64
 	WorkingSet     uint64

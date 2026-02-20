@@ -12,39 +12,26 @@ import (
 type QuerySingleResultEvent struct {
 	PID    uint32
 	Found  bool
-	Result model.QueryResult
+	Result process.Profile
 }
 
 func QuerySingle(store *process.Store, pid uint32) mvu.Task {
 	return mvu.Task{
 		ID: "query-single",
 		Execute: func(ctx context.Context, ch chan<- mvu.Event) {
-			snapshot := store.GetAll()
-
-			for _, s := range snapshot {
-				if s.Info.PID == pid {
-					ev := QuerySingleResultEvent{
-						PID:    pid,
-						Found:  true,
-						Result: toQueryResult(s),
-					}
-					select {
-					case <-ctx.Done():
-						return
-					case ch <- ev:
-						return
-					}
-				}
-			}
+			profile, found := store.GetProfile(pid)
 
 			ev := QuerySingleResultEvent{
-				PID:   pid,
-				Found: false,
+				PID:    pid,
+				Found:  found,
+				Result: profile,
 			}
+
 			select {
 			case <-ctx.Done():
 				return
 			case ch <- ev:
+				return
 			}
 		},
 	}
@@ -100,7 +87,7 @@ func toQueryResult(s process.Snapshot) model.QueryResult {
 		Name: s.Info.Name,
 		Age:  age,
 
-		IsReady:        s.Computed,
+		Computed:       s.Computed,
 		AvgCPU:         s.AvgCPU,
 		RecentCPU:      s.RecentCPU,
 		WorkingSet:     s.WorkingSet,

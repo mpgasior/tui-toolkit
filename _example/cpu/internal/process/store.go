@@ -5,13 +5,15 @@ import (
 )
 
 type Store struct {
-	mu       sync.RWMutex
-	profiles map[uint32]*Profile
+	mu           sync.RWMutex
+	profiles     map[uint32]*Profile
+	historyLimit int
 }
 
-func NewStore() *Store {
+func NewStore(historyLimit int) *Store {
 	return &Store{
-		profiles: make(map[uint32]*Profile),
+		profiles:     make(map[uint32]*Profile),
+		historyLimit: historyLimit,
 	}
 }
 
@@ -28,7 +30,7 @@ func (s *Store) Sync(updates []Update) {
 		if !found || !existing.CreationTime.Equal(u.CreationTime) {
 			existing = &Profile{
 				Info:    u.Info,
-				History: NewHistory(60),
+				History: NewHistory(s.historyLimit),
 			}
 			s.profiles[u.Info.PID] = existing
 		}

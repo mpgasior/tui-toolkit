@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
+	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
 	"github.com/mpgasior/tui-toolkit/draw"
 	"github.com/mpgasior/tui-toolkit/screen"
 	"github.com/mpgasior/tui-toolkit/view"
@@ -14,7 +14,8 @@ import (
 type Popup struct {
 	PID    uint32
 	Loaded bool
-	Result model.QueryResult
+	//Result model.QueryResult
+	Result process.Profile
 }
 
 func (p *Popup) Reset() {
@@ -33,14 +34,14 @@ func (p *Popup) Draw(vp view.Port) {
 
 	mainLayout := view.SplitH(vp.Offset(1),
 		view.Fixed("details", 7),
-		view.Dynamic("dynamic", 1),
+		view.Dynamic("chart", 1),
 		view.Fixed("help", 1),
 	)
 
 	detailsForm := view.SplitH(mainLayout["details"].Offset(0, 0, 0, 1),
 		view.Fixed("pid", 1),
 		view.Fixed("name", 1),
-		view.Fixed("age", 1),
+		view.Fixed("creation-time", 1),
 		view.Fixed("avg-cpu", 1),
 		view.Fixed("recent-cpu", 1),
 		view.Fixed("peak-mem", 1),
@@ -49,7 +50,8 @@ func (p *Popup) Draw(vp view.Port) {
 
 	setField := func(key string, title string, value string) {
 		fieldLayout := view.SplitV(detailsForm[key],
-			view.Fixed("title", 15),
+			view.Fixed("title", 14),
+			view.Fixed("gap", 1),
 			view.Dynamic("value", 1),
 		)
 
@@ -57,15 +59,23 @@ func (p *Popup) Draw(vp view.Port) {
 		draw.Line(fieldLayout["value"], value, screen.DefaultStyle)
 	}
 
-	setField("pid", "PID ", strconv.FormatInt(int64(p.Result.PID), 10))
-	setField("name", "Name ", p.Result.Name)
-	setField("age", "Age ", p.Result.Age.String())
-	setField("avg-cpu", "CPU% (Avg 1m) ", fmt.Sprintf("%.2f%%", p.Result.AvgCPU))
-	setField("recent-cpu", "CPU% (Now) ", fmt.Sprintf("%.2f%%", p.Result.RecentCPU))
-	setField("peak-mem", "MEM (Peak) ", formatWorkingSet(p.Result.PeakWorkingSet))
-	setField("recent-mem", "MEM (Now) ", formatWorkingSet(p.Result.WorkingSet))
+	stats, _ := p.Result.History.Stats()
 
-	//draw.Line(vp.Offset(0, 0, 0, 5), p.Result.Name, screen.DefaultStyle)
+	setField("pid", "PID", strconv.FormatInt(int64(p.Result.Info.PID), 10))
+	setField("name", "Name", p.Result.Info.Name)
+	if !p.Result.CreationTime.IsZero() {
+		setField("creation-time", "Creation Time", p.Result.CreationTime.String())
+	}
+	setField("avg-cpu", "CPU% (Avg 1m)", fmt.Sprintf("%.2f%%", stats.AvgCPU))
+	setField("recent-cpu", "CPU% (Now)", fmt.Sprintf("%.2f%%", stats.RecentCPU))
+	setField("peak-mem", "MEM (Peak)", formatWorkingSet(stats.PeakWorkingSet))
+	setField("recent-mem", "MEM (Now)", formatWorkingSet(stats.WorkingSet))
+
+	for idx := range p.Result.History.Len() {
+		sample := p.Result.History.Get(idx)
+		v := strconv.FormatInt(int64(sample.WorkingSet), 10)
+		draw.Line(mainLayout["chart"].Offset(idx, 0, 0, 0), v, screen.DefaultStyle)
+	}
 
 	items := []string{"Kill: k", "Interrupt: i", "Cancel: Esc"}
 	text := strings.Join(items, " • ")

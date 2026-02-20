@@ -22,7 +22,7 @@ type App struct {
 func New() *App {
 	return &App{
 		state: model.State{
-			Store:     process.NewStore(),
+			Store:     process.NewStore(5),
 			SortBy:    model.SortByRecentCPU,
 			SortOrder: model.SortOrderDescending,
 		},

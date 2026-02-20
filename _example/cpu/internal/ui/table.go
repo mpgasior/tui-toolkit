@@ -205,30 +205,36 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 			Text:  row.Name,
 			Style: rowStyle,
 		})
-		draw.Text(cell("age", rowIdx), draw.TextChunk{
-			Text:  formatDuration(row.Age),
-			Style: rowStyle,
-		})
-		draw.Text(cell("peak-working-set", rowIdx), draw.TextChunk{
-			Text:      formatWorkingSet(row.PeakWorkingSet),
-			Style:     rowStyle,
-			Alignment: draw.TextAlignmentRight,
-		})
-		draw.Text(cell("working-set", rowIdx), draw.TextChunk{
-			Text:      formatWorkingSet(row.WorkingSet),
-			Style:     rowStyle,
-			Alignment: draw.TextAlignmentRight,
-		})
-		draw.Text(cell("avg-cpu", rowIdx), draw.TextChunk{
-			Text:      fmt.Sprintf("%.2f%%", row.AvgCPU),
-			Style:     rowStyle,
-			Alignment: draw.TextAlignmentRight,
-		})
-		draw.Text(cell("recent-cpu", rowIdx), draw.TextChunk{
-			Text:      fmt.Sprintf("%.2f%%", row.RecentCPU),
-			Style:     rowStyle,
-			Alignment: draw.TextAlignmentRight,
-		})
+
+		if row.Age != 0 {
+			draw.Text(cell("age", rowIdx), draw.TextChunk{
+				Text:  formatDuration(row.Age),
+				Style: rowStyle,
+			})
+		}
+
+		if row.Computed {
+			draw.Text(cell("peak-working-set", rowIdx), draw.TextChunk{
+				Text:      formatWorkingSet(row.PeakWorkingSet),
+				Style:     rowStyle,
+				Alignment: draw.TextAlignmentRight,
+			})
+			draw.Text(cell("working-set", rowIdx), draw.TextChunk{
+				Text:      formatWorkingSet(row.WorkingSet),
+				Style:     rowStyle,
+				Alignment: draw.TextAlignmentRight,
+			})
+			draw.Text(cell("avg-cpu", rowIdx), draw.TextChunk{
+				Text:      fmt.Sprintf("%.2f%%", row.AvgCPU),
+				Style:     rowStyle,
+				Alignment: draw.TextAlignmentRight,
+			})
+			draw.Text(cell("recent-cpu", rowIdx), draw.TextChunk{
+				Text:      fmt.Sprintf("%.2f%%", row.RecentCPU),
+				Style:     rowStyle,
+				Alignment: draw.TextAlignmentRight,
+			})
+		}
 
 		rowIdx += 1
 	}

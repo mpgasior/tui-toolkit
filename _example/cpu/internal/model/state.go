@@ -20,12 +20,6 @@ type State struct {
 	SortOrder  SortOrder
 }
 
-func NewState() *State {
-	return &State{
-		Store: process.NewStore(),
-	}
-}
-
 func (s *State) TogglePause() bool {
 	s.IsPaused = !s.IsPaused
 	return s.IsPaused
