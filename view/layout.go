@@ -128,6 +128,10 @@ func distribute(total int, weights ...int) []int {
 		sumWeights += w
 	}
 
+	if sumWeights == 0 {
+		return make([]int, len(weights))
+	}
+
 	allocations := make([]allocation, len(weights))
 	distributed := 0
 

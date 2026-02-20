@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
@@ -25,9 +24,12 @@ type Table struct {
 	Rows      []model.QueryResult
 	SortBy    model.SortBy
 	SortOrder model.SortOrder
-	PID       uint32
-	IsPaused  bool
-	Scroll    view.Scroll
+
+	PIDSelected bool
+	PID         uint32
+
+	IsPaused bool
+	Scroll   view.Scroll
 }
 
 func NewTable() Table {
@@ -56,6 +58,7 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 		count := len(t.Rows)
 		if count > 0 && t.Scroll.Index < count {
 			t.PID = t.Rows[t.Scroll.Index].PID
+			t.PIDSelected = true
 			return true
 		}
 	case vt.KeyJ:
@@ -73,6 +76,12 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 	}
 
 	return false
+}
+
+func (t *Table) GetPID() (pid uint32, ok bool) {
+	pid, ok = t.PID, t.PIDSelected
+	t.PIDSelected = false
+	return pid, ok
 }
 
 func (t *Table) NextSortOrder() {
@@ -98,7 +107,8 @@ func (t *Table) PrevSortBy() {
 	}
 }
 
-func (t *Table) ResetBusy() {
+func (t *Table) Reset() {
+	t.PIDSelected = false
 	t.IsPaused = false
 	t.Scroll.Jump(0)
 }
@@ -209,12 +219,12 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 			Alignment: draw.TextAlignmentRight,
 		})
 		draw.Text(cell("avg-cpu", rowIdx), draw.TextChunk{
-			Text:      fmt.Sprintf("%5.2f%%", row.AvgCPU),
+			Text:      formatPercentage(row.AvgCPU),
 			Style:     rowStyle,
 			Alignment: draw.TextAlignmentRight,
 		})
 		draw.Text(cell("recent-cpu", rowIdx), draw.TextChunk{
-			Text:      fmt.Sprintf("%5.2f%%", row.RecentCPU),
+			Text:      formatPercentage(row.RecentCPU),
 			Style:     rowStyle,
 			Alignment: draw.TextAlignmentRight,
 		})

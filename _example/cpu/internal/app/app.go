@@ -35,17 +35,17 @@ func (a *App) Init() mvu.Task {
 }
 
 func (a *App) Update(e mvu.Event) mvu.Task {
-	switch e.(type) {
+	switch event := e.(type) {
 	case task.DataRefreshedEvent:
+		if a.ui.IsFocused(ui.FocusPopup) {
+			return task.QuerySingle(a.state.Store, a.state.PID)
+		}
 		return a.TaskQuery()
 	case task.QuerySingleResultEvent:
-		result := e.(task.QuerySingleResultEvent).Result
-		a.ui.Popup.Result = result
+		a.ui.Popup.Result = event.Result
 		return mvu.TaskNone
 	case task.QueryResultEvent:
-		result := e.(task.QueryResultEvent)
-
-		a.state.Sync(result.Data)
+		a.state.Sync(event.Data)
 
 		a.ui.Table.SortBy = a.state.SortBy
 		a.ui.Table.SortOrder = a.state.SortOrder
@@ -97,18 +97,23 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 			}
 		case ui.FocusTable:
 			if key.IsKey(vt.KeyEsc) {
-				a.ui.Table.ResetBusy()
+				a.ui.Table.Reset()
 				a.ui.CurrentFocus = ui.FocusSearch
 			}
 			if didUpdate := a.ui.Table.Update(key); didUpdate {
 				a.state.SortBy = a.ui.Table.SortBy
 				a.state.SortOrder = a.ui.Table.SortOrder
-				a.state.PID = a.ui.Table.PID
-
-				if a.state.PID != 0 {
+				if pid, ok := a.ui.Table.GetPID(); ok {
+					a.state.PID = pid
 					a.ui.CurrentFocus = ui.FocusPopup
 					return task.QuerySingle(a.state.Store, a.state.PID)
 				}
+
+				return a.TaskQuery()
+			}
+		case ui.FocusPopup:
+			if key.IsKey(vt.KeyEsc) {
+				a.ui.CurrentFocus = ui.FocusTable
 				return a.TaskQuery()
 			}
 		}
