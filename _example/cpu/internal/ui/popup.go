@@ -12,12 +12,24 @@ import (
 )
 
 type Popup struct {
+	PID    uint32
+	Loaded bool
 	Result model.QueryResult
+}
+
+func (p *Popup) Reset() {
+	p.Loaded = false
 }
 
 func (p *Popup) Draw(vp view.Port) {
 	draw.Clear(vp, screen.DefaultStyle)
 	draw.Box(vp, draw.BoxBorderDouble, screen.DefaultStyle.Fg(screen.ColorGreen))
+
+	if !p.Loaded {
+		pid := strconv.FormatInt(int64(p.PID), 10)
+		draw.Line(vp.Offset(1), "Loading PID ("+pid+") ...", screen.DefaultStyle)
+		return
+	}
 
 	mainLayout := view.SplitH(vp.Offset(1),
 		view.Fixed("details", 7),

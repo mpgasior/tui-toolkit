@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
@@ -219,12 +220,12 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 			Alignment: draw.TextAlignmentRight,
 		})
 		draw.Text(cell("avg-cpu", rowIdx), draw.TextChunk{
-			Text:      formatPercentage(row.AvgCPU),
+			Text:      fmt.Sprintf("%.2f%%", row.AvgCPU),
 			Style:     rowStyle,
 			Alignment: draw.TextAlignmentRight,
 		})
 		draw.Text(cell("recent-cpu", rowIdx), draw.TextChunk{
-			Text:      formatPercentage(row.RecentCPU),
+			Text:      fmt.Sprintf("%.2f%%", row.RecentCPU),
 			Style:     rowStyle,
 			Alignment: draw.TextAlignmentRight,
 		})

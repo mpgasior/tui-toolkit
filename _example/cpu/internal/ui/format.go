@@ -5,10 +5,6 @@ import (
 	"time"
 )
 
-func formatPercentage(v float64) string {
-	return fmt.Sprintf("%5.2f%%", v)
-}
-
 func formatDuration(d time.Duration) string {
 	if d == 0 {
 		return "N/A"

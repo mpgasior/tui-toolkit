@@ -43,6 +43,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		return a.TaskQuery()
 	case task.QuerySingleResultEvent:
 		a.ui.Popup.Result = event.Result
+		a.ui.Popup.Loaded = true
 		return mvu.TaskNone
 	case task.QueryResultEvent:
 		a.state.Sync(event.Data)
@@ -114,6 +115,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		case ui.FocusPopup:
 			if key.IsKey(vt.KeyEsc) {
 				a.ui.CurrentFocus = ui.FocusTable
+				a.ui.Popup.Reset()
 				return a.TaskQuery()
 			}
 		}
