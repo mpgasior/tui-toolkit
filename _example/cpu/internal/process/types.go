@@ -32,7 +32,7 @@ type Update struct {
 }
 
 type Sample struct {
-	SampleTime time.Time
+	Timestamp time.Time
 
 	UserTime       time.Duration
 	KernelTime     time.Duration

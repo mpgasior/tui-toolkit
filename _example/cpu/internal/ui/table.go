@@ -22,7 +22,7 @@ var tableColumnOrder = []model.SortBy{
 }
 
 type Table struct {
-	Rows      []model.QueryResult
+	Rows      []model.ProcessSummary
 	SortBy    model.SortBy
 	SortOrder model.SortOrder
 

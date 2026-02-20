@@ -12,7 +12,7 @@ type State struct {
 	PID uint32
 
 	IsPaused   bool
-	Filtered   []QueryResult
+	Filtered   []ProcessSummary
 	LastUpdate time.Time
 
 	SearchTerm string
@@ -25,15 +25,15 @@ func (s *State) TogglePause() bool {
 	return s.IsPaused
 }
 
-func (s *State) CurrentQuery() Query {
-	return Query{
-		Term:      s.SearchTerm,
-		SortBy:    s.SortBy,
-		Direction: s.SortOrder,
+func (s *State) CurrentListQuery() ProcessListQuery {
+	return ProcessListQuery{
+		Term:  s.SearchTerm,
+		By:    s.SortBy,
+		Order: s.SortOrder,
 	}
 }
 
-func (s *State) Sync(results []QueryResult) {
+func (s *State) Sync(results []ProcessSummary) {
 	s.Filtered = results
 	s.LastUpdate = time.Now()
 }

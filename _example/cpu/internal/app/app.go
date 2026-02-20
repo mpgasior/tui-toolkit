@@ -45,7 +45,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		a.ui.Popup.Result = event.Result
 		a.ui.Popup.Loaded = true
 		return mvu.TaskNone
-	case task.QueryResultEvent:
+	case task.ProcessSummaryEvent:
 		a.state.Sync(event.Data)
 
 		a.ui.Table.SortBy = a.state.SortBy
@@ -130,7 +130,7 @@ func (a *App) TaskQuery() mvu.Task {
 	a.ui.SetSearching(true)
 	return mvu.TaskN(
 		task.Tick(a.ui.Search.Spinner.ID, 80*time.Millisecond),
-		task.Query(a.state.Store, a.state.CurrentQuery()),
+		task.QueryProcessList(a.state.Store, a.state.CurrentListQuery()),
 	)
 }
 

@@ -2,14 +2,14 @@ package model
 
 import "strings"
 
-func Filter(rows []QueryResult, term string) []QueryResult {
+func Filter(rows []ProcessSummary, term string) []ProcessSummary {
 	if term == "" {
 		return rows
 	}
 
 	term = strings.ToLower(term)
 
-	var filtered []QueryResult
+	var filtered []ProcessSummary
 	for _, row := range rows {
 		name := strings.ToLower(row.Name)
 		if strings.Contains(name, term) {

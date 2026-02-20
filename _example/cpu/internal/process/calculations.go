@@ -4,7 +4,7 @@ import "runtime"
 
 func CalculateCPU(first, last Sample) float64 {
 	deltaWork := (last.UserTime + last.KernelTime) - (first.UserTime + first.KernelTime)
-	deltaTime := last.SampleTime.Sub(first.SampleTime)
+	deltaTime := last.Timestamp.Sub(first.Timestamp)
 	if deltaTime <= 0 {
 		return 0
 	}

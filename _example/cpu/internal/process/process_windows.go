@@ -74,7 +74,7 @@ func GetUpdate(entry windows.ProcessEntry32) (Update, error) {
 	}
 
 	update.Sample = &Sample{
-		SampleTime:     time.Now().UTC(),
+		Timestamp:      time.Now().UTC(),
 		KernelTime:     toDuration(kernelTime),
 		UserTime:       toDuration(userTime),
 		WorkingSet:     uint64(counters.WorkingSetSize),

@@ -37,12 +37,12 @@ func QuerySingle(store *process.Store, pid uint32) mvu.Task {
 	}
 }
 
-type QueryResultEvent struct {
-	Query model.Query
-	Data  []model.QueryResult
+type ProcessSummaryEvent struct {
+	Query model.ProcessListQuery
+	Data  []model.ProcessSummary
 }
 
-func Query(store *process.Store, query model.Query) mvu.Task {
+func QueryProcessList(store *process.Store, query model.ProcessListQuery) mvu.Task {
 	return mvu.Task{
 		ID: "query",
 		Execute: func(ctx context.Context, ch chan<- mvu.Event) {
@@ -53,16 +53,16 @@ func Query(store *process.Store, query model.Query) mvu.Task {
 			}
 
 			snapshot := store.GetAll()
-			results := make([]model.QueryResult, 0, len(snapshot))
+			results := make([]model.ProcessSummary, 0, len(snapshot))
 
 			for _, s := range snapshot {
-				results = append(results, toQueryResult(s))
+				results = append(results, toProcessSummary(s))
 			}
 
 			results = model.Filter(results, query.Term)
-			model.SortResults(results, query.SortBy, query.Direction)
+			model.SortResults(results, query.By, query.Order)
 
-			e := QueryResultEvent{
+			e := ProcessSummaryEvent{
 				Query: query,
 				Data:  results,
 			}
@@ -76,13 +76,13 @@ func Query(store *process.Store, query model.Query) mvu.Task {
 	}
 }
 
-func toQueryResult(s process.Snapshot) model.QueryResult {
+func toProcessSummary(s process.Snapshot) model.ProcessSummary {
 	age := time.Duration(0)
 	if !s.CreationTime.IsZero() {
 		age = time.Since(s.CreationTime)
 	}
 
-	return model.QueryResult{
+	return model.ProcessSummary{
 		PID:  s.Info.PID,
 		Name: s.Info.Name,
 		Age:  age,

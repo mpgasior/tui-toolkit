@@ -21,13 +21,13 @@ const (
 	SortByPeakWorkingSet
 )
 
-type Query struct {
-	Term      string
-	SortBy    SortBy
-	Direction SortOrder
+type ProcessListQuery struct {
+	Term  string
+	By    SortBy
+	Order SortOrder
 }
 
-type QueryResult struct {
+type ProcessSummary struct {
 	PID  uint32
 	Name string
 	Age  time.Duration
