@@ -28,7 +28,7 @@ func (p *Popup) Update(data model.ProcessHistory) {
 	p.data = data
 }
 
-func (p *Popup) Reset() {
+func (p *Popup) Close() {
 	p.Key = process.KeyNone
 	p.Loaded = false
 }

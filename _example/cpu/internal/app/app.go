@@ -46,9 +46,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		a.ui.Popup.Update(event.Data)
 		return mvu.TaskNone
 	case task.ListReadyEvent:
-		a.ui.Table.Rows = event.Data
-		a.ui.Table.SortBy = event.Query.By
-		a.ui.Table.SortOrder = event.Query.Order
+		a.ui.UpdateTable(event.Data, event.Query)
 		return a.TaskStopQuery()
 	case task.TickEvent:
 		a.ui.Search.Spinner.Next()
@@ -110,7 +108,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		case ui.FocusPopup:
 			if key.IsKey(vt.KeyEsc) {
 				a.ui.CurrentFocus = ui.FocusTable
-				a.ui.Popup.Reset()
+				a.ui.Popup.Close()
 				return a.TaskQuery()
 			}
 		}
