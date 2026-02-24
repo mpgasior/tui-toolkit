@@ -33,7 +33,7 @@ func (p *Popup) Draw(vp view.Port) {
 	}
 
 	mainLayout := view.SplitH(vp.Offset(1),
-		view.Fixed("details", 7),
+		view.Fixed("details", 8),
 		view.Dynamic("chart", 1),
 		view.Fixed("help", 1),
 	)
