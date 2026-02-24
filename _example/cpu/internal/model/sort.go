@@ -45,7 +45,9 @@ func SortResults(rows []Process, sortBy SortBy, order SortOrder) {
 		return
 	}
 
-	slices.SortFunc(rows, func(a Process, b Process) int {
+	slices.SortFunc(rows, sorters[SortByPID])
+
+	slices.SortStableFunc(rows, func(a Process, b Process) int {
 		result := fn(a, b)
 
 		if order == SortOrderDescending {

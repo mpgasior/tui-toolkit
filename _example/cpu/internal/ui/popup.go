@@ -90,11 +90,10 @@ func (p *Popup) Draw(vp view.Port) {
 		setField("recent-mem", "MEM (Now)", formatWorkingSet(p.data.LatestMem))
 	}
 
-	//for idx := range p.Data.History.Len() {
-	//	sample := p.Data.History.Get(idx)
-	//	v := strconv.FormatInt(int64(sample.WorkingSet), 10)
-	//	draw.Line(mainLayout["chart"].Offset(idx, 0, 0, 0), v, screen.DefaultStyle)
-	//}
+	for idx, cpu := range p.data.CPU {
+		v := fmt.Sprintf("%.2f%%", cpu)
+		draw.Line(mainLayout["chart"].Offset(idx, 0, 0, 0), v, screen.DefaultStyle)
+	}
 
 	items := []string{"Kill: k", "Interrupt: i", "Cancel: Esc"}
 	text := strings.Join(items, " • ")
