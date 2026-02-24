@@ -42,6 +42,7 @@ func (p *Popup) Draw(vp view.Port) {
 		view.Fixed("pid", 1),
 		view.Fixed("name", 1),
 		view.Fixed("creation-time", 1),
+		view.Fixed("exit-time", 1),
 		view.Fixed("avg-cpu", 1),
 		view.Fixed("recent-cpu", 1),
 		view.Fixed("peak-mem", 1),
@@ -63,6 +64,11 @@ func (p *Popup) Draw(vp view.Port) {
 	setField("name", "Name", p.Data.Name)
 	if !p.Data.CreationTime.IsZero() {
 		setField("creation-time", "Creation Time", p.Data.CreationTime.String())
+	}
+	if !p.Data.ExitTime.IsZero() {
+		setField("exit-time", "Exit Time", p.Data.ExitTime.String())
+	} else {
+		setField("exit-time", "Exit Time", "")
 	}
 	if p.Data.CPUReady {
 		setField("avg-cpu", "CPU% (Avg 1m)", fmt.Sprintf("%.2f%%", p.Data.AvgCPU))

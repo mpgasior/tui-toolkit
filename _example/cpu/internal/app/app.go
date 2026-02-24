@@ -107,6 +107,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 				a.state.SortOrder = a.ui.Table.SortOrder
 				if a.ui.Table.Selected != process.KeyNone {
 					a.state.SelectedKey = a.ui.Table.Selected
+					a.ui.Table.Selected = process.KeyNone
 					a.ui.Popup.Key = a.state.SelectedKey
 
 					a.ui.CurrentFocus = ui.FocusPopup

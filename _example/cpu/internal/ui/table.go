@@ -101,7 +101,7 @@ func (t *Table) PrevSortBy() {
 }
 
 func (t *Table) Reset() {
-	//t.Selected = process.Key""
+	t.Selected = process.KeyNone
 	t.Scroll.Jump(0)
 }
 
