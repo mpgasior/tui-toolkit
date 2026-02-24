@@ -49,22 +49,21 @@ func getBootTime() time.Time {
 	return time.Unix(0, 0)
 }
 
-func GetUpdate(pid int) (Update, error) {
+func GetSample(pid int) (Sample, error) {
 	path := fmt.Sprintf("/proc/%d/status", pid)
 	file, err := os.Open(path)
 	if err != nil {
-		return Update{}, err
+		var zero Sample
+		return zero, err
 	}
 	defer file.Close()
 
 	var (
 		name      string
-		ppid      uint32
 		utime     int64
 		stime     int64
 		starttime int64
 		currRSS   uint64
-		peakRSS   uint64
 	)
 
 	scanner := bufio.NewScanner(file)
@@ -81,13 +80,8 @@ func GetUpdate(pid int) (Update, error) {
 		switch key {
 		case "Name":
 			name = val
-		case "PPid":
-			p, _ := strconv.Atoi(val)
-			ppid = uint32(p)
 		case "VmRSS":
 			currRSS = parseStatusValue(val)
-		case "VmHWM":
-			peakRSS = parseStatusValue(val)
 		}
 	}
 
@@ -106,25 +100,19 @@ func GetUpdate(pid int) (Update, error) {
 	bootTime := getBootTime()
 	creationTime := bootTime.Add(time.Duration(starttime) * tickDuration)
 
-	return Update{
-		Info: Info{
-			PID:       uint32(pid),
-			ParentPID: ppid,
-			Name:      name,
-		},
-		CreationTime: creationTime.UTC(),
-		Sample: &Sample{
-			Timestamp:      time.Now().UTC(),
-			UserTime:       time.Duration(utime) * tickDuration,
-			KernelTime:     time.Duration(stime) * tickDuration,
-			WorkingSet:     currRSS,
-			PeakWorkingSet: peakRSS,
-		},
+	return Sample{
+		PID:             uint32(pid),
+		Name:            name,
+		CreationTime:    creationTime.UTC(),
+		Timestamp:       time.Now().UTC(),
+		UserTotalTime:   time.Duration(utime) * tickDuration,
+		KernelTotalTime: time.Duration(stime) * tickDuration,
+		MemoryRSS:       currRSS,
 	}, nil
 }
 
-func GetAll() ([]Update, error) {
-	var updates []Update
+func GetAll() ([]Sample, error) {
+	var samples []Sample
 	files, err := os.ReadDir("/proc")
 	if err != nil {
 		return nil, err
@@ -132,10 +120,10 @@ func GetAll() ([]Update, error) {
 
 	for _, file := range files {
 		if pid, err := strconv.Atoi(file.Name()); err == nil {
-			if update, err := GetUpdate(pid); err == nil {
-				updates = append(updates, update)
+			if s, err := GetSample(pid); err == nil {
+				samples = append(samples, s)
 			}
 		}
 	}
-	return updates, nil
+	return samples, nil
 }

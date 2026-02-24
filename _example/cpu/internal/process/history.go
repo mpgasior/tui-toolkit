@@ -45,10 +45,10 @@ func NewHistory(size int) *History {
 }
 
 func (h *History) Push(s Sample) {
-	h.Mem.Push(s.MemoryRRS)
-	h.Summary.LatestMem = s.MemoryRRS
-	if s.MemoryRRS > h.Summary.MaxMem {
-		h.Summary.MaxMem = s.MemoryRRS
+	h.Mem.Push(s.MemoryRSS)
+	h.Summary.LatestMem = s.MemoryRSS
+	if s.MemoryRSS > h.Summary.MaxMem {
+		h.Summary.MaxMem = s.MemoryRSS
 	}
 
 	if h.lastTimestamp.IsZero() {

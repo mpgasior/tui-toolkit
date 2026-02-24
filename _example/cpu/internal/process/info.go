@@ -34,7 +34,7 @@ type Sample struct {
 	CreationTime    time.Time
 	UserTotalTime   time.Duration
 	KernelTotalTime time.Duration
-	MemoryRRS       uint64
+	MemoryRSS       uint64
 
 	Timestamp    time.Time
 	IsRestricted bool
