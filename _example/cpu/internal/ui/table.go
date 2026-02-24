@@ -197,9 +197,14 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 			Style: rowStyle,
 		})
 
-		if row.Age != 0 {
+		if row.AgeReady {
+			text := formatDuration(row.Age)
+			if !row.ExitTime.IsZero() {
+				text = "dead"
+			}
+
 			draw.Text(cell("age", rowIdx), draw.TextChunk{
-				Text:  formatDuration(row.Age),
+				Text:  text,
 				Style: rowStyle,
 			})
 		}

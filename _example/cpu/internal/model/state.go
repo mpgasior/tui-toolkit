@@ -8,7 +8,6 @@ type State struct {
 	Registry *process.Registry
 
 	IsPaused bool
-	Snapshot []Process
 
 	SearchTerm string
 	SortBy     SortBy

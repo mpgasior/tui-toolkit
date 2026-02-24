@@ -46,11 +46,11 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		//	a.ui.Popup.Loaded = true
 		//	return mvu.TaskNone
 	case task.ListReadyEvent:
-		a.state.Snapshot = event.Data
+		//a.state.Snapshot = event.Data
 		a.state.SortBy = event.Query.By
 		a.state.SortOrder = event.Query.Order
 
-		a.ui.Table.Rows = a.state.Snapshot
+		a.ui.Table.Rows = event.Data
 		a.ui.Table.SortBy = a.state.SortBy
 		a.ui.Table.SortOrder = a.state.SortOrder
 
