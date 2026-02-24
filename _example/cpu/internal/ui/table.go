@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
+	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
 	"github.com/mpgasior/tui-toolkit/draw"
 	"github.com/mpgasior/tui-toolkit/screen"
 	"github.com/mpgasior/tui-toolkit/view"
@@ -14,22 +15,20 @@ import (
 var tableColumnOrder = []model.SortBy{
 	model.SortByPID,
 	model.SortByAvgCPU,
-	model.SortByRecentCPU,
-	model.SortByWorkingSet,
-	model.SortByPeakWorkingSet,
+	model.SortByCPU,
+	model.SortByMem,
+	model.SortByMaxMem,
 	model.SortByAge,
 	model.SortByName,
 }
 
 type Table struct {
-	Rows      []model.ProcessSummary
+	Rows      []model.Process
 	SortBy    model.SortBy
 	SortOrder model.SortOrder
 
-	PIDSelected bool
-	PID         uint32
-
 	IsPaused bool
+	Selected process.Key
 	Scroll   view.Scroll
 }
 
@@ -58,8 +57,7 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 	case vt.KeyEnter:
 		count := len(t.Rows)
 		if count > 0 && t.Scroll.Index < count {
-			t.PID = t.Rows[t.Scroll.Index].PID
-			t.PIDSelected = true
+			t.Selected = t.Rows[t.Scroll.Index].Key
 			return true
 		}
 	case vt.KeyJ:
@@ -77,12 +75,6 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 	}
 
 	return false
-}
-
-func (t *Table) GetPID() (pid uint32, ok bool) {
-	pid, ok = t.PID, t.PIDSelected
-	t.PIDSelected = false
-	return pid, ok
 }
 
 func (t *Table) NextSortOrder() {
@@ -109,8 +101,7 @@ func (t *Table) PrevSortBy() {
 }
 
 func (t *Table) Reset() {
-	t.PIDSelected = false
-	t.IsPaused = false
+	//t.Selected = process.Key""
 	t.Scroll.Jump(0)
 }
 
@@ -168,9 +159,9 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 	drawHeader("pid", "PID", model.SortByPID)
 	drawHeader("name", "Name", model.SortByName)
 	drawHeader("avg-cpu", "CPU% (Avg 1m)", model.SortByAvgCPU)
-	drawHeader("recent-cpu", "CPU% (Now)", model.SortByRecentCPU)
-	drawHeader("working-set", "MEM (Now)", model.SortByWorkingSet)
-	drawHeader("peak-working-set", "MEM (Peak)", model.SortByPeakWorkingSet)
+	drawHeader("recent-cpu", "CPU% (Now)", model.SortByCPU)
+	drawHeader("working-set", "MEM (Now)", model.SortByMem)
+	drawHeader("peak-working-set", "MEM (Peak)", model.SortByMaxMem)
 	drawHeader("age", "Age", model.SortByAge)
 
 	_, h := vp.Size()
@@ -213,24 +204,27 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 			})
 		}
 
-		if row.Computed {
+		if row.MemReady {
 			draw.Text(cell("peak-working-set", rowIdx), draw.TextChunk{
-				Text:      formatWorkingSet(row.PeakWorkingSet),
+				Text:      formatWorkingSet(row.MemoryMax),
 				Style:     rowStyle,
 				Alignment: draw.TextAlignmentRight,
 			})
 			draw.Text(cell("working-set", rowIdx), draw.TextChunk{
-				Text:      formatWorkingSet(row.WorkingSet),
+				Text:      formatWorkingSet(row.MemoryRSS),
 				Style:     rowStyle,
 				Alignment: draw.TextAlignmentRight,
 			})
+		}
+
+		if row.CPUReady {
 			draw.Text(cell("avg-cpu", rowIdx), draw.TextChunk{
-				Text:      fmt.Sprintf("%.2f%%", row.AvgCPU),
+				Text:      fmt.Sprintf("%.2f%%", row.CPUAvg),
 				Style:     rowStyle,
 				Alignment: draw.TextAlignmentRight,
 			})
 			draw.Text(cell("recent-cpu", rowIdx), draw.TextChunk{
-				Text:      fmt.Sprintf("%.2f%%", row.RecentCPU),
+				Text:      fmt.Sprintf("%.2f%%", row.CPU),
 				Style:     rowStyle,
 				Alignment: draw.TextAlignmentRight,
 			})

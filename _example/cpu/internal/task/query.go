@@ -9,40 +9,12 @@ import (
 	"github.com/mpgasior/tui-toolkit/mvu"
 )
 
-type QuerySingleResultEvent struct {
-	PID    uint32
-	Found  bool
-	Result process.Profile
-}
-
-func QuerySingle(store *process.Store, pid uint32) mvu.Task {
-	return mvu.Task{
-		ID: "query-single",
-		Execute: func(ctx context.Context, ch chan<- mvu.Event) {
-			profile, found := store.GetProfile(pid)
-
-			ev := QuerySingleResultEvent{
-				PID:    pid,
-				Found:  found,
-				Result: profile,
-			}
-
-			select {
-			case <-ctx.Done():
-				return
-			case ch <- ev:
-				return
-			}
-		},
-	}
-}
-
-type ProcessSummaryEvent struct {
+type ListReadyEvent struct {
 	Query model.ProcessListQuery
-	Data  []model.ProcessSummary
+	Data  []model.Process
 }
 
-func QueryProcessList(store *process.Store, query model.ProcessListQuery) mvu.Task {
+func RebuildSnapshot(registry *process.Registry, query model.ProcessListQuery) mvu.Task {
 	return mvu.Task{
 		ID: "query",
 		Execute: func(ctx context.Context, ch chan<- mvu.Event) {
@@ -52,17 +24,17 @@ func QueryProcessList(store *process.Store, query model.ProcessListQuery) mvu.Ta
 			case <-time.After(80 * time.Millisecond):
 			}
 
-			snapshot := store.GetAll()
-			results := make([]model.ProcessSummary, 0, len(snapshot))
+			snapshot := registry.GetSnapshot()
+			results := make([]model.Process, 0, len(snapshot))
 
 			for _, s := range snapshot {
-				results = append(results, toProcessSummary(s))
+				results = append(results, toProcess(s))
 			}
 
 			results = model.Filter(results, query.Term)
 			model.SortResults(results, query.By, query.Order)
 
-			e := ProcessSummaryEvent{
+			e := ListReadyEvent{
 				Query: query,
 				Data:  results,
 			}
@@ -76,21 +48,17 @@ func QueryProcessList(store *process.Store, query model.ProcessListQuery) mvu.Ta
 	}
 }
 
-func toProcessSummary(s process.Snapshot) model.ProcessSummary {
+func toProcess(s process.Snapshot) model.Process {
+	ageReady := false
 	age := time.Duration(0)
 	if !s.CreationTime.IsZero() {
+		ageReady = true
 		age = time.Since(s.CreationTime)
 	}
 
-	return model.ProcessSummary{
-		PID:  s.Info.PID,
-		Name: s.Info.Name,
-		Age:  age,
-
-		Computed:       s.Computed,
-		AvgCPU:         s.AvgCPU,
-		RecentCPU:      s.RecentCPU,
-		WorkingSet:     s.WorkingSet,
-		PeakWorkingSet: s.PeakWorkingSet,
+	return model.Process{
+		Snapshot: s,
+		Age:      age,
+		AgeReady: ageReady,
 	}
 }

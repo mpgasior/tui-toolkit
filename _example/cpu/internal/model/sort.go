@@ -6,23 +6,23 @@ import (
 	"strings"
 )
 
-var sorters = map[SortBy]func(a, b ProcessSummary) int{
-	SortByPID:            func(a, b ProcessSummary) int { return cmp.Compare(a.PID, b.PID) },
-	SortByName:           func(a, b ProcessSummary) int { return strings.Compare(a.Name, b.Name) },
-	SortByAge:            func(a, b ProcessSummary) int { return cmp.Compare(a.Age, b.Age) },
-	SortByAvgCPU:         func(a, b ProcessSummary) int { return cmp.Compare(a.AvgCPU, b.AvgCPU) },
-	SortByRecentCPU:      func(a, b ProcessSummary) int { return cmp.Compare(a.RecentCPU, b.RecentCPU) },
-	SortByWorkingSet:     func(a, b ProcessSummary) int { return cmp.Compare(a.WorkingSet, b.WorkingSet) },
-	SortByPeakWorkingSet: func(a, b ProcessSummary) int { return cmp.Compare(a.PeakWorkingSet, b.PeakWorkingSet) },
+var sorters = map[SortBy]func(a, b Process) int{
+	SortByPID:    func(a, b Process) int { return cmp.Compare(a.PID, b.PID) },
+	SortByName:   func(a, b Process) int { return strings.Compare(a.Name, b.Name) },
+	SortByAge:    func(a, b Process) int { return cmp.Compare(a.Age, b.Age) },
+	SortByAvgCPU: func(a, b Process) int { return cmp.Compare(a.CPUAvg, b.CPUAvg) },
+	SortByCPU:    func(a, b Process) int { return cmp.Compare(a.CPU, b.CPU) },
+	SortByMem:    func(a, b Process) int { return cmp.Compare(a.MemoryRSS, b.MemoryRSS) },
+	SortByMaxMem: func(a, b Process) int { return cmp.Compare(a.MemoryMax, b.MemoryMax) },
 }
 
-func SortResults(rows []ProcessSummary, sortBy SortBy, order SortOrder) {
+func SortResults(rows []Process, sortBy SortBy, order SortOrder) {
 	fn, ok := sorters[sortBy]
 	if !ok {
 		return
 	}
 
-	slices.SortFunc(rows, func(a ProcessSummary, b ProcessSummary) int {
+	slices.SortFunc(rows, func(a Process, b Process) int {
 		result := fn(a, b)
 
 		if order == SortOrderDescending {

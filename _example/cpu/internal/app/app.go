@@ -22,8 +22,8 @@ type App struct {
 func New() *App {
 	return &App{
 		state: model.State{
-			Store:     process.NewStore(60),
-			SortBy:    model.SortByRecentCPU,
+			Registry:  process.NewRegistry(60),
+			SortBy:    model.SortByCPU,
 			SortOrder: model.SortOrderDescending,
 		},
 		ui: ui.New(),
@@ -31,26 +31,28 @@ func New() *App {
 }
 
 func (a *App) Init() mvu.Task {
-	return task.Refresh(a.state.Store, time.Second)
+	return task.Refresh(a.state.Registry, time.Second)
 }
 
 func (a *App) Update(e mvu.Event) mvu.Task {
 	switch event := e.(type) {
-	case task.DataRefreshedEvent:
-		if a.ui.IsFocused(ui.FocusPopup) {
-			return task.QuerySingle(a.state.Store, a.state.PID)
-		}
+	case task.RegistryRefreshedEvent:
+		//if a.ui.IsFocused(ui.FocusPopup) {
+		//	return task.QuerySingle(a.state.Store, a.state.PID)
+		//}
 		return a.TaskQuery()
-	case task.QuerySingleResultEvent:
-		a.ui.Popup.Result = event.Result
-		a.ui.Popup.Loaded = true
-		return mvu.TaskNone
-	case task.ProcessSummaryEvent:
-		a.state.Sync(event.Data)
+		//case task.QuerySingleResultEvent:
+		//	a.ui.Popup.Result = event.Result
+		//	a.ui.Popup.Loaded = true
+		//	return mvu.TaskNone
+	case task.ListReadyEvent:
+		a.state.Snapshot = event.Data
+		a.state.SortBy = event.Query.By
+		a.state.SortOrder = event.Query.Order
 
+		a.ui.Table.Rows = a.state.Snapshot
 		a.ui.Table.SortBy = a.state.SortBy
 		a.ui.Table.SortOrder = a.state.SortOrder
-		a.ui.Table.Rows = a.state.Filtered
 
 		return a.TaskStopQuery()
 	case task.TickEvent:
@@ -83,7 +85,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 			if isPaused {
 				return task.CancelRefresh()
 			}
-			return task.Refresh(a.state.Store, time.Second)
+			return task.Refresh(a.state.Registry, time.Second)
 		}
 
 		switch a.ui.CurrentFocus {
@@ -104,13 +106,13 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 			if didUpdate := a.ui.Table.Update(key); didUpdate {
 				a.state.SortBy = a.ui.Table.SortBy
 				a.state.SortOrder = a.ui.Table.SortOrder
-				if pid, ok := a.ui.Table.GetPID(); ok {
-					a.state.PID = pid
-					a.ui.Popup.PID = a.state.PID
+				//if pid, ok := a.ui.Table.GetPID(); ok {
+				//	a.state.PID = pid
+				//	a.ui.Popup.PID = a.state.PID
 
-					a.ui.CurrentFocus = ui.FocusPopup
-					return task.QuerySingle(a.state.Store, a.state.PID)
-				}
+				//	a.ui.CurrentFocus = ui.FocusPopup
+				//	return task.QuerySingle(a.state.Store, a.state.PID)
+				//}
 
 				return a.TaskQuery()
 			}
@@ -130,7 +132,7 @@ func (a *App) TaskQuery() mvu.Task {
 	a.ui.SetSearching(true)
 	return mvu.TaskN(
 		task.Tick(a.ui.Search.Spinner.ID, 80*time.Millisecond),
-		task.QueryProcessList(a.state.Store, a.state.CurrentListQuery()),
+		task.RebuildSnapshot(a.state.Registry, a.state.CurrentListQuery()),
 	)
 }
 

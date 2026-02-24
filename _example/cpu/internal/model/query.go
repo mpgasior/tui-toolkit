@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
+)
 
 type SortOrder int
 
@@ -13,12 +17,12 @@ type SortBy int
 
 const (
 	SortByPID SortBy = iota
-	SortByRecentCPU
+	SortByCPU
 	SortByAvgCPU
 	SortByName
 	SortByAge
-	SortByWorkingSet
-	SortByPeakWorkingSet
+	SortByMem
+	SortByMaxMem
 )
 
 type ProcessListQuery struct {
@@ -27,14 +31,9 @@ type ProcessListQuery struct {
 	Order SortOrder
 }
 
-type ProcessSummary struct {
-	PID  uint32
-	Name string
-	Age  time.Duration
+type Process struct {
+	process.Snapshot
 
-	Computed       bool
-	AvgCPU         float64
-	RecentCPU      float64
-	WorkingSet     uint64
-	PeakWorkingSet uint64
+	AgeReady bool
+	Age      time.Duration
 }

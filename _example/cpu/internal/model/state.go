@@ -1,23 +1,20 @@
 package model
 
 import (
-	"time"
-
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
 )
 
 type State struct {
-	Store *process.Store
+	Registry *process.Registry
 
-	PID uint32
-
-	IsPaused   bool
-	Filtered   []ProcessSummary
-	LastUpdate time.Time
+	IsPaused bool
+	Snapshot []Process
 
 	SearchTerm string
 	SortBy     SortBy
 	SortOrder  SortOrder
+
+	SelectedKey process.Key
 }
 
 func (s *State) TogglePause() bool {
@@ -31,9 +28,4 @@ func (s *State) CurrentListQuery() ProcessListQuery {
 		By:    s.SortBy,
 		Order: s.SortOrder,
 	}
-}
-
-func (s *State) Sync(results []ProcessSummary) {
-	s.Filtered = results
-	s.LastUpdate = time.Now()
 }

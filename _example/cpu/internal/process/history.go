@@ -1,99 +1,88 @@
 package process
 
-type Stats struct {
-	RecentCPU      float64
-	AvgCPU         float64
-	WorkingSet     uint64
-	PeakWorkingSet uint64
+import (
+	"runtime"
+	"time"
+)
+
+type Summary struct {
+	CPUSum float64
+
+	LatestCPU float64
+	AvgCPU    float64
+	LatestMem uint64
+	MaxMem    uint64
+
+	Samples uint64
+}
+
+func (s Summary) CPUReady() bool {
+	return true
+	return s.Samples >= 2
+}
+
+func (s Summary) MemReady() bool {
+	return true
+	return s.Samples >= 1
 }
 
 type History struct {
-	samples    []Sample
-	maxSamples int
+	CPU *RingBuffer[float64]
+	Mem *RingBuffer[uint64]
+
+	lastTimestamp   time.Time
+	lastUserTotal   time.Duration
+	lastKernelTotal time.Duration
+
+	Summary Summary
 }
 
-func NewHistory(maxSamples int) History {
-	return History{
-		samples:    make([]Sample, 0, maxSamples),
-		maxSamples: maxSamples,
+func NewHistory(size int) *History {
+	return &History{
+		CPU: NewRingBuffer[float64](size),
+		Mem: NewRingBuffer[uint64](size),
 	}
 }
 
-func (h *History) Clone() History {
-	newSamples := make([]Sample, len(h.samples))
-	copy(newSamples, h.samples)
-
-	return History{
-		samples:    newSamples,
-		maxSamples: h.maxSamples,
+func (h *History) Push(s Sample) {
+	h.Mem.Push(s.MemoryRRS)
+	h.Summary.LatestMem = s.MemoryRRS
+	if s.MemoryRRS > h.Summary.MaxMem {
+		h.Summary.MaxMem = s.MemoryRRS
 	}
-}
 
-func (h *History) Len() int {
-	return len(h.samples)
-}
-
-func (h *History) Get(i int) Sample {
-	return h.samples[i]
-}
-
-func (h *History) AddSample(s Sample) {
-	if len(h.samples) >= h.maxSamples {
-		copy(h.samples, h.samples[1:])
-		h.samples[len(h.samples)-1] = s
+	if h.lastTimestamp.IsZero() {
+		h.lastTimestamp = s.Timestamp
+		h.lastUserTotal = s.UserTotalTime
+		h.lastKernelTotal = s.KernelTotalTime
 		return
 	}
 
-	h.samples = append(h.samples, s)
-}
+	deltaTime := s.Timestamp.Sub(h.lastTimestamp)
+	if deltaTime > 0 {
+		lastTotal := h.lastKernelTotal + h.lastUserTotal
+		total := s.KernelTotalTime + s.UserTotalTime
 
-func (h *History) Stats() (stats Stats, ok bool) {
-	if h.Len() < 2 {
-		return stats, false
-	}
-	stats = Stats{
-		AvgCPU:         h.calculateAverage(),
-		RecentCPU:      h.calculateRecent(),
-		WorkingSet:     h.getLastWorkingSet(),
-		PeakWorkingSet: h.getLastPeakWorkingSet(),
-	}
-	return stats, true
-}
+		deltaWork := total - lastTotal
+		rawUsage := float64(deltaWork) / float64(deltaTime)
+		usage := rawUsage / float64(runtime.NumCPU())
+		usage *= 100
 
-func (h *History) getLastWorkingSet() uint64 {
-	if h.Len() == 0 {
-		return 0
-	}
+		if h.CPU.Full() {
+			oldestUsage, _ := h.CPU.Get(0)
+			h.Summary.CPUSum -= oldestUsage
+		} else {
+			h.Summary.Samples += 1
+		}
 
-	return h.Get(h.Len() - 1).WorkingSet
-}
+		h.Summary.CPUSum += usage
+		h.Summary.LatestCPU = usage
+		h.CPU.Push(usage)
 
-func (h *History) getLastPeakWorkingSet() uint64 {
-	if h.Len() == 0 {
-		return 0
+		h.Summary.AvgCPU = h.Summary.CPUSum / float64(h.Summary.Samples)
 	}
 
-	return h.Get(h.Len() - 1).PeakWorkingSet
-}
-
-func (h *History) calculateAverage() float64 {
-	if h.Len() < 2 {
-		return 0.0
-	}
-
-	first := h.Get(0)
-	last := h.Get(h.Len() - 1)
-
-	return CalculateCPU(first, last)
-}
-
-func (h *History) calculateRecent() float64 {
-	if h.Len() < 2 {
-		return 0.0
-	}
-
-	first := h.Get(h.Len() - 2)
-	last := h.Get(h.Len() - 1)
-
-	return CalculateCPU(first, last)
+	h.lastTimestamp = s.Timestamp
+	h.lastUserTotal = s.UserTotalTime
+	h.lastKernelTotal = s.KernelTotalTime
 }

@@ -8,28 +8,28 @@ import (
 	"github.com/mpgasior/tui-toolkit/mvu"
 )
 
-type DataRefreshedEvent struct{}
+type RegistryRefreshedEvent struct{}
 
 func CancelRefresh() mvu.Task {
 	return mvu.TaskCancel("refresh")
 }
 
-func Refresh(store *process.Store, interval time.Duration) mvu.Task {
+func Refresh(registry *process.Registry, interval time.Duration) mvu.Task {
 	return mvu.Task{
 		ID: "refresh",
 		Execute: func(ctx context.Context, ch chan<- mvu.Event) {
 			for {
-				snapshot, err := process.GetAll()
+				samples, err := process.GetAll()
 				if err != nil {
 					continue
 				}
 
-				store.Sync(snapshot)
+				registry.Update(samples)
 
 				select {
 				case <-ctx.Done():
 					return
-				case ch <- DataRefreshedEvent{}:
+				case ch <- RegistryRefreshedEvent{}:
 				}
 
 				select {

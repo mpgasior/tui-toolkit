@@ -43,56 +43,47 @@ func getMemoryInfo(process windows.Handle) (ProcessMemoryCounters, error) {
 	return counters, nil
 }
 
-func GetUpdate(entry windows.ProcessEntry32) (Update, error) {
-	update := Update{
-		Info: Info{
-			PID:       entry.ProcessID,
-			ParentPID: entry.ParentProcessID,
-			Name:      windows.UTF16ToString(entry.ExeFile[:]),
-		},
+func GetSample(entry windows.ProcessEntry32) (Sample, error) {
+	sample := Sample{
+		PID:       entry.ProcessID,
+		Name:      windows.UTF16ToString(entry.ExeFile[:]),
+		Timestamp: time.Now().UTC(),
 	}
 
 	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.ProcessID)
 	if err != nil {
-		return update, err
+		sample.IsRestricted = true
+		return sample, err
 	}
 	defer windows.CloseHandle(handle)
 
 	var creationTime, exitTime, kernelTime, userTime windows.Filetime
 
 	if err := windows.GetProcessTimes(handle, &creationTime, &exitTime, &kernelTime, &userTime); err != nil {
-		return update, err
+		sample.IsRestricted = true
+		return sample, err
 	}
 
 	counters, err := getMemoryInfo(handle)
 	if err != nil {
-		return update, err
+		sample.IsRestricted = true
+		return sample, err
 	}
 
 	toDuration := func(ft windows.Filetime) time.Duration {
 		return time.Duration(uint64(ft.HighDateTime)<<32|uint64(ft.LowDateTime)) * 100
 	}
 
-	update.Sample = &Sample{
-		Timestamp:      time.Now().UTC(),
-		KernelTime:     toDuration(kernelTime),
-		UserTime:       toDuration(userTime),
-		WorkingSet:     uint64(counters.WorkingSetSize),
-		VirtualSize:    uint64(counters.PagefileUsage),
-		PeakWorkingSet: uint64(counters.PeakWorkingSetSize),
-	}
+	sample.KernelTotalTime = toDuration(kernelTime)
+	sample.UserTotalTime = toDuration(userTime)
+	sample.MemoryRRS = uint64(counters.WorkingSetSize)
+	sample.CreationTime = time.Unix(0, creationTime.Nanoseconds())
 
-	update.CreationTime = time.Unix(0, creationTime.Nanoseconds())
-	if exitTime.HighDateTime != 0 && exitTime.LowDateTime != 0 {
-		exit := time.Unix(0, exitTime.Nanoseconds())
-		update.ExitTime = exit
-	}
-
-	return update, nil
+	return sample, nil
 }
 
-func GetAll() ([]Update, error) {
-	var updates []Update
+func GetAll() ([]Sample, error) {
+	var samples []Sample
 
 	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
@@ -107,13 +98,13 @@ func GetAll() ([]Update, error) {
 	}
 
 	for {
-		update, _ := GetUpdate(entry)
-		updates = append(updates, update)
+		sample, _ := GetSample(entry)
+		samples = append(samples, sample)
 
 		if err := windows.Process32Next(snapshot, &entry); err != nil {
 			break
 		}
 	}
 
-	return updates, nil
+	return samples, nil
 }
