@@ -120,9 +120,9 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		view.Fixed("", 2),
 		view.Fixed("recent-cpu", 10),
 		view.Fixed("", 2),
-		view.Fixed("working-set", 10),
+		view.Fixed("recent-mem", 10),
 		view.Fixed("", 2),
-		view.Fixed("peak-working-set", 10),
+		view.Fixed("peak-mem", 10),
 		view.Fixed("", 2),
 		view.Fixed("age", 10),
 		view.Fixed("", 2),
@@ -160,8 +160,8 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 	drawHeader("name", "Name", model.SortByName)
 	drawHeader("avg-cpu", "CPU% (Avg 1m)", model.SortByAvgCPU)
 	drawHeader("recent-cpu", "CPU% (Now)", model.SortByCPU)
-	drawHeader("working-set", "MEM (Now)", model.SortByMem)
-	drawHeader("peak-working-set", "MEM (Peak)", model.SortByMaxMem)
+	drawHeader("recent-mem", "MEM (Now)", model.SortByMem)
+	drawHeader("peak-mem", "MEM (Peak)", model.SortByMaxMem)
 	drawHeader("age", "Age", model.SortByAge)
 
 	_, h := vp.Size()
@@ -210,12 +210,12 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 		}
 
 		if row.MemReady {
-			draw.Text(cell("peak-working-set", rowIdx), draw.TextChunk{
+			draw.Text(cell("peak-mem", rowIdx), draw.TextChunk{
 				Text:      formatWorkingSet(row.MemoryMax),
 				Style:     rowStyle,
 				Alignment: draw.TextAlignmentRight,
 			})
-			draw.Text(cell("working-set", rowIdx), draw.TextChunk{
+			draw.Text(cell("recent-mem", rowIdx), draw.TextChunk{
 				Text:      formatWorkingSet(row.MemoryRSS),
 				Style:     rowStyle,
 				Alignment: draw.TextAlignmentRight,

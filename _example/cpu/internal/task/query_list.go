@@ -10,11 +10,11 @@ import (
 )
 
 type ListReadyEvent struct {
-	Query model.ProcessListQuery
+	Query model.ListQuery
 	Data  []model.Process
 }
 
-func RebuildSnapshot(registry *process.Registry, query model.ProcessListQuery) mvu.Task {
+func QueryList(registry *process.Registry, query model.ListQuery) mvu.Task {
 	return mvu.Task{
 		ID: "query",
 		Execute: func(ctx context.Context, ch chan<- mvu.Event) {

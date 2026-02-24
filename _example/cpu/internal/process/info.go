@@ -15,6 +15,8 @@ func NewKey(pid uint32, startTime time.Time) Key {
 	return Key(fmt.Sprintf("%d-%d", pid, startTime.Unix()))
 }
 
+var KeyNone Key = ""
+
 type Info struct {
 	PID          uint32
 	Name         string

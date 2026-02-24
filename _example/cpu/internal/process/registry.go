@@ -37,6 +37,9 @@ type HistorySnapshot struct {
 	AvgCPU float64
 	MaxMem uint64
 
+	LatestCPU float64
+	LatestMem uint64
+
 	CPUReady bool
 	MemReady bool
 }
@@ -111,10 +114,10 @@ func (r *Registry) GetSnapshot() []Snapshot {
 			CreationTime: i.CreationTime,
 			ExitTime:     i.ExitTime,
 			CPU:          s.LatestCPU,
-			MemoryRSS:    s.LatestMem,
 			CPUAvg:       s.AvgCPU,
-			MemoryMax:    s.MaxMem,
 			CPUReady:     s.CPUReady(),
+			MemoryMax:    s.MaxMem,
+			MemoryRSS:    s.LatestMem,
 			MemReady:     s.MemReady(),
 		})
 	}
@@ -132,7 +135,7 @@ func (r *Registry) GetHistory(k Key) (HistorySnapshot, bool) {
 		return zero, false
 	}
 
-	history := r.telemetry[k]
+	h := r.telemetry[k]
 
 	return HistorySnapshot{
 		Key:          k,
@@ -141,12 +144,14 @@ func (r *Registry) GetHistory(k Key) (HistorySnapshot, bool) {
 		CreationTime: info.CreationTime,
 		ExitTime:     info.ExitTime,
 
-		CPU: history.CPU.All(),
-		Mem: history.Mem.All(),
+		CPU: h.CPU.All(),
+		Mem: h.Mem.All(),
 
-		AvgCPU:   history.Summary.AvgCPU,
-		MaxMem:   history.Summary.MaxMem,
-		CPUReady: history.Summary.CPUReady(),
-		MemReady: history.Summary.MemReady(),
+		LatestCPU: h.Summary.LatestCPU,
+		LatestMem: h.Summary.LatestMem,
+		AvgCPU:    h.Summary.AvgCPU,
+		MaxMem:    h.Summary.MaxMem,
+		CPUReady:  h.Summary.CPUReady(),
+		MemReady:  h.Summary.MemReady(),
 	}, true
 }

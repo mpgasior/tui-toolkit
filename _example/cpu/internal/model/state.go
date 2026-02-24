@@ -21,8 +21,8 @@ func (s *State) TogglePause() bool {
 	return s.IsPaused
 }
 
-func (s *State) CurrentListQuery() ProcessListQuery {
-	return ProcessListQuery{
+func (s *State) CurrentListQuery() ListQuery {
+	return ListQuery{
 		Term:  s.SearchTerm,
 		By:    s.SortBy,
 		Order: s.SortOrder,

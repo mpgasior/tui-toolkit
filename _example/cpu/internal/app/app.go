@@ -37,16 +37,15 @@ func (a *App) Init() mvu.Task {
 func (a *App) Update(e mvu.Event) mvu.Task {
 	switch event := e.(type) {
 	case task.RegistryRefreshedEvent:
-		//if a.ui.IsFocused(ui.FocusPopup) {
-		//	return task.QuerySingle(a.state.Store, a.state.PID)
-		//}
+		if a.ui.IsFocused(ui.FocusPopup) {
+			return task.QueryHistory(a.state.Registry, a.state.SelectedKey)
+		}
 		return a.TaskQuery()
-		//case task.QuerySingleResultEvent:
-		//	a.ui.Popup.Result = event.Result
-		//	a.ui.Popup.Loaded = true
-		//	return mvu.TaskNone
+	case task.HistoryReadyEvent:
+		a.ui.Popup.Data = event.Data
+		a.ui.Popup.Loaded = true
+		return mvu.TaskNone
 	case task.ListReadyEvent:
-		//a.state.Snapshot = event.Data
 		a.state.SortBy = event.Query.By
 		a.state.SortOrder = event.Query.Order
 
@@ -106,13 +105,13 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 			if didUpdate := a.ui.Table.Update(key); didUpdate {
 				a.state.SortBy = a.ui.Table.SortBy
 				a.state.SortOrder = a.ui.Table.SortOrder
-				//if pid, ok := a.ui.Table.GetPID(); ok {
-				//	a.state.PID = pid
-				//	a.ui.Popup.PID = a.state.PID
+				if a.ui.Table.Selected != process.KeyNone {
+					a.state.SelectedKey = a.ui.Table.Selected
+					a.ui.Popup.Key = a.state.SelectedKey
 
-				//	a.ui.CurrentFocus = ui.FocusPopup
-				//	return task.QuerySingle(a.state.Store, a.state.PID)
-				//}
+					a.ui.CurrentFocus = ui.FocusPopup
+					return task.QueryHistory(a.state.Registry, a.state.SelectedKey)
+				}
 
 				return a.TaskQuery()
 			}
@@ -132,7 +131,7 @@ func (a *App) TaskQuery() mvu.Task {
 	a.ui.SetSearching(true)
 	return mvu.TaskN(
 		task.Tick(a.ui.Search.Spinner.ID, 80*time.Millisecond),
-		task.RebuildSnapshot(a.state.Registry, a.state.CurrentListQuery()),
+		task.QueryList(a.state.Registry, a.state.CurrentListQuery()),
 	)
 }
 

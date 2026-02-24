@@ -25,7 +25,7 @@ const (
 	SortByMaxMem
 )
 
-type ProcessListQuery struct {
+type ListQuery struct {
 	Term  string
 	By    SortBy
 	Order SortOrder
@@ -36,4 +36,8 @@ type Process struct {
 
 	AgeReady bool
 	Age      time.Duration
+}
+
+type ProcessHistory struct {
+	process.HistorySnapshot
 }
