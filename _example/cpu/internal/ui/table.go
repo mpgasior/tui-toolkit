@@ -257,30 +257,8 @@ func (t *Table) Draw(vp view.Port, focused, paused bool) {
 
 func (t *Table) drawScroll(vp view.Port, style screen.Style) {
 	w, h := vp.Size()
-	totalRows := len(t.Rows)
-	if totalRows == 0 {
-		return
-	}
-
-	trackHeight := h - 2
-	if trackHeight <= 0 {
-		return
-	}
-
-	thumbHeight := int(float64(trackHeight) * float64(trackHeight) / float64(totalRows))
-	if thumbHeight == 0 {
-		thumbHeight = 1
-	}
-
-	maxOffset := totalRows - trackHeight
-	scrollRatio := float64(t.Scroll.Offset) / float64(maxOffset)
-
-	startPos := int(scrollRatio * float64(trackHeight-thumbHeight))
-
-	scrollBar := vp.Slice(w-1, 0, 1, h).Offset(1, 0, 1, 0)
-	for idx := 0; idx < thumbHeight; idx += 1 {
-		draw.Rune(scrollBar, 0, startPos+idx, '▐', style)
-	}
+	scrollBar := vp.Slice(w-1, 1, 1, h-2)
+	draw.ScrollV(scrollBar, t.Scroll.Offset, len(t.Rows), draw.RuneScrollVRight, style)
 }
 
 func (t *Table) drawFooter(vp view.Port, focused, paused bool, style screen.Style) {
