@@ -7,6 +7,7 @@ import (
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
 	"github.com/mpgasior/tui-toolkit/draw"
+	"github.com/mpgasior/tui-toolkit/mvu"
 	"github.com/mpgasior/tui-toolkit/screen"
 	"github.com/mpgasior/tui-toolkit/view"
 	"github.com/mpgasior/tui-toolkit/vt"
@@ -20,6 +21,15 @@ var tableColumnOrder = []model.SortBy{
 	model.SortByMaxMem,
 	model.SortByAge,
 	model.SortByName,
+}
+
+type SortRequestedEvent struct {
+	Column model.SortBy
+	Order  model.SortOrder
+}
+
+type PIDSelectedEvent struct {
+	Key process.Key
 }
 
 type Table struct {
@@ -39,17 +49,23 @@ func NewTable() Table {
 	}
 }
 
-func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
+func (t *Table) Update(key vt.KeyEvent) (mvu.Event, bool) {
 	switch key.Rune {
 	case 's':
 		t.NextSortOrder()
-		return true
+		return SortRequestedEvent{
+			Column: t.SortBy, Order: t.SortOrder,
+		}, true
 	case 'h':
 		t.PrevSortBy()
-		return true
+		return SortRequestedEvent{
+			Column: t.SortBy, Order: t.SortOrder,
+		}, true
 	case 'l':
 		t.NextSortBy()
-		return true
+		return SortRequestedEvent{
+			Column: t.SortBy, Order: t.SortOrder,
+		}, true
 	}
 
 	switch key.Key {
@@ -57,7 +73,9 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 		count := len(t.Rows)
 		if count > 0 && t.Scroll.Index < count {
 			t.Selected = t.Rows[t.Scroll.Index].Key
-			return true
+			return PIDSelectedEvent{
+				Key: t.Selected,
+			}, true
 		}
 	case vt.KeyJ:
 		t.Scroll.Move(1)
@@ -73,7 +91,7 @@ func (t *Table) Update(key vt.KeyEvent) (didUpdate bool) {
 		t.Scroll.Move(5)
 	}
 
-	return false
+	return nil, false
 }
 
 func (t *Table) NextSortOrder() {

@@ -3,9 +3,14 @@ package ui
 import (
 	"github.com/mpgasior/tui-toolkit/draw"
 	"github.com/mpgasior/tui-toolkit/models"
+	"github.com/mpgasior/tui-toolkit/mvu"
 	"github.com/mpgasior/tui-toolkit/screen"
 	"github.com/mpgasior/tui-toolkit/view"
 )
+
+type FilterChangedEvent struct {
+	Term string
+}
 
 type Search struct {
 	*models.TextInput
@@ -19,6 +24,16 @@ func NewSearch() Search {
 		TextInput: &models.TextInput{},
 		Spinner:   models.NewSpinner("spinner"),
 	}
+}
+
+func (s *Search) Update(e mvu.Event) (mvu.Event, bool) {
+	if s.TextInput.Update(e) {
+		return FilterChangedEvent{
+			Term: s.TextInput.String(),
+		}, true
+	}
+
+	return nil, false
 }
 
 func (s *Search) SetSearching(searching bool) {

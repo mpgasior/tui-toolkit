@@ -15,10 +15,21 @@ import (
 type Popup struct {
 	Key    process.Key
 	Loaded bool
-	Data   model.ProcessHistory
+	data   model.ProcessHistory
+}
+
+func (p *Popup) Open(key process.Key) {
+	p.Loaded = false
+	p.Key = key
+}
+
+func (p *Popup) Update(data model.ProcessHistory) {
+	p.Loaded = true
+	p.data = data
 }
 
 func (p *Popup) Reset() {
+	p.Key = process.KeyNone
 	p.Loaded = false
 }
 
@@ -60,23 +71,23 @@ func (p *Popup) Draw(vp view.Port) {
 		draw.Line(fieldLayout["value"], value, screen.DefaultStyle)
 	}
 
-	setField("pid", "PID", strconv.FormatInt(int64(p.Data.PID), 10))
-	setField("name", "Name", p.Data.Name)
-	if !p.Data.CreationTime.IsZero() {
-		setField("creation-time", "Creation Time", p.Data.CreationTime.String())
+	setField("pid", "PID", strconv.FormatInt(int64(p.data.PID), 10))
+	setField("name", "Name", p.data.Name)
+	if !p.data.CreationTime.IsZero() {
+		setField("creation-time", "Creation Time", p.data.CreationTime.String())
 	}
-	if !p.Data.ExitTime.IsZero() {
-		setField("exit-time", "Exit Time", p.Data.ExitTime.String())
+	if !p.data.ExitTime.IsZero() {
+		setField("exit-time", "Exit Time", p.data.ExitTime.String())
 	} else {
 		setField("exit-time", "Exit Time", "")
 	}
-	if p.Data.CPUReady {
-		setField("avg-cpu", "CPU% (Avg 1m)", fmt.Sprintf("%.2f%%", p.Data.AvgCPU))
-		setField("recent-cpu", "CPU% (Now)", fmt.Sprintf("%.2f%%", p.Data.LatestCPU))
+	if p.data.CPUReady {
+		setField("avg-cpu", "CPU% (Avg 1m)", fmt.Sprintf("%.2f%%", p.data.AvgCPU))
+		setField("recent-cpu", "CPU% (Now)", fmt.Sprintf("%.2f%%", p.data.LatestCPU))
 	}
-	if p.Data.MemReady {
-		setField("peak-mem", "MEM (Peak)", formatWorkingSet(p.Data.MaxMem))
-		setField("recent-mem", "MEM (Now)", formatWorkingSet(p.Data.LatestMem))
+	if p.data.MemReady {
+		setField("peak-mem", "MEM (Peak)", formatWorkingSet(p.data.MaxMem))
+		setField("recent-mem", "MEM (Now)", formatWorkingSet(p.data.LatestMem))
 	}
 
 	//for idx := range p.Data.History.Len() {

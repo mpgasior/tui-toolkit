@@ -42,8 +42,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		}
 		return a.TaskQuery()
 	case task.HistoryReadyEvent:
-		a.ui.Popup.Data = event.Data
-		a.ui.Popup.Loaded = true
+		a.ui.Popup.Update(event.Data)
 		return mvu.TaskNone
 	case task.ListReadyEvent:
 		a.state.SortBy = event.Query.By
@@ -57,12 +56,23 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 	case task.TickEvent:
 		a.ui.Search.Spinner.Next()
 		return mvu.TaskNone
+	case ui.SortRequestedEvent:
+		a.state.SortBy = event.Column
+		a.state.SortOrder = event.Order
+		return a.TaskQuery()
+	case ui.PIDSelectedEvent:
+		a.state.SelectedKey = event.Key
+		a.ui.CurrentFocus = ui.FocusPopup
+		a.ui.Popup.Open(event.Key)
+		return task.QueryHistory(a.state.Registry, event.Key)
+	case ui.FilterChangedEvent:
+		a.state.SearchTerm = event.Term
+		return a.TaskQuery()
 	}
 
 	if _, ok := e.(vt.PasteEvent); ok && a.ui.IsFocused(ui.FocusSearch) {
-		if didUpdate := a.ui.Search.Update(e); didUpdate {
-			a.state.SearchTerm = a.ui.Search.String()
-			return a.TaskQuery()
+		if e, didUpdate := a.ui.Search.Update(e); didUpdate {
+			return mvu.TaskOne(e)
 		}
 	}
 
@@ -91,28 +101,16 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 				a.ui.CurrentFocus = ui.FocusTable
 				return mvu.TaskNone
 			}
-			if didUpdate := a.ui.Search.Update(e); didUpdate {
-				a.state.SearchTerm = a.ui.Search.String()
-				return a.TaskQuery()
+			if e, didUpdate := a.ui.Search.Update(e); didUpdate {
+				return mvu.TaskOne(e)
 			}
 		case ui.FocusTable:
 			if key.IsKey(vt.KeyEsc) {
 				a.ui.Table.Reset()
 				a.ui.CurrentFocus = ui.FocusSearch
 			}
-			if didUpdate := a.ui.Table.Update(key); didUpdate {
-				a.state.SortBy = a.ui.Table.SortBy
-				a.state.SortOrder = a.ui.Table.SortOrder
-				if a.ui.Table.Selected != process.KeyNone {
-					a.state.SelectedKey = a.ui.Table.Selected
-					a.ui.Table.Selected = process.KeyNone
-					a.ui.Popup.Key = a.state.SelectedKey
-
-					a.ui.CurrentFocus = ui.FocusPopup
-					return task.QueryHistory(a.state.Registry, a.state.SelectedKey)
-				}
-
-				return a.TaskQuery()
+			if e, didUpdate := a.ui.Table.Update(key); didUpdate {
+				return mvu.TaskOne(e)
 			}
 		case ui.FocusPopup:
 			if key.IsKey(vt.KeyEsc) {
