@@ -79,9 +79,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 			a.ui.PrevFocus()
 			return mvu.TaskNone
 		case vt.KeyCtrlP:
-			isPaused := a.state.TogglePause()
-			a.ui.Table.IsPaused = isPaused
-			if isPaused {
+			if a.state.TogglePause() {
 				return task.CancelRefresh()
 			}
 			return task.Refresh(a.state.Registry, time.Second)
@@ -152,7 +150,11 @@ func (a *App) Render(ctx mvu.RenderContext) {
 	)
 
 	a.ui.Search.Draw(layout["search"], a.ui.CurrentFocus == ui.FocusSearch)
-	a.ui.Table.Draw(layout["table"], a.ui.CurrentFocus == ui.FocusTable)
+	a.ui.Table.Draw(
+		layout["table"],
+		a.ui.CurrentFocus == ui.FocusTable,
+		a.state.IsPaused,
+	)
 	if a.ui.IsFocused(ui.FocusPopup) {
 		a.ui.Popup.Draw(ctx.View.Offset(5, 10, 5, 10))
 	}

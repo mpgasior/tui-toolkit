@@ -92,9 +92,6 @@ func (r *Registry) Update(samples []Sample) {
 		if v.ExitTime.IsZero() {
 			v.ExitTime = now
 		}
-
-		delete(r.table, k)
-		delete(r.telemetry, k)
 	}
 }
 

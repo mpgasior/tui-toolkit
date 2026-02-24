@@ -32,7 +32,8 @@ func (s *Search) Draw(vp view.Port, focused bool) {
 	}
 	draw.Box(vp, draw.BoxBorderThin, boxStyle)
 
-	layout := view.SplitV(vp.Offset(1),
+	layout := view.SplitV(
+		vp.Offset(1),
 		view.Dynamic("input", 1),
 		view.Fixed("spinner", 1),
 	)

@@ -27,7 +27,6 @@ type Table struct {
 	SortBy    model.SortBy
 	SortOrder model.SortOrder
 
-	IsPaused bool
 	Selected process.Key
 	Scroll   view.Scroll
 }
@@ -105,7 +104,7 @@ func (t *Table) Reset() {
 	t.Scroll.Jump(0)
 }
 
-func (t *Table) Draw(vp view.Port, focused bool) {
+func (t *Table) Draw(vp view.Port, focused, paused bool) {
 	activeStyle := screen.DefaultStyle
 	if focused {
 		activeStyle = activeStyle.Fg(screen.ColorGreen)
@@ -167,7 +166,7 @@ func (t *Table) Draw(vp view.Port, focused bool) {
 	_, h := vp.Size()
 	start, end := t.Scroll.Update(h-2, len(t.Rows))
 
-	t.drawFooter(cell("name", h-1), focused, activeStyle)
+	t.drawFooter(cell("name", h-1), focused, paused, activeStyle)
 	t.drawScroll(vp, activeStyle)
 
 	if t.Rows == nil {
@@ -267,7 +266,7 @@ func (t *Table) drawScroll(vp view.Port, style screen.Style) {
 	}
 }
 
-func (t *Table) drawFooter(vp view.Port, focused bool, style screen.Style) {
+func (t *Table) drawFooter(vp view.Port, focused, paused bool, style screen.Style) {
 	text := "Total: " + strconv.FormatInt(int64(len(t.Rows)), 10)
 	if focused {
 		index := strconv.FormatInt(int64(t.Scroll.Index+1), 10)
@@ -275,7 +274,7 @@ func (t *Table) drawFooter(vp view.Port, focused bool, style screen.Style) {
 		text = index + " of " + total
 	}
 
-	if t.IsPaused {
+	if paused {
 		text = "[Paused] " + text
 	}
 
