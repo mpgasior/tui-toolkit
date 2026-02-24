@@ -6,6 +6,29 @@ import (
 	"strings"
 )
 
+type SortOrder int
+
+const (
+	SortOrderAscending SortOrder = iota
+	SortOrderDescending
+)
+
+func (s SortOrder) Next() SortOrder {
+	return (s + 1) % 2
+}
+
+type SortBy int
+
+const (
+	SortByPID SortBy = iota
+	SortByCPU
+	SortByAvgCPU
+	SortByName
+	SortByAge
+	SortByMem
+	SortByMaxMem
+)
+
 var sorters = map[SortBy]func(a, b Process) int{
 	SortByPID:    func(a, b Process) int { return cmp.Compare(a.PID, b.PID) },
 	SortByName:   func(a, b Process) int { return strings.Compare(a.Name, b.Name) },

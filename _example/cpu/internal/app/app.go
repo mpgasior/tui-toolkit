@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
-	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/task"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/ui"
 	"github.com/mpgasior/tui-toolkit/draw"
@@ -21,17 +20,19 @@ type App struct {
 
 func New() *App {
 	return &App{
-		state: model.State{
-			Registry:  process.NewRegistry(60),
-			SortBy:    model.SortByCPU,
-			SortOrder: model.SortOrderDescending,
-		},
-		ui: ui.New(),
+		state: model.New(60),
+		ui:    ui.New(),
 	}
 }
 
 func (a *App) Init() mvu.Task {
-	return task.Refresh(a.state.Registry, time.Second)
+	return mvu.TaskN(
+		task.Refresh(a.state.Registry, time.Second),
+		mvu.TaskOne(ui.SortRequestedEvent{
+			Column: model.SortByCPU,
+			Order:  model.SortOrderDescending,
+		}),
+	)
 }
 
 func (a *App) Update(e mvu.Event) mvu.Task {
@@ -45,25 +46,19 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		a.ui.Popup.Update(event.Data)
 		return mvu.TaskNone
 	case task.ListReadyEvent:
-		a.state.SortBy = event.Query.By
-		a.state.SortOrder = event.Query.Order
-
 		a.ui.Table.Rows = event.Data
-		a.ui.Table.SortBy = a.state.SortBy
-		a.ui.Table.SortOrder = a.state.SortOrder
-
+		a.ui.Table.SortBy = event.Query.By
+		a.ui.Table.SortOrder = event.Query.Order
 		return a.TaskStopQuery()
 	case task.TickEvent:
 		a.ui.Search.Spinner.Next()
 		return mvu.TaskNone
 	case ui.SortRequestedEvent:
-		a.state.SortBy = event.Column
-		a.state.SortOrder = event.Order
+		a.state.UpdateSort(event.Column, event.Order)
 		return a.TaskQuery()
 	case ui.PIDSelectedEvent:
 		a.state.SelectedKey = event.Key
-		a.ui.CurrentFocus = ui.FocusPopup
-		a.ui.Popup.Open(event.Key)
+		a.ui.OpenPopup(event.Key)
 		return task.QueryHistory(a.state.Registry, event.Key)
 	case ui.FilterChangedEvent:
 		a.state.SearchTerm = event.Term

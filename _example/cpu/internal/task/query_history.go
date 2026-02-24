@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"time"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"

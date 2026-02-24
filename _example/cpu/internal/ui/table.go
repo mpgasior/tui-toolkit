@@ -37,8 +37,7 @@ type Table struct {
 	SortBy    model.SortBy
 	SortOrder model.SortOrder
 
-	Selected process.Key
-	Scroll   view.Scroll
+	Scroll view.Scroll
 }
 
 func NewTable() Table {
@@ -49,10 +48,15 @@ func NewTable() Table {
 	}
 }
 
+func (t *Table) Set(rows []model.Process, by model.SortBy, order model.SortOrder) {
+	t.Rows = rows
+	t.SortBy, t.SortOrder = by, order
+}
+
 func (t *Table) Update(key vt.KeyEvent) (mvu.Event, bool) {
 	switch key.Rune {
 	case 's':
-		t.NextSortOrder()
+		t.SortOrder = t.SortOrder.Next()
 		return SortRequestedEvent{
 			Column: t.SortBy, Order: t.SortOrder,
 		}, true
@@ -72,9 +76,9 @@ func (t *Table) Update(key vt.KeyEvent) (mvu.Event, bool) {
 	case vt.KeyEnter:
 		count := len(t.Rows)
 		if count > 0 && t.Scroll.Index < count {
-			t.Selected = t.Rows[t.Scroll.Index].Key
+			key := t.Rows[t.Scroll.Index].Key
 			return PIDSelectedEvent{
-				Key: t.Selected,
+				Key: key,
 			}, true
 		}
 	case vt.KeyJ:
@@ -92,10 +96,6 @@ func (t *Table) Update(key vt.KeyEvent) (mvu.Event, bool) {
 	}
 
 	return nil, false
-}
-
-func (t *Table) NextSortOrder() {
-	t.SortOrder = (t.SortOrder + 1) % 2
 }
 
 func (t *Table) NextSortBy() {
@@ -118,7 +118,6 @@ func (t *Table) PrevSortBy() {
 }
 
 func (t *Table) Reset() {
-	t.Selected = process.KeyNone
 	t.Scroll.Jump(0)
 }
 

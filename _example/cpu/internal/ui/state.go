@@ -1,5 +1,10 @@
 package ui
 
+import (
+	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
+	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
+)
+
 type Focus int
 
 const (
@@ -23,6 +28,15 @@ func New() ViewState {
 		Search:       NewSearch(),
 		Table:        NewTable(),
 	}
+}
+
+func (s *ViewState) UpdateTable(rows []model.Process, query model.ListQuery) {
+	s.Table.Set(rows, query.By, query.Order)
+}
+
+func (s *ViewState) OpenPopup(key process.Key) {
+	s.CurrentFocus = FocusPopup
+	s.Popup.Open(key)
 }
 
 func (s *ViewState) IsFocused(f Focus) bool {

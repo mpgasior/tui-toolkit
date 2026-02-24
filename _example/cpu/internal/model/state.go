@@ -16,6 +16,17 @@ type State struct {
 	SelectedKey process.Key
 }
 
+func New(size int) State {
+	return State{
+		Registry: process.NewRegistry(size),
+	}
+}
+
+func (s *State) UpdateSort(by SortBy, order SortOrder) {
+	s.SortBy = by
+	s.SortOrder = order
+}
+
 func (s *State) TogglePause() bool {
 	s.IsPaused = !s.IsPaused
 	return s.IsPaused
