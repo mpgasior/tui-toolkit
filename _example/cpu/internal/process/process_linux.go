@@ -103,8 +103,8 @@ func GetSample(pid int) (Sample, error) {
 	return Sample{
 		PID:             uint32(pid),
 		Name:            name,
-		CreationTime:    creationTime.UTC(),
-		Timestamp:       time.Now().UTC(),
+		CreationTime:    creationTime,
+		Timestamp:       time.Now(),
 		UserTotalTime:   time.Duration(utime) * tickDuration,
 		KernelTotalTime: time.Duration(stime) * tickDuration,
 		MemoryRSS:       currRSS,

@@ -17,12 +17,10 @@ type Summary struct {
 }
 
 func (s Summary) CPUReady() bool {
-	return true
 	return s.Samples >= 2
 }
 
 func (s Summary) MemReady() bool {
-	return true
 	return s.Samples >= 1
 }
 
