@@ -76,7 +76,7 @@ func GetSample(entry windows.ProcessEntry32) (Sample, error) {
 
 	sample.KernelTotalTime = toDuration(kernelTime)
 	sample.UserTotalTime = toDuration(userTime)
-	sample.MemoryRRS = uint64(counters.WorkingSetSize)
+	sample.MemoryRSS = uint64(counters.WorkingSetSize)
 	sample.CreationTime = time.Unix(0, creationTime.Nanoseconds())
 
 	return sample, nil

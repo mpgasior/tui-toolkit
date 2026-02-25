@@ -43,6 +43,9 @@ func NewHistory(size int) *History {
 }
 
 func (h *History) Push(s Sample) {
+	if s.IsRestricted {
+		return
+	}
 	h.Mem.Push(s.MemoryRSS)
 	h.Summary.LatestMem = s.MemoryRSS
 	if s.MemoryRSS > h.Summary.MaxMem {

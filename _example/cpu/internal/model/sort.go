@@ -3,7 +3,6 @@ package model
 import (
 	"cmp"
 	"slices"
-	"strings"
 )
 
 type SortOrder int
@@ -29,14 +28,71 @@ const (
 	SortByMaxMem
 )
 
-var sorters = map[SortBy]func(a, b Process) int{
-	SortByPID:    func(a, b Process) int { return cmp.Compare(a.PID, b.PID) },
-	SortByName:   func(a, b Process) int { return strings.Compare(a.Name, b.Name) },
-	SortByAge:    func(a, b Process) int { return cmp.Compare(a.Age, b.Age) },
-	SortByAvgCPU: func(a, b Process) int { return cmp.Compare(a.CPUAvg, b.CPUAvg) },
-	SortByCPU:    func(a, b Process) int { return cmp.Compare(a.CPU, b.CPU) },
-	SortByMem:    func(a, b Process) int { return cmp.Compare(a.MemoryRSS, b.MemoryRSS) },
-	SortByMaxMem: func(a, b Process) int { return cmp.Compare(a.MemoryMax, b.MemoryMax) },
+func orderedCmp[T cmp.Ordered](a, b T, order SortOrder) int {
+	r := cmp.Compare(a, b)
+	if r != 0 && order == SortOrderDescending {
+		return -r
+	}
+
+	return r
+}
+
+var sorters = map[SortBy]func(a, b Process, order SortOrder) int{
+	SortByPID: func(a, b Process, order SortOrder) int {
+		return orderedCmp(a.PID, b.PID, order)
+	},
+	SortByName: func(a, b Process, order SortOrder) int {
+		return orderedCmp(a.Name, b.Name, order)
+	},
+	SortByAge: func(a, b Process, order SortOrder) int {
+		if a.AgeReady != b.AgeReady {
+			if a.AgeReady {
+				return -1
+			}
+			return 1
+		}
+		return orderedCmp(a.Age, b.Age, order)
+	},
+	SortByAvgCPU: func(a, b Process, order SortOrder) int {
+		if a.CPUReady != b.CPUReady {
+			if a.CPUReady {
+				return -1
+			}
+
+			return 1
+		}
+
+		return orderedCmp(a.CPUAvg, b.CPUAvg, order)
+	},
+	SortByCPU: func(a, b Process, order SortOrder) int {
+		if a.CPUReady != b.CPUReady {
+			if a.CPUReady {
+				return -1
+			}
+
+			return 1
+		}
+
+		return orderedCmp(a.CPU, b.CPU, order)
+	},
+	SortByMem: func(a, b Process, order SortOrder) int {
+		if a.MemReady != b.MemReady {
+			if a.MemReady {
+				return -1
+			}
+			return 1
+		}
+		return orderedCmp(a.MemoryRSS, b.MemoryRSS, order)
+	},
+	SortByMaxMem: func(a, b Process, order SortOrder) int {
+		if a.MemReady != b.MemReady {
+			if a.MemReady {
+				return -1
+			}
+			return 1
+		}
+		return orderedCmp(a.MemoryMax, b.MemoryMax, order)
+	},
 }
 
 func SortResults(rows []Process, sortBy SortBy, order SortOrder) {
@@ -45,15 +101,12 @@ func SortResults(rows []Process, sortBy SortBy, order SortOrder) {
 		return
 	}
 
-	slices.SortFunc(rows, sorters[SortByPID])
+	slices.SortFunc(rows, func(a, b Process) int {
+		return sorters[SortByPID](a, b, order)
+	})
 
-	slices.SortStableFunc(rows, func(a Process, b Process) int {
-		result := fn(a, b)
-
-		if order == SortOrderDescending {
-			return -result
-		}
-
+	slices.SortStableFunc(rows, func(a, b Process) int {
+		result := fn(a, b, order)
 		return result
 	})
 }
