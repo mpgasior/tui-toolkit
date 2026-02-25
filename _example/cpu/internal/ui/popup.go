@@ -43,13 +43,31 @@ func (p *Popup) Draw(vp view.Port) {
 		return
 	}
 
-	mainLayout := view.SplitH(vp.Offset(1),
+	mainLayout := view.SplitH(
+		vp.Offset(1, 2),
 		view.Fixed("details", 8),
 		view.Dynamic("chart", 1),
 		view.Fixed("help", 1),
 	)
 
-	detailsForm := view.SplitH(mainLayout["details"].Offset(0, 0, 0, 1),
+	p.drawDetails(mainLayout["details"])
+
+	for idx, cpu := range p.data.CPU {
+		v := fmt.Sprintf("%.2f%%", cpu)
+		draw.Line(mainLayout["chart"].Offset(idx, 0, 0, 0), v, screen.DefaultStyle)
+	}
+
+	p.drawHelp(mainLayout["help"])
+}
+
+func (p *Popup) drawHelp(vp view.Port) {
+	items := []string{"Kill: k", "Interrupt: i", "Cancel: Esc"}
+	text := strings.Join(items, " • ")
+	draw.Line(vp, text, screen.DefaultStyle.Fg(screen.ColorBlue))
+}
+
+func (p *Popup) drawDetails(vp view.Port) {
+	form := view.SplitH(vp,
 		view.Fixed("pid", 1),
 		view.Fixed("name", 1),
 		view.Fixed("creation-time", 1),
@@ -60,42 +78,56 @@ func (p *Popup) Draw(vp view.Port) {
 		view.Fixed("recent-mem", 1),
 	)
 
-	setField := func(key string, title string, value string) {
-		fieldLayout := view.SplitV(detailsForm[key],
+	field := func(key string) (title view.Port, value view.Port) {
+		layout := view.SplitV(form[key],
 			view.Fixed("title", 14),
 			view.Fixed("gap", 1),
 			view.Dynamic("value", 1),
 		)
 
-		draw.Line(fieldLayout["title"], title, screen.DefaultStyle.Attr(screen.AttrBold))
-		draw.Line(fieldLayout["value"], value, screen.DefaultStyle)
+		return layout["title"], layout["value"]
+	}
+
+	styleTitle := screen.DefaultStyle.Attr(screen.AttrBold)
+	styleValue := screen.DefaultStyle
+
+	setField := func(key, title, value string) {
+		vpTitle, vpValue := field(key)
+
+		draw.Line(vpTitle, title, styleTitle)
+		draw.Line(vpValue, value, styleValue)
 	}
 
 	setField("pid", "PID", strconv.FormatInt(int64(p.data.PID), 10))
 	setField("name", "Name", p.data.Name)
+
+	var vpTitle view.Port
+	var vpValue view.Port
+
+	vpTitle, vpValue = field("creation-time")
+	draw.Line(vpTitle, "Created", styleTitle)
 	if !p.data.CreationTime.IsZero() {
-		setField("creation-time", "Creation Time", p.data.CreationTime.String())
+		draw.Line(vpValue, p.data.CreationTime.String(), styleValue)
 	}
+
+	vpTitle, vpValue = field("exit-time")
+	draw.Line(vpTitle, "Exited", styleTitle)
 	if !p.data.ExitTime.IsZero() {
-		setField("exit-time", "Exit Time", p.data.ExitTime.String())
-	} else {
-		setField("exit-time", "Exit Time", "")
+		draw.Line(vpValue, p.data.ExitTime.String(), styleValue.Fg(screen.ColorRed))
 	}
+
 	if p.data.CPUReady {
 		setField("avg-cpu", "CPU% (Avg 1m)", fmt.Sprintf("%.2f%%", p.data.AvgCPU))
 		setField("recent-cpu", "CPU% (Now)", fmt.Sprintf("%.2f%%", p.data.LatestCPU))
+	} else {
+		setField("avg-cpu", "CPU% (Avg 1m)", "")
+		setField("recent-cpu", "CPU% (Now)", "")
 	}
 	if p.data.MemReady {
 		setField("peak-mem", "MEM (Peak)", formatWorkingSet(p.data.MaxMem))
 		setField("recent-mem", "MEM (Now)", formatWorkingSet(p.data.LatestMem))
+	} else {
+		setField("peak-mem", "MEM (Peak)", "")
+		setField("recent-mem", "MEM (Now)", "")
 	}
-
-	for idx, cpu := range p.data.CPU {
-		v := fmt.Sprintf("%.2f%%", cpu)
-		draw.Line(mainLayout["chart"].Offset(idx, 0, 0, 0), v, screen.DefaultStyle)
-	}
-
-	items := []string{"Kill: k", "Interrupt: i", "Cancel: Esc"}
-	text := strings.Join(items, " • ")
-	draw.Line(mainLayout["help"], text, screen.DefaultStyle.Fg(screen.ColorBlue))
 }
