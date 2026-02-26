@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+	"math"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -43,21 +45,74 @@ func (p *Popup) Draw(vp view.Port) {
 		return
 	}
 
-	mainLayout := view.SplitH(
+	layout := view.SplitH(
 		vp.Offset(1, 2),
 		view.Fixed("details", 8),
 		view.Dynamic("chart", 1),
 		view.Fixed("help", 1),
 	)
 
-	p.drawDetails(mainLayout["details"])
-
-	for idx, cpu := range p.data.CPU {
-		v := fmt.Sprintf("%.2f%%", cpu)
-		draw.Line(mainLayout["chart"].Offset(idx, 0, 0, 0), v, screen.DefaultStyle)
+	p.drawDetails(layout["details"])
+	chartLayout := view.SplitV(
+		layout["chart"],
+		view.Dynamic("cpu", 1),
+		view.Fixed("gap", 1),
+		view.Dynamic("mem", 1),
+	)
+	p.drawChart(chartLayout["cpu"], p.data.CPU, screen.DefaultStyle.Fg(screen.ColorRed))
+	memory := make([]float64, len(p.data.Mem))
+	for idx, m := range p.data.Mem {
+		memory[idx] = float64(m)
 	}
+	p.drawChart(chartLayout["mem"], memory, screen.DefaultStyle.Fg(screen.ColorBlue))
+	p.drawHelp(layout["help"])
+}
 
-	p.drawHelp(mainLayout["help"])
+func (p *Popup) drawChart(vp view.Port, data []float64, style screen.Style) {
+	draw.Box(vp, draw.BoxBorderCorners, style)
+	draw.Line(vp.Offset(0, 0, 0, 10), "CPU min: 10%, max: 25%", style)
+	vp = vp.Offset(1)
+
+	if len(data) == 0 {
+		return
+	}
+	w, h := vp.Size()
+
+	dataMin := slices.Min(data)
+	dataMax := slices.Max(data)
+
+	dataRange := dataMax - dataMin
+	rangeMax := float64(h)
+
+	var blocks = [9]rune{' ', '▂', '▃', '▄', '▅', '▆', '▇', '█', '█'}
+
+	for x, d := range data {
+		if x >= w {
+			break
+		}
+
+		var v float64
+		if dataRange == 0 {
+			v = float64(h) * 0.5
+		} else {
+			v = ((d - dataMin) / dataRange) * rangeMax
+		}
+
+		fullBlocks := int(math.Floor(v))
+		remainder := v - float64(fullBlocks)
+		partialIdx := int(remainder * 8)
+
+		for yOffset := 0; yOffset < fullBlocks && yOffset < h; yOffset++ {
+			draw.Rune(vp, x, h-1-yOffset, '█', style)
+		}
+
+		if fullBlocks < h {
+			char := blocks[partialIdx]
+			if char != ' ' {
+				draw.Rune(vp, x, h-1-fullBlocks, char, style)
+			}
+		}
+	}
 }
 
 func (p *Popup) drawHelp(vp view.Port) {
