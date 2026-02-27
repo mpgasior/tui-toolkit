@@ -86,13 +86,13 @@ func (p *Popup) drawChart(vp view.Port, title string, data []float64, style scre
 	})
 
 	draw.Text(vp.Offset(0, 2, 0, 0), draw.TextChunk{
-		Text:      fmt.Sprintf(" %.2f%% (now)", now),
+		Text:      fmt.Sprintf(" %.2f%% (now) ", now),
 		Style:     style,
 		Alignment: draw.TextAlignmentRight,
 	})
 
 	draw.Text(vp.Slice(0, h-1, w-2, h), draw.TextChunk{
-		Text:      fmt.Sprintf(" %.2f%% (min) %.2f%% (max)", dataMin, dataMax),
+		Text:      fmt.Sprintf(" %.2f%% (min) %.2f%% (avg) %.2f%% (max) ", dataMin, (dataMin+dataMax)/2, dataMax),
 		Style:     style,
 		Alignment: draw.TextAlignmentRight,
 	})
