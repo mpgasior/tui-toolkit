@@ -34,8 +34,11 @@ type HistorySnapshot struct {
 	CPU []float64
 	Mem []uint64
 
+	MaxCPU float64
+	MinCPU float64
 	AvgCPU float64
 	MaxMem uint64
+	MinMem uint64
 
 	LatestCPU float64
 	LatestMem uint64
@@ -150,7 +153,10 @@ func (r *Registry) GetHistory(k Key) (HistorySnapshot, bool) {
 		LatestCPU: h.Summary.LatestCPU,
 		LatestMem: h.Summary.LatestMem,
 		AvgCPU:    h.Summary.AvgCPU,
+		MaxCPU:    h.Summary.MaxCPU,
+		MinCPU:    h.Summary.MinCPU,
 		MaxMem:    h.Summary.MaxMem,
+		MinMem:    h.Summary.MinMem,
 		CPUReady:  h.Summary.CPUReady(),
 		MemReady:  h.Summary.MemReady(),
 	}, true

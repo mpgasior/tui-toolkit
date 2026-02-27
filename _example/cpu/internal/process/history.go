@@ -10,8 +10,11 @@ type Summary struct {
 
 	LatestCPU float64
 	AvgCPU    float64
+	MinCPU    float64
+	MaxCPU    float64
 	LatestMem uint64
 	MaxMem    uint64
+	MinMem    uint64
 
 	Samples uint64
 }
@@ -51,8 +54,13 @@ func (h *History) Push(s Sample) {
 	if s.MemoryRSS > h.Summary.MaxMem {
 		h.Summary.MaxMem = s.MemoryRSS
 	}
+	if s.MemoryRSS < h.Summary.MinMem {
+		h.Summary.MinMem = s.MemoryRSS
+	}
 
 	if h.lastTimestamp.IsZero() {
+		h.Summary.MinMem = s.MemoryRSS
+
 		h.lastTimestamp = s.Timestamp
 		h.lastUserTotal = s.UserTotalTime
 		h.lastKernelTotal = s.KernelTotalTime
@@ -81,6 +89,12 @@ func (h *History) Push(s Sample) {
 		h.CPU.Push(usage)
 
 		h.Summary.AvgCPU = h.Summary.CPUSum / float64(h.Summary.Samples)
+		if usage < h.Summary.MinCPU {
+			h.Summary.MinCPU = usage
+		}
+		if usage > h.Summary.MaxCPU {
+			h.Summary.MaxCPU = usage
+		}
 	}
 
 	h.lastTimestamp = s.Timestamp

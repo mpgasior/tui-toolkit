@@ -2,8 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"math"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -53,82 +51,61 @@ func (p *Popup) Draw(vp view.Port) {
 	)
 
 	p.drawDetails(layout["details"])
-	chartLayout := view.SplitH(
+	charts := view.SplitV(
 		layout["chart"],
 		view.Dynamic("cpu", 1),
 		view.Dynamic("mem", 1),
 	)
-	p.drawChart(chartLayout["cpu"], "CPU Usage (%)", p.data.CPU, screen.DefaultStyle.Fg(screen.ColorRed))
-	memory := make([]float64, len(p.data.Mem))
-	for idx, m := range p.data.Mem {
-		memory[idx] = float64(m)
-	}
-	p.drawChart(chartLayout["mem"], "Memory Usage (B)", memory, screen.DefaultStyle.Fg(screen.ColorBlue))
+
+	cpuStyle := screen.DefaultStyle.Fg(screen.ColorRed)
+	draw.Box(charts["cpu"], draw.BoxBorderThin, cpuStyle)
+	draw.Histogram(charts["cpu"].Offset(1), p.data.CPU, func(v float64) float64 { return v }, cpuStyle)
+	p.drawChartBorder(
+		charts["cpu"].Offset(0, 2, 0, 2),
+		" CPU Usage (%) ",
+		fmt.Sprintf("%.2f%% (now) ", p.data.LatestCPU),
+		fmt.Sprintf("%.2f%% (min) %.2f%% (avg) %.2f%% (max) ", p.data.MinCPU, p.data.AvgCPU, p.data.MaxCPU),
+		cpuStyle,
+	)
+
+	memStyle := screen.DefaultStyle.Fg(screen.ColorBlue)
+	draw.Box(charts["mem"], draw.BoxBorderThin, memStyle)
+	draw.Histogram(charts["mem"].Offset(1), p.data.Mem, func(v uint64) float64 { return float64(v) }, memStyle)
+	p.drawChartBorder(
+		charts["mem"].Offset(0, 2, 0, 2),
+		" Memory Usage (%) ",
+		fmt.Sprintf("%s (now) ", formatWorkingSet(p.data.LatestMem)),
+		fmt.Sprintf("%s (min) %s (max) ", formatWorkingSet(p.data.MinMem), formatWorkingSet(p.data.MaxMem)),
+		memStyle,
+	)
 	p.drawHelp(layout["help"])
 }
 
-func (p *Popup) drawChart(vp view.Port, title string, data []float64, style screen.Style) {
-	draw.Box(vp, draw.BoxBorderCorners, style)
-	draw.Box(vp, draw.BoxBorderThin, style)
-
-	if len(data) == 0 {
-		return
+func (p *Popup) drawChartBorder(
+	vp view.Port,
+	topLeft, topRight, bottomRight string,
+	style screen.Style,
+) {
+	if topLeft != "" {
+		draw.Text(vp, draw.TextChunk{
+			Text:  topLeft,
+			Style: style,
+		})
 	}
-	w, h := vp.Size()
-
-	dataMin := slices.Min(data)
-	dataMax := slices.Max(data)
-	now := data[len(data)-1]
-	draw.Text(vp.Offset(0, 0, 0, 2), draw.TextChunk{
-		Text:      " " + title + " ",
-		Style:     style,
-		Alignment: draw.TextAlignmentLeft,
-	})
-
-	draw.Text(vp.Offset(0, 2, 0, 0), draw.TextChunk{
-		Text:      fmt.Sprintf(" %.2f%% (now) ", now),
-		Style:     style,
-		Alignment: draw.TextAlignmentRight,
-	})
-
-	draw.Text(vp.Slice(0, h-1, w-2, h), draw.TextChunk{
-		Text:      fmt.Sprintf(" %.2f%% (min) %.2f%% (avg) %.2f%% (max) ", dataMin, (dataMin+dataMax)/2, dataMax),
-		Style:     style,
-		Alignment: draw.TextAlignmentRight,
-	})
-
-	vp = vp.Offset(1)
-	dataRange := dataMax - dataMin
-	rangeMax := float64(h)
-
-	var blocks = [9]rune{' ', '▂', '▃', '▄', '▅', '▆', '▇', '█', '█'}
-
-	for x, d := range data {
-		if x >= w {
-			break
-		}
-
-		var v float64
-		if dataRange == 0 {
-			v = float64(h) * 0.5
-		} else {
-			v = ((d - dataMin) / dataRange) * rangeMax
-		}
-
-		fullBlocks := int(math.Floor(v))
-		remainder := v - float64(fullBlocks)
-		partialIdx := int(remainder * 8)
-
-		for yOffset := 0; yOffset < fullBlocks && yOffset < h; yOffset++ {
-			draw.Rune(vp, x, h-1-yOffset, '█', style)
-		}
-
-		if fullBlocks < h {
-			char := blocks[partialIdx]
-			if char != ' ' {
-				draw.Rune(vp, x, h-1-fullBlocks, char, style)
-			}
-		}
+	if topRight != "" {
+		draw.Text(vp, draw.TextChunk{
+			Text:      topRight,
+			Style:     style,
+			Alignment: draw.TextAlignmentRight,
+		})
+	}
+	if bottomRight != "" {
+		w, h := vp.Size()
+		draw.Text(vp.Slice(0, h-1, w, h), draw.TextChunk{
+			Text:      bottomRight,
+			Style:     style,
+			Alignment: draw.TextAlignmentRight,
+		})
 	}
 }
 
@@ -144,10 +121,6 @@ func (p *Popup) drawDetails(vp view.Port) {
 		view.Fixed("name", 1),
 		view.Fixed("creation-time", 1),
 		view.Fixed("exit-time", 1),
-		view.Fixed("avg-cpu", 1),
-		view.Fixed("recent-cpu", 1),
-		view.Fixed("peak-mem", 1),
-		view.Fixed("recent-mem", 1),
 	)
 
 	field := func(key string) (title view.Port, value view.Port) {
@@ -186,20 +159,5 @@ func (p *Popup) drawDetails(vp view.Port) {
 	draw.Line(vpTitle, "Exited", styleTitle)
 	if !p.data.ExitTime.IsZero() {
 		draw.Line(vpValue, p.data.ExitTime.String(), styleValue.Fg(screen.ColorRed))
-	}
-
-	if p.data.CPUReady {
-		setField("avg-cpu", "CPU% (Avg 1m)", fmt.Sprintf("%.2f%%", p.data.AvgCPU))
-		setField("recent-cpu", "CPU% (Now)", fmt.Sprintf("%.2f%%", p.data.LatestCPU))
-	} else {
-		setField("avg-cpu", "CPU% (Avg 1m)", "")
-		setField("recent-cpu", "CPU% (Now)", "")
-	}
-	if p.data.MemReady {
-		setField("peak-mem", "MEM (Peak)", formatWorkingSet(p.data.MaxMem))
-		setField("recent-mem", "MEM (Now)", formatWorkingSet(p.data.LatestMem))
-	} else {
-		setField("peak-mem", "MEM (Peak)", "")
-		setField("recent-mem", "MEM (Now)", "")
 	}
 }
