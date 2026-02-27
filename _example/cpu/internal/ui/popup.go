@@ -47,31 +47,29 @@ func (p *Popup) Draw(vp view.Port) {
 
 	layout := view.SplitH(
 		vp.Offset(1, 2),
-		view.Fixed("details", 8),
+		view.Fixed("details", 4),
 		view.Dynamic("chart", 1),
 		view.Fixed("help", 1),
 	)
 
 	p.drawDetails(layout["details"])
-	chartLayout := view.SplitV(
+	chartLayout := view.SplitH(
 		layout["chart"],
 		view.Dynamic("cpu", 1),
-		view.Fixed("gap", 1),
 		view.Dynamic("mem", 1),
 	)
-	p.drawChart(chartLayout["cpu"], p.data.CPU, screen.DefaultStyle.Fg(screen.ColorRed))
+	p.drawChart(chartLayout["cpu"], "CPU Usage (%)", p.data.CPU, screen.DefaultStyle.Fg(screen.ColorRed))
 	memory := make([]float64, len(p.data.Mem))
 	for idx, m := range p.data.Mem {
 		memory[idx] = float64(m)
 	}
-	p.drawChart(chartLayout["mem"], memory, screen.DefaultStyle.Fg(screen.ColorBlue))
+	p.drawChart(chartLayout["mem"], "Memory Usage (B)", memory, screen.DefaultStyle.Fg(screen.ColorBlue))
 	p.drawHelp(layout["help"])
 }
 
-func (p *Popup) drawChart(vp view.Port, data []float64, style screen.Style) {
+func (p *Popup) drawChart(vp view.Port, title string, data []float64, style screen.Style) {
 	draw.Box(vp, draw.BoxBorderCorners, style)
-	draw.Line(vp.Offset(0, 0, 0, 10), "CPU min: 10%, max: 25%", style)
-	vp = vp.Offset(1)
+	draw.Box(vp, draw.BoxBorderThin, style)
 
 	if len(data) == 0 {
 		return
@@ -80,7 +78,26 @@ func (p *Popup) drawChart(vp view.Port, data []float64, style screen.Style) {
 
 	dataMin := slices.Min(data)
 	dataMax := slices.Max(data)
+	now := data[len(data)-1]
+	draw.Text(vp.Offset(0, 0, 0, 2), draw.TextChunk{
+		Text:      " " + title + " ",
+		Style:     style,
+		Alignment: draw.TextAlignmentLeft,
+	})
 
+	draw.Text(vp.Offset(0, 2, 0, 0), draw.TextChunk{
+		Text:      fmt.Sprintf(" %.2f%% (now)", now),
+		Style:     style,
+		Alignment: draw.TextAlignmentRight,
+	})
+
+	draw.Text(vp.Slice(0, h-1, w-2, h), draw.TextChunk{
+		Text:      fmt.Sprintf(" %.2f%% (min) %.2f%% (max)", dataMin, dataMax),
+		Style:     style,
+		Alignment: draw.TextAlignmentRight,
+	})
+
+	vp = vp.Offset(1)
 	dataRange := dataMax - dataMin
 	rangeMax := float64(h)
 
