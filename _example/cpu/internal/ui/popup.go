@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
@@ -42,21 +41,27 @@ func (p *Popup) Draw(vp view.Port) {
 		draw.Line(vp.Offset(1), "Loading PID ("+pid+") ...", screen.DefaultStyle)
 		return
 	}
+	text := fmt.Sprintf(" [ %s (%d) ]", p.data.Name, p.data.PID)
+	draw.Line(vp.Offset(0, 0, 0, 2), text, screen.DefaultStyle)
 
 	layout := view.SplitH(
 		vp.Offset(1, 2),
-		view.Fixed("details", 4),
+		view.Fixed("details", 2),
 		view.Dynamic("chart", 1),
 		view.Fixed("help", 1),
 	)
 
 	p.drawDetails(layout["details"])
+	p.drawHistograms(layout["chart"])
+	p.drawHelp(layout["help"])
+}
+
+func (p *Popup) drawHistograms(vp view.Port) {
 	charts := view.SplitV(
-		layout["chart"],
+		vp,
 		view.Dynamic("cpu", 1),
 		view.Dynamic("mem", 1),
 	)
-
 	cpuStyle := screen.DefaultStyle.Fg(screen.ColorRed)
 	draw.Box(charts["cpu"], draw.BoxBorderThin, cpuStyle)
 	draw.Histogram(charts["cpu"].Offset(1), p.data.CPU, func(v float64) float64 { return v }, cpuStyle)
@@ -78,7 +83,6 @@ func (p *Popup) Draw(vp view.Port) {
 		fmt.Sprintf("%s (min) %s (max) ", formatWorkingSet(p.data.MinMem), formatWorkingSet(p.data.MaxMem)),
 		memStyle,
 	)
-	p.drawHelp(layout["help"])
 }
 
 func (p *Popup) drawChartBorder(
@@ -117,8 +121,6 @@ func (p *Popup) drawHelp(vp view.Port) {
 
 func (p *Popup) drawDetails(vp view.Port) {
 	form := view.SplitH(vp,
-		view.Fixed("pid", 1),
-		view.Fixed("name", 1),
 		view.Fixed("creation-time", 1),
 		view.Fixed("exit-time", 1),
 	)
@@ -135,16 +137,6 @@ func (p *Popup) drawDetails(vp view.Port) {
 
 	styleTitle := screen.DefaultStyle.Attr(screen.AttrBold)
 	styleValue := screen.DefaultStyle
-
-	setField := func(key, title, value string) {
-		vpTitle, vpValue := field(key)
-
-		draw.Line(vpTitle, title, styleTitle)
-		draw.Line(vpValue, value, styleValue)
-	}
-
-	setField("pid", "PID", strconv.FormatInt(int64(p.data.PID), 10))
-	setField("name", "Name", p.data.Name)
 
 	var vpTitle view.Port
 	var vpValue view.Port
