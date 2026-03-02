@@ -62,30 +62,56 @@ func (p *Popup) drawHistograms(vp view.Port) {
 		view.Dynamic("cpu", 1),
 		view.Dynamic("mem", 1),
 	)
+
 	cpuStyle := screen.DefaultStyle.Fg(screen.ColorRed)
-	draw.Box(charts["cpu"], draw.BoxBorderThin, cpuStyle)
-	draw.Histogram(charts["cpu"].Offset(1), p.data.CPU, func(v float64) float64 { return v }, cpuStyle)
-	p.drawChartBorder(
-		charts["cpu"].Offset(0, 2, 0, 2),
+	drawMetric(charts["cpu"], p.data.CPU,
 		" CPU Usage (%) ",
 		fmt.Sprintf("%.2f%% (now) ", p.data.LatestCPU),
 		fmt.Sprintf("%.2f%% (min) %.2f%% (avg) %.2f%% (max) ", p.data.MinCPU, p.data.AvgCPU, p.data.MaxCPU),
 		cpuStyle,
+		func(v float64) float64 { return v },
 	)
 
 	memStyle := screen.DefaultStyle.Fg(screen.ColorBlue)
-	draw.Box(charts["mem"], draw.BoxBorderThin, memStyle)
-	draw.Histogram(charts["mem"].Offset(1), p.data.Mem, func(v uint64) float64 { return float64(v) }, memStyle)
-	p.drawChartBorder(
-		charts["mem"].Offset(0, 2, 0, 2),
+	drawMetric(charts["mem"], p.data.Mem,
 		" Memory Usage (%) ",
 		fmt.Sprintf("%s (now) ", formatWorkingSet(p.data.LatestMem)),
 		fmt.Sprintf("%s (min) %s (max) ", formatWorkingSet(p.data.MinMem), formatWorkingSet(p.data.MaxMem)),
 		memStyle,
+		func(v uint64) float64 { return float64(v) },
 	)
 }
 
-func (p *Popup) drawChartBorder(
+func drawMetric[T any](
+	viewPort view.Port,
+	data []T,
+	title string,
+	nowLabel string,
+	statsLabel string,
+	style screen.Style,
+	transform func(T) float64,
+) {
+	draw.Box(viewPort, draw.BoxBorderThin, style)
+
+	histVP := viewPort.Offset(1)
+
+	displayData := data
+	if w, _ := histVP.Size(); len(displayData) > w {
+		displayData = displayData[len(displayData)-w:]
+	}
+
+	draw.Histogram(histVP, displayData, transform, style)
+
+	drawChartBorder(
+		viewPort.Offset(0, 2, 0, 2),
+		title,
+		nowLabel,
+		statsLabel,
+		style,
+	)
+}
+
+func drawChartBorder(
 	vp view.Port,
 	topLeft, topRight, bottomRight string,
 	style screen.Style,

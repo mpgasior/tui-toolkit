@@ -27,7 +27,8 @@ func New() *App {
 
 func (a *App) Init() mvu.Task {
 	return mvu.TaskN(
-		task.Refresh(a.state.Registry, time.Millisecond*500),
+		//task.Refresh(a.state.Registry, time.Second),
+		task.Refresh(a.state.Registry, time.Millisecond*750),
 		mvu.TaskOne(ui.SortRequestedEvent{
 			Column: model.SortByCPU,
 			Order:  model.SortOrderDescending,
