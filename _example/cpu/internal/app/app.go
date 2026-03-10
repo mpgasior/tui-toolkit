@@ -20,14 +20,13 @@ type App struct {
 
 func New() *App {
 	return &App{
-		state: model.New(60),
+		state: model.New(60, 5*time.Minute),
 		ui:    ui.New(),
 	}
 }
 
 func (a *App) Init() mvu.Task {
 	return mvu.TaskN(
-		//task.Refresh(a.state.Registry, time.Second),
 		task.Refresh(a.state.Registry, time.Millisecond*750),
 		mvu.TaskOne(ui.SortRequestedEvent{
 			Column: model.SortByCPU,
@@ -44,7 +43,12 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		}
 		return a.TaskQuery()
 	case task.HistoryReadyEvent:
-		a.ui.Popup.Update(event.Data)
+		if event.Found {
+			a.ui.Popup.Update(event.Data)
+			return mvu.TaskNone
+		}
+
+		a.ui.Popup.Close()
 		return mvu.TaskNone
 	case task.ListReadyEvent:
 		a.ui.UpdateTable(event.Data, event.Query)
@@ -53,7 +57,7 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 		a.ui.Search.Spinner.Next()
 		return mvu.TaskNone
 	case ui.SortRequestedEvent:
-		a.state.UpdateSort(event.Column, event.Order)
+		a.state.UpdateSort(event.Column, event.Order, event.Exclude)
 		return a.TaskQuery()
 	case ui.PIDSelectedEvent:
 		a.state.SelectedKey = event.Key
@@ -87,6 +91,9 @@ func (a *App) Update(e mvu.Event) mvu.Task {
 				return task.CancelRefresh()
 			}
 			return task.Refresh(a.state.Registry, time.Second)
+		case vt.KeyCtrlE:
+			a.state.UpdateExclude(a.state.Exclude.Next())
+			return a.TaskQuery()
 		}
 
 		switch a.ui.CurrentFocus {

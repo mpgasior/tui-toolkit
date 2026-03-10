@@ -31,7 +31,7 @@ func New() ViewState {
 }
 
 func (s *ViewState) UpdateTable(rows []model.Process, query model.ListQuery) {
-	s.Table.Set(rows, query.By, query.Order)
+	s.Table.Set(rows, query.By, query.Order, query.Exclude)
 }
 
 func (s *ViewState) OpenPopup(key process.Key) {

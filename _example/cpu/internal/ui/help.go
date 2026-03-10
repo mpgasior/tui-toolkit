@@ -9,19 +9,18 @@ import (
 )
 
 func DrawHelp(vp view.Port, focus Focus) {
-	items := []string{"Quit: ctrl+c"}
-
-	switch focus {
-	case FocusSearch, FocusTable:
-		items = append(items, "Focus: [S-]Tab", "Pause: ctrl+p")
-
-		if focus == FocusTable {
-			items = append(items,
-				"Sort: s",
-				"Column: h/l",
-				"Top/End: g/G",
-			)
-		}
+	items := []string{
+		"Quit: ctrl+c",
+		"Focus: [S-]Tab",
+		"Pause: ctrl+p",
+		"Mode: ctrl+e",
+	}
+	if focus == FocusTable {
+		items = append(items,
+			"Sort: s",
+			"Column: h/l",
+			"Top/End: g/G",
+		)
 	}
 
 	text := strings.Join(items, " • ")

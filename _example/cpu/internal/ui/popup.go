@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/model"
 	"github.com/mpgasior/tui-toolkit/_example/cpu/internal/process"
@@ -12,35 +11,36 @@ import (
 )
 
 type Popup struct {
-	Key    process.Key
-	Loaded bool
+	key    process.Key
+	loaded bool
 	data   model.ProcessHistory
 }
 
 func (p *Popup) Open(key process.Key) {
-	p.Loaded = false
-	p.Key = key
+	p.loaded = false
+	p.key = key
 }
 
 func (p *Popup) Update(data model.ProcessHistory) {
-	p.Loaded = true
+	p.loaded = true
 	p.data = data
 }
 
 func (p *Popup) Close() {
-	p.Key = process.KeyNone
-	p.Loaded = false
+	p.key = process.KeyNone
+	p.loaded = false
 }
 
 func (p *Popup) Draw(vp view.Port) {
 	draw.Clear(vp, screen.DefaultStyle)
 	draw.Box(vp, draw.BoxBorderDouble, screen.DefaultStyle.Fg(screen.ColorGreen))
 
-	if !p.Loaded {
-		pid := p.Key.String()
+	if !p.loaded {
+		pid := p.key.String()
 		draw.Line(vp.Offset(1), "Loading PID ("+pid+") ...", screen.DefaultStyle)
 		return
 	}
+
 	text := fmt.Sprintf(" [ %s (%d) ]", p.data.Name, p.data.PID)
 	draw.Line(vp.Offset(0, 0, 0, 2), text, screen.DefaultStyle)
 
@@ -48,12 +48,10 @@ func (p *Popup) Draw(vp view.Port) {
 		vp.Offset(1, 2),
 		view.Fixed("details", 2),
 		view.Dynamic("chart", 1),
-		view.Fixed("help", 1),
 	)
 
 	p.drawDetails(layout["details"])
 	p.drawHistograms(layout["chart"])
-	p.drawHelp(layout["help"])
 }
 
 func (p *Popup) drawHistograms(vp view.Port) {
@@ -139,12 +137,6 @@ func drawChartBorder(
 	}
 }
 
-func (p *Popup) drawHelp(vp view.Port) {
-	items := []string{"Kill: k", "Interrupt: i", "Cancel: Esc"}
-	text := strings.Join(items, " • ")
-	draw.Line(vp, text, screen.DefaultStyle.Fg(screen.ColorBlue))
-}
-
 func (p *Popup) drawDetails(vp view.Port) {
 	form := view.SplitH(vp,
 		view.Fixed("creation-time", 1),
@@ -173,9 +165,9 @@ func (p *Popup) drawDetails(vp view.Port) {
 		draw.Line(vpValue, p.data.CreationTime.String(), styleValue)
 	}
 
-	vpTitle, vpValue = field("exit-time")
-	draw.Line(vpTitle, "Exited", styleTitle)
 	if !p.data.ExitTime.IsZero() {
+		vpTitle, vpValue = field("exit-time")
+		draw.Line(vpTitle, "Exited", styleTitle)
 		draw.Line(vpValue, p.data.ExitTime.String(), styleValue.Fg(screen.ColorRed))
 	}
 }

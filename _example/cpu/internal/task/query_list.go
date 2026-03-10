@@ -31,7 +31,7 @@ func QueryList(registry *process.Registry, query model.ListQuery) mvu.Task {
 				results = append(results, toProcess(s))
 			}
 
-			results = model.Filter(results, query.Term)
+			results = model.Filter(results, query.Term, query.Exclude)
 			model.SortResults(results, query.By, query.Order)
 
 			e := ListReadyEvent{

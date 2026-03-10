@@ -24,8 +24,9 @@ var tableColumnOrder = []model.SortBy{
 }
 
 type SortRequestedEvent struct {
-	Column model.SortBy
-	Order  model.SortOrder
+	Column  model.SortBy
+	Order   model.SortOrder
+	Exclude model.Exclude
 }
 
 type PIDSelectedEvent struct {
@@ -36,6 +37,7 @@ type Table struct {
 	Rows      []model.Process
 	SortBy    model.SortBy
 	SortOrder model.SortOrder
+	Exclude   model.Exclude
 
 	Scroll view.Scroll
 }
@@ -48,9 +50,9 @@ func NewTable() Table {
 	}
 }
 
-func (t *Table) Set(rows []model.Process, by model.SortBy, order model.SortOrder) {
+func (t *Table) Set(rows []model.Process, by model.SortBy, order model.SortOrder, exclude model.Exclude) {
 	t.Rows = rows
-	t.SortBy, t.SortOrder = by, order
+	t.SortBy, t.SortOrder, t.Exclude = by, order, exclude
 }
 
 func (t *Table) Update(key vt.KeyEvent) (mvu.Event, bool) {
@@ -58,17 +60,17 @@ func (t *Table) Update(key vt.KeyEvent) (mvu.Event, bool) {
 	case 's':
 		t.SortOrder = t.SortOrder.Next()
 		return SortRequestedEvent{
-			Column: t.SortBy, Order: t.SortOrder,
+			Column: t.SortBy, Order: t.SortOrder, Exclude: t.Exclude,
 		}, true
 	case 'h':
 		t.PrevSortBy()
 		return SortRequestedEvent{
-			Column: t.SortBy, Order: t.SortOrder,
+			Column: t.SortBy, Order: t.SortOrder, Exclude: t.Exclude,
 		}, true
 	case 'l':
 		t.NextSortBy()
 		return SortRequestedEvent{
-			Column: t.SortBy, Order: t.SortOrder,
+			Column: t.SortBy, Order: t.SortOrder, Exclude: t.Exclude,
 		}, true
 	}
 
@@ -180,10 +182,11 @@ func (t *Table) Draw(vp view.Port, focused, paused bool) {
 	drawHeader("peak-mem", "MEM (Peak)", model.SortByMaxMem)
 	drawHeader("age", "Age", model.SortByAge)
 
-	_, h := vp.Size()
+	w, h := vp.Size()
 	start, end := t.Scroll.Update(h-2, len(t.Rows))
 
-	t.drawFooter(cell("name", h-1), focused, paused, activeStyle)
+	bottom := vp.Slice(2, h-1, w-2, 1)
+	t.drawFooter(bottom, focused, paused, activeStyle)
 	t.drawScroll(vp, activeStyle)
 
 	if t.Rows == nil {
@@ -262,18 +265,30 @@ func (t *Table) drawScroll(vp view.Port, style screen.Style) {
 }
 
 func (t *Table) drawFooter(vp view.Port, focused, paused bool, style screen.Style) {
-	text := "Total: " + strconv.FormatInt(int64(len(t.Rows)), 10)
+	var text string
+	switch t.Exclude {
+	case model.ExcludeNone:
+		text = " [Active+Dead] "
+	case model.ExcludeActive:
+		text = " [Dead] "
+	case model.ExcludeExited:
+		text = " [Active] "
+	}
+
 	if focused {
 		index := strconv.FormatInt(int64(t.Scroll.Index+1), 10)
 		total := strconv.FormatInt(int64(len(t.Rows)), 10)
-		text = index + " of " + total
+		text += index + " of " + total + " "
+	} else {
+		total := strconv.FormatInt(int64(len(t.Rows)), 10)
+		text += total + " "
 	}
 
 	if paused {
 		text = "[Paused] " + text
 	}
 
-	draw.Text(vp.Offset(0, 2), draw.TextChunk{
+	draw.Text(vp.Offset(0, 2, 0, 0), draw.TextChunk{
 		Text:      text,
 		Style:     style,
 		Alignment: draw.TextAlignmentRight,

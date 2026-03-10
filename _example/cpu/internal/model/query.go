@@ -7,9 +7,10 @@ import (
 )
 
 type ListQuery struct {
-	Term  string
-	By    SortBy
-	Order SortOrder
+	Term    string
+	By      SortBy
+	Order   SortOrder
+	Exclude Exclude
 }
 
 type Process struct {

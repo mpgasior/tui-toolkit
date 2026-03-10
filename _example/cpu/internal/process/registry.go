@@ -50,16 +50,18 @@ type HistorySnapshot struct {
 type Registry struct {
 	mu sync.RWMutex
 
-	table       map[Key]*Info
-	telemetry   map[Key]*History
-	historySize int
+	table        map[Key]*Info
+	telemetry    map[Key]*History
+	historySize  int
+	recycleAfter time.Duration
 }
 
-func NewRegistry(historySize int) *Registry {
+func NewRegistry(historySize int, recycleAfter time.Duration) *Registry {
 	return &Registry{
-		table:       make(map[Key]*Info),
-		telemetry:   make(map[Key]*History),
-		historySize: historySize,
+		table:        make(map[Key]*Info),
+		telemetry:    make(map[Key]*History),
+		historySize:  historySize,
+		recycleAfter: recycleAfter,
 	}
 }
 
@@ -87,6 +89,7 @@ func (r *Registry) Update(samples []Sample) {
 		r.telemetry[key].Push(s)
 	}
 
+	deleteCutoff := now.Add(r.recycleAfter)
 	for k, v := range r.table {
 		if _, ok := seenKeys[k]; ok {
 			continue
@@ -96,8 +99,10 @@ func (r *Registry) Update(samples []Sample) {
 			v.ExitTime = now
 		}
 
-		delete(r.table, k)
-		delete(r.telemetry, k)
+		if v.ExitTime.After(deleteCutoff) {
+			delete(r.table, k)
+			delete(r.telemetry, k)
+		}
 	}
 }
 
