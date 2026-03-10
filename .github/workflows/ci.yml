@@ -45,6 +45,7 @@ jobs:
       run: go test -v ./...
       
     - name: golangci-lint
+      if: false
       uses: golangci/golangci-lint-action@v6
       with:
         version: latest

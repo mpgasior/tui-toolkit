@@ -11,7 +11,6 @@ type TextInput struct {
 
 func (t *TextInput) Update(e any) bool {
 	if paste, ok := e.(vt.PasteEvent); ok {
-		println("??????????")
 		runes := []rune(string(paste.Bytes))
 		t.cursor += len(runes)
 		t.buffer = append(t.buffer, runes...)
