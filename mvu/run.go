@@ -1,7 +1,6 @@
 package mvu
 
 import (
-	"bytes"
 	"context"
 
 	"github.com/mpgasior/tui-toolkit/screen"
@@ -52,56 +51,35 @@ func Run(c Component) error {
 		select {
 		case <-ctx.Done():
 			return nil
-		case ev := <-ch:
-			if ev == ShutdownEvent {
+		case e := <-ch:
+			switch ev := e.(type) {
+			case shutdownEvent:
 				cancel()
 				return nil
-			}
-
-			if resize, ok := ev.(ResizeEvent); ok {
-				scr = screen.New(resize.Width, resize.Height)
+			case ResizeEvent:
+				scr = screen.New(ev.Width, ev.Height)
 				scr.Flush(terminal)
-				continue
-			}
-
-			if batch, ok := ev.(BatchTaskEvent); ok {
-				for _, t := range batch.Tasks {
+			case BatchTaskEvent:
+				for _, t := range ev.Tasks {
 					session.Dispatch(t)
 				}
-				continue
-			}
-
-			if launch, ok := ev.(LaunchEvent); ok {
-				var buf bytes.Buffer
-				runErr, err := session.RunSuspended(ctx, func() error {
-					cmd, captureOutput, err := launch.CmdBuilder(tty.In, tty.Out)
-					if err != nil {
-						return err
-					}
-
-					if captureOutput {
-						cmd.Stdout = &buf
-					}
-
-					return cmd.Run()
+			case ExecEvent:
+				var task Task
+				err := session.RunSuspended(ctx, func() {
+					task = ev(tty.In, tty.Out)
 				})
-
 				if err != nil {
 					return err
 				}
 
-				if launch.OnResult != nil {
-					t := launch.OnResult(buf.Bytes(), runErr)
-					session.Dispatch(t)
-				}
+				session.Dispatch(task)
 
 				if _, err := scr.Flush(terminal); err != nil {
 					return err
 				}
-				continue
+			default:
+				session.Dispatch(c.Update(ev))
 			}
-
-			session.Dispatch(c.Update(ev))
 		}
 	}
 }

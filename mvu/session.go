@@ -100,15 +100,15 @@ func (s *Session) Stop() error {
 	return nil
 }
 
-func (s *Session) RunSuspended(ctx context.Context, run func() error) (runErr error, err error) {
-	if err = s.Stop(); err != nil {
-		return nil, err
+func (s *Session) RunSuspended(ctx context.Context, run func()) error {
+	if err := s.Stop(); err != nil {
+		return err
 	}
 
-	runErr = run()
+	run()
 
-	err = s.Start(ctx)
-	return runErr, err
+	err := s.Start(ctx)
+	return err
 }
 
 func (s *Session) Dispatch(t Task) {
