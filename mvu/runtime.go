@@ -84,6 +84,9 @@ func (r *Runtime) Start(ctx context.Context) (dispatch func(Task), shutdown func
 	shutdown = sync.OnceFunc(func() {
 		cancel()
 		wg.Wait()
+
+		clear(r.pending)
+		clear(r.tasks)
 	})
 
 	wg.Go(coordinate)
