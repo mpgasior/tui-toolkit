@@ -20,14 +20,16 @@ func main() {
 	}
 	defer term.Restore(fd, state)
 
-	r, err := termio.NewReader(fd)
+	ctxReader, err := termio.NewReader(fd)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer r.Close()
+	defer ctxReader.Close()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
+
+	r := termio.NewEscReader(ctx, ctxReader.ReadContext, 2*time.Second)
 
 	ctrlC := [8]byte{3}
 	for {
@@ -36,9 +38,7 @@ func main() {
 		}
 
 		var buf [8]byte
-		readCtx, stop := context.WithTimeout(ctx, time.Second*3)
-		n, err := r.ReadContext(readCtx, buf[:])
-		stop()
+		n, err := r.Read(buf[:])
 
 		if err != nil {
 			fmt.Printf("%v\r\n", err)
