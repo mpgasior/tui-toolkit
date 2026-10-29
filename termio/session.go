@@ -2,9 +2,9 @@ package termio
 
 import (
 	"context"
-	"errors"
 	"os"
 
+	"github.com/mpgasior/tui-toolkit/scope"
 	"golang.org/x/term"
 )
 
@@ -32,34 +32,50 @@ func OpenSession(in, out *os.File) (*session, error) {
 type session struct {
 	in, out *os.File
 	state   *term.State
+	scope   *scope.Scope[*session]
 
 	reader Reader
 }
 
 func (s *session) Enter() error {
-	fd := int(s.in.Fd())
-	state, err := term.MakeRaw(fd)
-	if err != nil {
-		return nil
-	}
-	s.state = state
+	scope := scope.New(s,
+		scope.Step[*session]{
+			Apply: func(s *session) error {
+				fd := int(s.in.Fd())
+				state, err := term.MakeRaw(fd)
+				if err != nil {
+					return err
+				}
+				s.state = state
+				return nil
+			},
+			Restore: func(s *session) error {
+				fd := int(s.in.Fd())
+				return term.Restore(fd, s.state)
+			},
+		},
+		scope.Step[*session]{
+			Apply: func(s *session) error {
+				fd := int(s.in.Fd())
+				var err error
+				s.reader, err = NewReader(fd)
+				return err
+			},
+			Restore: func(s *session) error {
+				return s.reader.Close()
+			},
+		})
 
-	r, err := NewReader(fd)
-	if err != nil {
-		return errors.Join(
-			err,
-			term.Restore(fd, s.state))
+	if err := scope.Apply(); err != nil {
+		return err
 	}
-	s.reader = r
 
+	s.scope = scope
 	return nil
 }
 
 func (s *session) Close() error {
-	fd := int(s.in.Fd())
-	return errors.Join(
-		term.Restore(fd, s.state),
-		s.reader.Close())
+	return s.scope.Restore()
 }
 
 func (s *session) Suspend(fn func()) error {
