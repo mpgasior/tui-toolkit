@@ -62,6 +62,7 @@ func NewReader(fd int) (_ *reader, err error) {
 
 func (r *reader) Close() error {
 	return errors.Join(
+		unix.SetNonblock(r.fd, false),
 		unix.Close(r.epFd),
 		unix.Close(r.cancelFd),
 	)
