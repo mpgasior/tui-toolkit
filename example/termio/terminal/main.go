@@ -11,7 +11,10 @@ import (
 )
 
 func main() {
-	t, err := termio.OpenSession(os.Stdin, os.Stdout)
+	mods := []termio.SessionModifier{
+		termio.WithAltScreen,
+	}
+	t, err := termio.OpenSession(os.Stdin, os.Stdout, mods...)
 	if err != nil {
 		log.Fatal(err)
 	}

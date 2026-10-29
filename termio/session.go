@@ -17,12 +17,18 @@ type Session interface {
 	Close() error
 }
 
-func OpenSession(in, out *os.File) (*session, error) {
+type SessionModifier struct {
+	Apply   func(s Session) error
+	Restore func(s Session) error
+}
+
+func OpenSession(in, out *os.File, mods ...SessionModifier) (*session, error) {
 	s := &session{
 		in: in, out: out,
+		mods: mods,
 	}
 
-	if err := s.Enter(); err != nil {
+	if err := s.enter(); err != nil {
 		return nil, err
 	}
 
@@ -32,13 +38,14 @@ func OpenSession(in, out *os.File) (*session, error) {
 type session struct {
 	in, out *os.File
 	state   *term.State
+	mods    []SessionModifier
 	scope   *scope.Scope[*session]
 
 	reader Reader
 }
 
-func (s *session) Enter() error {
-	scope := scope.New(s,
+func (s *session) enter() error {
+	builder := scope.NewBuilder(s,
 		scope.Step[*session]{
 			Apply: func(s *session) error {
 				fd := int(s.in.Fd())
@@ -66,6 +73,18 @@ func (s *session) Enter() error {
 			},
 		})
 
+	toStep := func(fn func(Session) error) func(*session) error {
+		return func(s *session) error { return fn(s) }
+	}
+
+	for _, mod := range s.mods {
+		builder.AddStep(scope.Step[*session]{
+			Apply:   toStep(mod.Apply),
+			Restore: toStep(mod.Restore),
+		})
+	}
+
+	scope := builder.Scope()
 	if err := scope.Apply(); err != nil {
 		return err
 	}
@@ -85,7 +104,7 @@ func (s *session) Suspend(fn func()) error {
 
 	fn()
 
-	return s.Enter()
+	return s.enter()
 }
 
 func (s *session) In() *os.File {
