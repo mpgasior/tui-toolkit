@@ -34,3 +34,9 @@ var (
 		{Lo: 0xA0, Hi: 0xFE},
 	}
 )
+
+var (
+	BytesSS3Prefix = []byte(SS3)
+
+	SS3FinalRange = ByteRange{Lo: 0x40, Hi: 0x7E}
+)
