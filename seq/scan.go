@@ -2,17 +2,22 @@ package seq
 
 import (
 	"bytes"
-	"errors"
 	"unicode/utf8"
 
 	"github.com/mpgasior/tui-toolkit/ansi"
 )
 
-var ErrMalformedSequence = errors.New("seq: malformed ansi escape sequence")
+func errMalformedSeq(data []byte, seqType string) (int, []byte, error) {
+	return 0, nil, &MalformedSeqErr{data: data, seqTyp: seqType}
+}
 
 func Scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if len(data) == 0 {
 		return 0, nil, nil
+	}
+
+	if len(data) == 1 && data[0] == ansi.ByteEsc {
+		return 1, data[:1], nil
 	}
 
 	if bytes.HasPrefix(data, ansi.BytesBracketedPastePrefix) {
@@ -27,12 +32,16 @@ func Scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		return ScanSS3(data, atEOF)
 	}
 
+	if bytes.HasPrefix(data, ansi.BytesMetaPrefix) {
+		return ScanMeta(data, atEOF)
+	}
+
 	return ScanUtf8(data, atEOF)
 }
 
 func ScanCSI(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if !bytes.HasPrefix(data, ansi.BytesCSIPrefix) {
-		return len(data), data, ErrMalformedSequence
+		return errMalformedSeq(data, "CSI")
 	}
 	for i := len(ansi.BytesCSIPrefix); i < len(data); i += 1 {
 		b := data[i]
@@ -42,7 +51,7 @@ func ScanCSI(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		}
 
 		if !ansi.CSIParamRange.Contains(b) && !ansi.CSIIntermediateRange.Contains(b) {
-			return i, data[:i], ErrMalformedSequence
+			return errMalformedSeq(data, "CSI")
 		}
 	}
 
@@ -55,7 +64,7 @@ func ScanCSI(data []byte, atEOF bool) (advance int, token []byte, err error) {
 
 func ScanSS3(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if !bytes.HasPrefix(data, ansi.BytesSS3Prefix) {
-		return len(data), data, ErrMalformedSequence
+		return errMalformedSeq(data, "SS3")
 	}
 
 	finalByteIndex := len(ansi.BytesSS3Prefix)
@@ -72,12 +81,12 @@ func ScanSS3(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		return tokenLen, data[:tokenLen], nil
 	}
 
-	return tokenLen, data[:tokenLen], ErrMalformedSequence
+	return errMalformedSeq(data, "SS3")
 }
 
 func ScanBracketedPaste(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if !bytes.HasPrefix(data, ansi.BytesBracketedPastePrefix) {
-		return len(data), data, ErrMalformedSequence
+		return errMalformedSeq(data, "BracketedPaste")
 	}
 
 	for i := len(ansi.BytesBracketedPastePrefix); i < len(data); i += 1 {
@@ -94,11 +103,29 @@ func ScanBracketedPaste(data []byte, atEOF bool) (advance int, token []byte, err
 	return 0, nil, nil
 }
 
-func ScanUtf8(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if len(data) == 0 {
+func ScanMeta(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if !bytes.HasPrefix(data, ansi.BytesMetaPrefix) {
+		return errMalformedSeq(data, "Meta")
+	}
+
+	finalByteIndex := len(ansi.BytesMetaPrefix)
+	if len(data) < finalByteIndex {
+		if atEOF {
+			return len(data), data, nil
+		}
 		return 0, nil, nil
 	}
 
+	b := data[finalByteIndex]
+	tokenLen := finalByteIndex + 1
+	if ansi.MetaFinalRange.Contains(b) {
+		return tokenLen, data[:tokenLen], nil
+	}
+
+	return errMalformedSeq(data, "Meta")
+}
+
+func ScanUtf8(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if !utf8.FullRune(data) {
 		if atEOF {
 			return len(data), data, nil
@@ -108,7 +135,7 @@ func ScanUtf8(data []byte, atEOF bool) (advance int, token []byte, err error) {
 
 	r, size := utf8.DecodeRune(data)
 	if r == utf8.RuneError && size == 1 {
-		return 0, nil, ErrMalformedSequence
+		return errMalformedSeq(data, "UTF8")
 	}
 
 	return size, data[:size], nil

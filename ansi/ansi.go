@@ -45,3 +45,12 @@ var (
 	BytesBracketedPastePrefix = []byte(CSI + "200~")
 	BytesBracketedPasteSuffix = []byte(CSI + "201~")
 )
+
+var (
+	BytesMetaPrefix = []byte(ESC)
+
+	MetaFinalRange = RangeTable{
+		{Lo: 0x00, Hi: 0x1F},
+		{Lo: 0x7E, Hi: 0x7E},
+	}
+)

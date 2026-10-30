@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -37,5 +38,8 @@ func main() {
 
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintf(term, "%v\r\n", err)
+		if me, ok := errors.AsType[*seq.MalformedSeqErr](err); ok {
+			fmt.Fprintf(term, "%v\r\n", me.Data())
+		}
 	}
 }
