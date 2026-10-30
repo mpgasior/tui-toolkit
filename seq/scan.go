@@ -3,6 +3,7 @@ package seq
 import (
 	"bytes"
 	"errors"
+	"unicode/utf8"
 
 	"github.com/mpgasior/tui-toolkit/ansi"
 )
@@ -26,7 +27,7 @@ func Scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		return ScanSS3(data, atEOF)
 	}
 
-	return len(data), data, errors.New("not implemented")
+	return ScanUtf8(data, atEOF)
 }
 
 func ScanCSI(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -91,4 +92,24 @@ func ScanBracketedPaste(data []byte, atEOF bool) (advance int, token []byte, err
 	}
 
 	return 0, nil, nil
+}
+
+func ScanUtf8(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	if !utf8.FullRune(data) {
+		if atEOF {
+			return len(data), data, nil
+		}
+		return 0, nil, nil
+	}
+
+	r, size := utf8.DecodeRune(data)
+	if r == utf8.RuneError && size == 1 {
+		return 0, nil, ErrMalformedSequence
+	}
+
+	return size, data[:size], nil
 }
