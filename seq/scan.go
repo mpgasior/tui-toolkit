@@ -10,7 +10,7 @@ import (
 
 var ErrMalformedSequence = errors.New("seq: malformed ansi escape sequence")
 
-func ScanAnsiToken(data []byte, atEOF bool) (advance int, token []byte, err error) {
+func Scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if len(data) == 0 {
 		return 0, nil, nil
 	}

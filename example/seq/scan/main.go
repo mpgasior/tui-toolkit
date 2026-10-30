@@ -22,7 +22,7 @@ func main() {
 
 	r := seq.NewEscReader(context.Background(), term.ReadContext, 0)
 	scanner := bufio.NewScanner(r)
-	scanner.Split(seq.ScanAnsiToken)
+	scanner.Split(seq.Scan)
 
 	for scanner.Scan() {
 		token := scanner.Bytes()
