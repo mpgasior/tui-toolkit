@@ -1,8 +1,10 @@
-package termio
+package seq
 
 import (
 	"context"
 	"time"
+
+	"github.com/mpgasior/tui-toolkit/ansi"
 )
 
 type ReadContextFunc func(ctx context.Context, p []byte) (n int, err error)
@@ -25,12 +27,12 @@ func NewEscReader(ctx context.Context, src ReadContextFunc, escTimeout time.Dura
 	}
 }
 
-func (er *EscReader) Read(p []byte) (n int, err error) {
+func (r *EscReader) Read(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
 
-	n, err = er.src(er.ctx, p)
+	n, err = r.src(r.ctx, p)
 	if err != nil {
 		return n, err
 	}
@@ -39,11 +41,11 @@ func (er *EscReader) Read(p []byte) (n int, err error) {
 		return n, nil
 	}
 
-	if n == 1 && p[0] == 0x1B {
-		ctx, stop := context.WithTimeout(er.ctx, er.escTimeout)
+	if n == 1 && p[0] == ansi.ByteEsc {
+		ctx, stop := context.WithTimeout(r.ctx, r.escTimeout)
 		defer stop()
 
-		n, err = er.src(ctx, p[1:])
+		n, err = r.src(ctx, p[1:])
 		if err != nil {
 			if err == ctx.Err() {
 				return 1, nil

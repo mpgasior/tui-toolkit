@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/mpgasior/tui-toolkit/seq"
 	"github.com/mpgasior/tui-toolkit/termio"
 	"golang.org/x/term"
 )
@@ -26,7 +27,7 @@ func main() {
 	defer ctxReader.Close()
 
 	ctx := context.Background()
-	r := termio.NewEscReader(ctx, ctxReader.ReadContext, 2*time.Second)
+	r := seq.NewEscReader(ctx, ctxReader.ReadContext, 2*time.Second)
 
 	ctrlC := [8]byte{3}
 	for {
