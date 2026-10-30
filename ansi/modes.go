@@ -1,6 +1,6 @@
 package ansi
 
 var (
-	BracketedPasteOn  = []byte("\x1b[2004h")
-	BracketedPasteOff = []byte("\x1b[2004l")
+	BracketedPasteOn  = []byte(CSI + "?2004h")
+	BracketedPasteOff = []byte(CSI + "?2004l")
 )

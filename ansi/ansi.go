@@ -40,3 +40,8 @@ var (
 
 	SS3FinalRange = ByteRange{Lo: 0x40, Hi: 0x7E}
 )
+
+var (
+	BytesBracketedPastePrefix = []byte(CSI + "200~")
+	BytesBracketedPasteSuffix = []byte(CSI + "201~")
+)

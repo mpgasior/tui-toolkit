@@ -3,7 +3,6 @@ package seq
 import (
 	"bytes"
 	"errors"
-	"fmt"
 
 	"github.com/mpgasior/tui-toolkit/ansi"
 )
@@ -15,6 +14,10 @@ func Scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		return 0, nil, nil
 	}
 
+	if bytes.HasPrefix(data, ansi.BytesBracketedPastePrefix) {
+		return ScanBracketedPaste(data, atEOF)
+	}
+
 	if bytes.HasPrefix(data, ansi.BytesCSIPrefix) {
 		return ScanCSI(data, atEOF)
 	}
@@ -23,7 +26,7 @@ func Scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		return ScanSS3(data, atEOF)
 	}
 
-	return 0, nil, fmt.Errorf("not implemented")
+	return len(data), data, errors.New("not implemented")
 }
 
 func ScanCSI(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -69,4 +72,23 @@ func ScanSS3(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	}
 
 	return tokenLen, data[:tokenLen], ErrMalformedSequence
+}
+
+func ScanBracketedPaste(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if !bytes.HasPrefix(data, ansi.BytesBracketedPastePrefix) {
+		return len(data), data, ErrMalformedSequence
+	}
+
+	for i := len(ansi.BytesBracketedPastePrefix); i < len(data); i += 1 {
+		tokenLen := i + 1
+		if bytes.HasSuffix(data[:tokenLen], ansi.BytesBracketedPasteSuffix) {
+			return tokenLen, data[:tokenLen], nil
+		}
+	}
+
+	if atEOF {
+		return len(data), data, nil
+	}
+
+	return 0, nil, nil
 }

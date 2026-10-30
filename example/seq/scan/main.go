@@ -14,7 +14,10 @@ import (
 )
 
 func main() {
-	term, err := termio.OpenSession(os.Stdin, os.Stdout)
+	mods := []termio.SessionModifier{
+		termio.WithBracketedPaste,
+	}
+	term, err := termio.OpenSession(os.Stdin, os.Stdout, mods...)
 	if err != nil {
 		log.Fatal(err)
 	}
