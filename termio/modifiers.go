@@ -1,6 +1,10 @@
 package termio
 
-import "github.com/mpgasior/tui-toolkit/ansi"
+import (
+	"io"
+
+	"github.com/mpgasior/tui-toolkit/ansi"
+)
 
 var (
 	WithAltScreen      = Mod(ansi.AltScreenOn, ansi.AltScreenOff)
@@ -8,14 +12,14 @@ var (
 	WithCursorHidden   = Mod(ansi.CursorHide, ansi.CursorShow)
 )
 
-func Mod(apply []byte, restore []byte) SessionModifier {
+func Mod(apply, restore string) SessionModifier {
 	return SessionModifier{
 		Apply: func(s Session) error {
-			_, err := s.Write(apply)
+			_, err := io.WriteString(s, apply)
 			return err
 		},
 		Restore: func(s Session) error {
-			_, err := s.Write(restore)
+			_, err := io.WriteString(s, restore)
 			return err
 		},
 	}

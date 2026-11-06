@@ -1,7 +1,7 @@
 package gfx
 
 import (
-	"io"
+	"unicode/utf8"
 
 	"github.com/mpgasior/tui-toolkit/ansi"
 )
@@ -31,14 +31,33 @@ func AppendStyleDiff(dst []byte, prev, next Style) []byte {
 	return ansi.AppendSGREnd(dst)
 }
 
-func WriteStyleDiff(w io.Writer, prev, next Style) (int, error) {
-	var stackBuf [64]byte
-	buf := AppendStyleDiff(stackBuf[:], prev, next)
+func AppendBufferDiff(dst []byte, prev, next *Buffer) []byte {
+	if prev.Width != next.Width || prev.Height != next.Height {
+		for y := 0; y < next.Height; y += 1 {
+			for x := 0; x < next.Width; x += 1 {
+				pos := y*next.Height + x
+				cell := next.Cells[pos]
+				dst = AppendStyleDiff(dst, StyleDefault, cell.Style)
+				dst = utf8.AppendRune(dst, cell.R)
+			}
+		}
+		return dst
+	}
 
-	return w.Write(buf)
-}
+	for y := 0; y < next.Height; y += 1 {
+		rowOffset := y * next.Width
+		for x := 0; x < next.Width; x += 1 {
+			pos := rowOffset + x
+			prevCell, nextCell := prev.Cells[pos], next.Cells[pos]
+			if prevCell == nextCell {
+				continue
+			}
 
-func WriteReset(w io.Writer) (int, error) {
-	var buf [64]byte
-	return w.Write(ansi.AppendSGRReset(buf[:0]))
+			dst = ansi.AppendCursorMove(dst, x, y)
+			dst = AppendStyleDiff(dst, prevCell.Style, nextCell.Style)
+			dst = utf8.AppendRune(dst, nextCell.R)
+		}
+	}
+
+	return dst
 }

@@ -1,6 +1,6 @@
 package ansi
 
-var (
-	AltScreenOn  = []byte("\x1b[?1049h")
-	AltScreenOff = []byte("\x1b[?1049l")
+const (
+	AltScreenOn  = CSI + "?1049h"
+	AltScreenOff = CSI + "?1049l"
 )

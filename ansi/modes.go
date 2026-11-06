@@ -1,6 +1,6 @@
 package ansi
 
-var (
-	BracketedPasteOn  = []byte(CSI + "?2004h")
-	BracketedPasteOff = []byte(CSI + "?2004l")
+const (
+	BracketedPasteOn  = CSI + "?2004h"
+	BracketedPasteOff = CSI + "?2004l"
 )
