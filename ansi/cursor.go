@@ -12,10 +12,10 @@ const (
 
 func AppendCursorMove(dst []byte, x, y int) []byte {
 	dst = append(dst, CSI...)
-	dst = strconv.AppendInt(dst, int64(y), 10)
+	dst = strconv.AppendInt(dst, int64(y+1), 10)
 	dst = append(dst, ';')
-	dst = strconv.AppendInt(dst, int64(x), 10)
-	dst = append(dst, 'f')
+	dst = strconv.AppendInt(dst, int64(x+1), 10)
+	dst = append(dst, 'H')
 	return dst
 }
 

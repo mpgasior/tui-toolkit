@@ -2,6 +2,7 @@ package termio
 
 import (
 	"context"
+	"io"
 	"os"
 
 	"github.com/mpgasior/tui-toolkit/scope"
@@ -42,6 +43,7 @@ type session struct {
 	scope   *scope.Scope[*session]
 
 	reader Reader
+	writer io.WriteCloser
 }
 
 func (s *session) enter() error {
@@ -70,6 +72,17 @@ func (s *session) enter() error {
 			},
 			Restore: func(s *session) error {
 				return s.reader.Close()
+			},
+		},
+		scope.Step[*session]{
+			Apply: func(s *session) error {
+				fd := int(s.out.Fd())
+				var err error
+				s.writer, err = NewWriter(fd)
+				return err
+			},
+			Restore: func(s *session) error {
+				return s.writer.Close()
 			},
 		})
 
@@ -120,7 +133,7 @@ func (s *session) ReadContext(ctx context.Context, p []byte) (n int, err error) 
 }
 
 func (s *session) Write(p []byte) (n int, err error) {
-	return s.out.Write(p)
+	return s.writer.Write(p)
 }
 
 func (s *session) GetSize() (w, h int, err error) {

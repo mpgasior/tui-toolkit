@@ -14,8 +14,8 @@ func WriteStyleDiff(w io.Writer, prev, next Style) (int, error) {
 }
 
 func WriteBufferDiff(w io.Writer, prev, next *Buffer) (int, error) {
-	var stackBuf [64]byte
-	buf := AppendBufferDiff(stackBuf[:], prev, next)
+	var buf []byte
+	buf = AppendBufferDiff(buf, prev, next)
 	return w.Write(buf)
 }
 
