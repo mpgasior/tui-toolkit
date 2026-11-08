@@ -24,7 +24,7 @@ func main() {
 	}
 	defer term.Close()
 
-	r := seq.NewEscReader(context.Background(), term.ReadContext, 0)
+	r := seq.NewEscReader(context.Background(), term.ReadContext)
 	scanner := bufio.NewScanner(r)
 	scanner.Split(seq.Scan)
 

@@ -27,7 +27,8 @@ func main() {
 	defer ctxReader.Close()
 
 	ctx := context.Background()
-	r := seq.NewEscReader(ctx, ctxReader.ReadContext, 2*time.Second)
+	r := seq.NewEscReader(ctx, ctxReader.ReadContext)
+	r.SetEscTimeout(2 * time.Second)
 
 	ctrlC := [8]byte{3}
 	for {

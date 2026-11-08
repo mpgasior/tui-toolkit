@@ -7,6 +7,8 @@ import (
 	"github.com/mpgasior/tui-toolkit/ansi"
 )
 
+const escTimeout = 25 * time.Millisecond
+
 type ReadContextFunc func(ctx context.Context, p []byte) (n int, err error)
 
 type EscReader struct {
@@ -15,16 +17,19 @@ type EscReader struct {
 	escTimeout time.Duration
 }
 
-func NewEscReader(ctx context.Context, src ReadContextFunc, escTimeout time.Duration) *EscReader {
-	if escTimeout <= 0 {
-		escTimeout = 25 * time.Millisecond
-	}
-
+func NewEscReader(ctx context.Context, src ReadContextFunc) *EscReader {
 	return &EscReader{
 		src:        src,
 		ctx:        ctx,
 		escTimeout: escTimeout,
 	}
+}
+
+func (r *EscReader) SetEscTimeout(t time.Duration) {
+	if t <= 0 {
+		t = escTimeout
+	}
+	r.escTimeout = t
 }
 
 func (r *EscReader) Read(p []byte) (n int, err error) {
