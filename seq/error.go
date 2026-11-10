@@ -14,3 +14,7 @@ func (e *MalformedSeqErr) Error() string {
 func (e *MalformedSeqErr) Data() []byte {
 	return e.data
 }
+
+func errMalformedSeq(data []byte, seqType string) (int, []byte, error) {
+	return 0, nil, &MalformedSeqErr{data: data, seqTyp: seqType}
+}

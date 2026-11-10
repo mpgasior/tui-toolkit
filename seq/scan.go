@@ -7,32 +7,35 @@ import (
 	"github.com/mpgasior/tui-toolkit/ansi"
 )
 
-func errMalformedSeq(data []byte, seqType string) (int, []byte, error) {
-	return 0, nil, &MalformedSeqErr{data: data, seqTyp: seqType}
-}
-
 func Scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if len(data) == 0 {
 		return 0, nil, nil
 	}
 
-	if len(data) == 1 && data[0] == ansi.ByteEsc {
+	if len(data) == 1 && data[0] == ansi.EscByte {
 		return 1, data[:1], nil
 	}
 
-	if bytes.HasPrefix(data, ansi.BytesBracketedPastePrefix) {
+	if bytes.HasPrefix(data, ansi.BracketedPastePrefixBytes) {
 		return ScanBracketedPaste(data, atEOF)
 	}
 
-	if bytes.HasPrefix(data, ansi.BytesCSIPrefix) {
-		return ScanCSI(data, atEOF)
+	if bytes.HasPrefix(data, ansi.CSIPrefixBytes) {
+		advance, token, err = ScanCSI(data, atEOF)
+		if advance > 0 {
+			if bytes.HasPrefix(data, ansi.MouseLegacyPrefixBytes) {
+				return ScanMouseClickLegacy(data, atEOF)
+			}
+		}
+
+		return advance, token, err
 	}
 
-	if bytes.HasPrefix(data, ansi.BytesSS3Prefix) {
+	if bytes.HasPrefix(data, ansi.SS3PrefixBytes) {
 		return ScanSS3(data, atEOF)
 	}
 
-	if bytes.HasPrefix(data, ansi.BytesMetaPrefix) {
+	if bytes.HasPrefix(data, ansi.MetaPrefixBytes) {
 		return ScanMeta(data, atEOF)
 	}
 
@@ -40,10 +43,10 @@ func Scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
 }
 
 func ScanCSI(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if !bytes.HasPrefix(data, ansi.BytesCSIPrefix) {
+	if !bytes.HasPrefix(data, ansi.CSIPrefixBytes) {
 		return errMalformedSeq(data, "CSI")
 	}
-	for i := len(ansi.BytesCSIPrefix); i < len(data); i += 1 {
+	for i := len(ansi.CSIPrefixBytes); i < len(data); i += 1 {
 		b := data[i]
 		if ansi.CSIFinalRange.Contains(b) {
 			tokenLen := i + 1
@@ -63,11 +66,11 @@ func ScanCSI(data []byte, atEOF bool) (advance int, token []byte, err error) {
 }
 
 func ScanSS3(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if !bytes.HasPrefix(data, ansi.BytesSS3Prefix) {
+	if !bytes.HasPrefix(data, ansi.SS3PrefixBytes) {
 		return errMalformedSeq(data, "SS3")
 	}
 
-	finalByteIndex := len(ansi.BytesSS3Prefix)
+	finalByteIndex := len(ansi.SS3PrefixBytes)
 	if len(data) < finalByteIndex {
 		if atEOF {
 			return len(data), data, nil
@@ -85,13 +88,13 @@ func ScanSS3(data []byte, atEOF bool) (advance int, token []byte, err error) {
 }
 
 func ScanBracketedPaste(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if !bytes.HasPrefix(data, ansi.BytesBracketedPastePrefix) {
+	if !bytes.HasPrefix(data, ansi.BracketedPastePrefixBytes) {
 		return errMalformedSeq(data, "BracketedPaste")
 	}
 
-	for i := len(ansi.BytesBracketedPastePrefix); i < len(data); i += 1 {
+	for i := len(ansi.BracketedPastePrefix); i < len(data); i += 1 {
 		tokenLen := i + 1
-		if bytes.HasSuffix(data[:tokenLen], ansi.BytesBracketedPasteSuffix) {
+		if bytes.HasSuffix(data[:tokenLen], ansi.BracketedPasteSuffixBytes) {
 			return tokenLen, data[:tokenLen], nil
 		}
 	}
@@ -104,11 +107,11 @@ func ScanBracketedPaste(data []byte, atEOF bool) (advance int, token []byte, err
 }
 
 func ScanMeta(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if !bytes.HasPrefix(data, ansi.BytesMetaPrefix) {
+	if !bytes.HasPrefix(data, ansi.MetaPrefixBytes) {
 		return errMalformedSeq(data, "Meta")
 	}
 
-	finalByteIndex := len(ansi.BytesMetaPrefix)
+	finalByteIndex := len(ansi.MetaPrefixBytes)
 	if len(data) < finalByteIndex {
 		if atEOF {
 			return len(data), data, nil

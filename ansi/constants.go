@@ -1,7 +1,6 @@
 package ansi
 
 // https://ecma-international.org/wp-content/uploads/ECMA-48_5th_edition_june_1991.pdf
-
 const (
 	ESC = "\x1b"
 	CSI = ESC + "["
@@ -13,21 +12,29 @@ const (
 )
 
 const (
-	ByteEsc = 0x1B
+	EscByte = 0x1B
 )
 
+const CSIPrefix = CSI
+
 var (
-	BytesCSIPrefix = []byte(CSI)
+	CSIPrefixBytes = []byte(CSI)
 
 	CSIFinalRange        = ByteRange{Lo: 0x40, Hi: 0x7E}
 	CSIParamRange        = ByteRange{Lo: 0x30, Hi: 0x3F}
 	CSIIntermediateRange = ByteRange{Lo: 0x20, Hi: 0x2F}
 )
 
+const (
+	OSCPrefix  = OSC
+	OSCSuffix  = ST
+	OSCSuffix2 = ESC + BEL
+)
+
 var (
-	BytesOSCPrefix  = []byte(OSC)
-	BytesOSCSuffix  = []byte(ST)
-	BytesOSCSuffix2 = []byte(ESC + BEL)
+	OSCPrefixBytes  = []byte(OSCPrefix)
+	OSCSuffixBytes  = []byte(OSCSuffix)
+	OSCSuffix2Bytes = []byte(OSCSuffix2)
 
 	OSCIntermediateRange = RangeTable{
 		{Lo: 0x88, Hi: 0x8D},
@@ -35,19 +42,18 @@ var (
 	}
 )
 
+const SS3Prefix = SS3
+
 var (
-	BytesSS3Prefix = []byte(SS3)
+	SS3PrefixBytes = []byte(SS3Prefix)
 
 	SS3FinalRange = ByteRange{Lo: 0x40, Hi: 0x7E}
 )
 
-var (
-	BytesBracketedPastePrefix = []byte(CSI + "200~")
-	BytesBracketedPasteSuffix = []byte(CSI + "201~")
-)
+const MetaPrefix = ESC
 
 var (
-	BytesMetaPrefix = []byte(ESC)
+	MetaPrefixBytes = []byte(MetaPrefix)
 
 	MetaFinalRange = RangeTable{
 		{Lo: 0x00, Hi: 0x1F},

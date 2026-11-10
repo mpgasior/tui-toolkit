@@ -10,6 +10,14 @@ const (
 	CursorBlinkOff = CSI + "?12l"
 )
 
+var (
+	CursorHideBytes = []byte(CursorHide)
+	CursorShowBytes = []byte(CursorShow)
+
+	CursorBlinkOnBytes  = []byte(CursorBlinkOn)
+	CursorBlinkOffBytes = []byte(CursorBlinkOff)
+)
+
 func AppendCursorMove(dst []byte, x, y int) []byte {
 	dst = append(dst, CSI...)
 	dst = strconv.AppendInt(dst, int64(y+1), 10)

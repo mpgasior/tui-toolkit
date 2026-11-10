@@ -46,7 +46,7 @@ func (r *EscReader) Read(p []byte) (n int, err error) {
 		return n, nil
 	}
 
-	if n == 1 && p[0] == ansi.ByteEsc {
+	if n == 1 && p[0] == ansi.EscByte {
 		ctx, stop := context.WithTimeout(r.ctx, r.escTimeout)
 		defer stop()
 

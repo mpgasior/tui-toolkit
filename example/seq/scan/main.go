@@ -31,7 +31,7 @@ func main() {
 	for scanner.Scan() {
 		token := scanner.Bytes()
 		fmt.Fprintf(term, "%v\r\n", token)
-		if bytes.Equal(token, []byte{ansi.ByteEsc}) {
+		if bytes.Equal(token, []byte{ansi.EscByte}) {
 			break
 		}
 	}
