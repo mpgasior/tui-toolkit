@@ -17,7 +17,8 @@ func main() {
 	mods := []termio.SessionModifier{
 		termio.WithAltScreen,
 		termio.WithMouseNormal,
-		//termio.WithMouseSGR,
+		termio.WithMouseAny,
+		termio.WithMouseSGR,
 	}
 	term, err := termio.OpenSession(os.Stdin, os.Stdout, mods...)
 	if err != nil {
@@ -44,7 +45,45 @@ func main() {
 		}
 
 		if mouse, ok := mouseDecoder.Decode(token); ok {
-			fmt.Fprintf(term, "%b -> X: %d Y: %d\r\n", token, mouse.X, mouse.Y)
+			var button, action string
+			var mod []string
+			switch mouse.Button {
+			case event.MouseButtonLeft:
+				button = "left"
+			case event.MouseButtonMiddle:
+				button = "middle"
+			case event.MouseButtonRight:
+				button = "right"
+			case event.MouseButtonWheelUp:
+				button = "wheel up"
+			case event.MouseButtonWheelDown:
+				button = "wheel down"
+			default:
+				button = "unknown"
+			}
+
+			switch mouse.Action {
+			case event.MouseActionMove:
+				action = "move"
+			case event.MouseActionPress:
+				action = "press"
+			case event.MouseActionRelease:
+				action = "release"
+			case event.MouseActionDrag:
+				action = "drag"
+			}
+
+			if mouse.Mods&event.MouseModifierCtrl != 0 {
+				mod = append(mod, "ctrl")
+			}
+			if mouse.Mods&event.MouseModifierAlt != 0 {
+				mod = append(mod, "alt")
+			}
+			if mouse.Mods&event.MouseModifierShift != 0 {
+				mod = append(mod, "shift")
+			}
+
+			fmt.Fprintf(term, "%b -> %s %s %v X: %d Y: %d\r\n", token, button, action, mod, mouse.X, mouse.Y)
 			continue
 		}
 

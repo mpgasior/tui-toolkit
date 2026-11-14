@@ -1,13 +1,38 @@
 package event
 
-import (
-	"bytes"
+type MouseButton uint8
 
-	"github.com/mpgasior/tui-toolkit/ansi"
+const (
+	MouseButtonNone MouseButton = iota
+	MouseButtonLeft
+	MouseButtonMiddle
+	MouseButtonRight
+	MouseButtonWheelUp
+	MouseButtonWheelDown
+)
+
+type MouseAction uint8
+
+const (
+	MouseActionPress MouseAction = iota
+	MouseActionRelease
+	MouseActionDrag
+	MouseActionMove
+)
+
+type MouseModifier uint8
+
+const (
+	MouseModifierShift = 1 << iota
+	MouseModifierAlt
+	MouseModifierCtrl
 )
 
 type Mouse struct {
-	X, Y byte
+	X, Y   int
+	Button MouseButton
+	Action MouseAction
+	Mods   MouseModifier
 }
 
 type MouseDecoder struct {
@@ -22,23 +47,8 @@ func (d *MouseDecoder) Decode(buf []byte) (mouse Mouse, ok bool) {
 		return legacy, ok
 	}
 
-	return mouse, true
-}
-
-func (d *MouseDecoder) decodeMouseLegacy(buf []byte) (mouse Mouse, ok bool) {
-	if !bytes.HasPrefix(buf, ansi.MouseLegacyPrefixBytes) {
-		return mouse, false
-	}
-
-	if len(buf) != ansi.MouseLegacyLength {
-		return mouse, false
-	}
-
-	x := buf[ansi.MouseLegacyColIndex] - ansi.MouseLegacyColRowOffset
-	y := buf[ansi.MouseLegacyRowIndex] - ansi.MouseLegacyColRowOffset
-
-	mouse = Mouse{
-		X: x, Y: y,
+	if modern, ok := d.decodeMouseSGR(buf); ok {
+		return modern, ok
 	}
 
 	return mouse, true

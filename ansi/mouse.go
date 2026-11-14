@@ -31,9 +31,20 @@ var (
 const MouseLegacyPrefix = CSI + "M"
 
 var (
-	MouseLegacyPrefixBytes       = []byte(MouseLegacyPrefix)
-	MouseLegacyLength            = len(MouseLegacyPrefixBytes) + 3
-	MouseLegacyColIndex          = len(MouseLegacyPrefixBytes) + 1
-	MouseLegacyRowIndex          = MouseLegacyColIndex + 1
-	MouseLegacyColRowOffset byte = 32
+	MouseLegacyPrefixBytes      = []byte(MouseLegacyPrefix)
+	MouseLegacyLength           = len(MouseLegacyPrefixBytes) + 3
+	MouseLegacyCtrlIndex        = len(MouseLegacyPrefixBytes)
+	MouseLegacyColIndex         = len(MouseLegacyPrefixBytes) + 1
+	MouseLegacyRowIndex         = MouseLegacyColIndex + 1
+	MouseLegacyOffset      byte = 32
+)
+
+const MouseSGRPrefix = CSI + "<"
+
+var (
+	MouseSGRPrefixBytes = []byte(MouseSGRPrefix)
+	MouseSGRFinalRange  = RangeTable{
+		{Lo: 'm', Hi: 'm'},
+		{Lo: 'M', Hi: 'M'},
+	}
 )
