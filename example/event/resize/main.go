@@ -44,6 +44,7 @@ func main() {
 
 		if resize, ok := resizeDecoder.Decode(token); ok {
 			fmt.Fprintf(term, "%b -> Rows: %d Cols: %d PixelHeigh %d PixelWidth %d\r\n", token, resize.Rows, resize.Cols, resize.PixelHeight, resize.PixelWidth)
+			continue
 		}
 
 		fmt.Fprintf(term, "%b\r\n", token)
