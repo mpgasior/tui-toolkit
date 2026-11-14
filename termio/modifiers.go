@@ -13,6 +13,7 @@ var (
 	WithMouseNormal    = ModBytes(ansi.MouseNormalModeOnBytes, ansi.MouseNormalModeOffBytes)
 	WithMouseAny       = ModBytes(ansi.MouseAnyModeOnBytes, ansi.MouseAnyModeOffBytes)
 	WithMouseSGR       = ModBytes(ansi.MouseSGRModeOnBytes, ansi.MouseSGRModeOffBytes)
+	WithInBandResize   = ModBytes(ansi.InBandResizeModeOnBytes, ansi.InBandResizeModeOffBytes)
 )
 
 func ModString(apply, restore string) SessionModifier {

@@ -30,7 +30,6 @@ const (
 	colorRGBMask      uint32 = 0xFFFFFF
 	colorANSISlotMask uint32 = 0x7
 	colorKindShift           = 24
-	colorBrightShift         = 31
 
 	colorBrightPayloadBit = 1 << 23
 )
