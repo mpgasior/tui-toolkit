@@ -2,6 +2,11 @@ package draw
 
 import "github.com/mpgasior/tui-toolkit/gfx"
 
+type SurfaceMutator interface {
+	Size() (w, h int)
+	Set(x, y int, r rune, s gfx.Style)
+}
+
 type Surface struct {
 	buf           *gfx.Buffer
 	dx, dy        int

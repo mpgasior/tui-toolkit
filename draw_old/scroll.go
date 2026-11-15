@@ -1,4 +1,4 @@
-package draw
+package draw_old
 
 import "github.com/mpgasior/tui-toolkit/screen"
 
