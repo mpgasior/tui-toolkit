@@ -32,8 +32,6 @@ func main() {
 					c += 1
 				}
 			}
-
-			return nil, nil
 		}
 	}
 
