@@ -43,9 +43,4 @@ func (s Style) Unpack() (fg, bg Color, attr Attr) {
 	return fg, bg, attr
 }
 
-var (
-	StyleDefault = Style(0).
-		SetBgColor(ColorDefault).
-		SetFgColor(ColorDefault).
-		SetAttr(AttrNone)
-)
+const StyleDefault = Style(0)

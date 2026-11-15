@@ -31,6 +31,34 @@ func AppendStyleDiff(dst []byte, prev, next Style) []byte {
 	return ansi.AppendSGREnd(dst)
 }
 
+func AppendCursorStyleDiff(dst []byte, prev, next CursorStyle) []byte {
+	if prev == next {
+		return dst
+	}
+
+	if next == CursorStyleDefault {
+		dst = ansi.AppendResetCursorColorRGB(dst)
+		return ansi.AppendCursorStyle(dst, ansi.CursorDefault)
+	}
+
+	color, shape, blink := next.Unpack()
+	cs := ansi.CursorStyle(shape)
+	if !blink {
+		cs += 1
+	}
+	dst = ansi.AppendCursorStyle(dst, cs)
+
+	switch color.Kind() {
+	case ColorKindRGB:
+		hex := color.RGB()
+		dst = ansi.AppendCursorColorRGB(dst, hex)
+	default:
+		dst = ansi.AppendResetCursorColorRGB(dst)
+	}
+
+	return dst
+}
+
 func AppendBufferDiff(dst []byte, prev, next *Buffer) []byte {
 	if prev == nil {
 		dst = ansi.AppendSGRReset(dst)
@@ -47,6 +75,7 @@ func AppendBufferDiff(dst []byte, prev, next *Buffer) []byte {
 			}
 		}
 		dst = ansi.AppendCursorMove(dst, next.CursorX, next.CursorY)
+		dst = AppendCursorStyleDiff(dst, CursorStyleDefault, next.CursorStyle)
 		dst = ansi.AppendCursorShow(dst)
 		return dst
 	}
@@ -79,6 +108,7 @@ func AppendBufferDiff(dst []byte, prev, next *Buffer) []byte {
 	}
 
 	dst = ansi.AppendCursorMove(dst, next.CursorX, next.CursorY)
+	dst = AppendCursorStyleDiff(dst, prev.CursorStyle, next.CursorStyle)
 	dst = ansi.AppendCursorShow(dst)
 
 	return dst

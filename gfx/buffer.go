@@ -10,6 +10,7 @@ type Buffer struct {
 	Cells         []Cell
 
 	CursorX, CursorY int
+	CursorStyle      CursorStyle
 }
 
 func NewBuffer(w, h int) *Buffer {
@@ -33,11 +34,12 @@ func (b *Buffer) Set(x, y int, r rune, s Style) {
 	b.Cells[y*b.Width+x] = Cell{R: r, Style: s}
 }
 
-func (b *Buffer) SetCursor(x, y int) {
+func (b *Buffer) SetCursor(x, y int, s CursorStyle) {
 	if x < 0 || x >= b.Width || y < 0 || y > b.Height {
 		b.CursorX, b.CursorY = -1, -1
 		return
 	}
 
 	b.CursorX, b.CursorY = x, y
+	b.CursorStyle = s
 }
