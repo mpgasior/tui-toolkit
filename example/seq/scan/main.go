@@ -15,12 +15,18 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func run() error {
 	mods := []termio.SessionModifier{
 		termio.WithBracketedPaste,
 	}
 	term, err := termio.OpenSession(os.Stdin, os.Stdout, mods...)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer term.Close()
 
@@ -32,7 +38,7 @@ func main() {
 		token := scanner.Bytes()
 		fmt.Fprintf(term, "%v\r\n", token)
 		if bytes.Equal(token, []byte{ansi.EscByte}) {
-			break
+			return nil
 		}
 	}
 
@@ -42,4 +48,6 @@ func main() {
 			fmt.Fprintf(term, "%v\r\n", me.Data())
 		}
 	}
+
+	return nil
 }

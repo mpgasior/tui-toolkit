@@ -11,12 +11,18 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func run() error {
 	mods := []termio.SessionModifier{
 		termio.WithAltScreen,
 	}
 	t, err := termio.OpenSession(os.Stdin, os.Stdout, mods...)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer t.Close()
 
@@ -38,7 +44,7 @@ func main() {
 		fmt.Fprintf(t, "%v\r\n", buf)
 
 		if buf == ctrlC {
-			break
+			return nil
 		}
 
 		if buf == e {

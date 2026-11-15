@@ -14,6 +14,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func run() error {
 	mods := []termio.SessionModifier{
 		termio.WithAltScreen,
 		termio.WithMouseNormal,
@@ -22,7 +28,7 @@ func main() {
 	}
 	term, err := termio.OpenSession(os.Stdin, os.Stdout, mods...)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	defer term.Close()
 
@@ -39,7 +45,7 @@ func main() {
 		if key, ok := keyDecoder.Decode(token); ok {
 			fmt.Fprintf(term, "%b -> Code: %v Rune: %c\r\n", token, key.Code, key.R)
 			if key.Code == ansi.KeyCtrlC {
-				break
+				return nil
 			}
 			continue
 		}
@@ -91,6 +97,8 @@ func main() {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatalln(err)
+		return err
 	}
+
+	return nil
 }

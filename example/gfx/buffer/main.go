@@ -10,19 +10,25 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func run() error {
 	mods := []termio.SessionModifier{
 		termio.WithAltScreen,
 	}
 
 	term, err := termio.OpenSession(os.Stdin, os.Stdout, mods...)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	defer term.Close()
 
 	width, height, err := term.GetSize()
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	buf := gfx.NewBuffer(width, height)
@@ -36,13 +42,15 @@ func main() {
 	lineH(height-1, '-', gfx.StyleDefault.SetFgColor(gfx.Green))
 
 	if _, err := gfx.WriteBufferDiff(term, nil, buf); err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	gfx.WriteReset(term)
 
 	var p [1]byte
 	_, err = term.ReadContext(context.Background(), p[:])
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
+
+	return nil
 }

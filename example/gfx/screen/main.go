@@ -10,18 +10,24 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func run() error {
 	mods := []termio.SessionModifier{
 		termio.WithAltScreen,
 	}
 	term, err := termio.OpenSession(os.Stdin, os.Stdout, mods...)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	defer term.Close()
 
 	w, h, err := term.GetSize()
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	screen := gfx.NewScreen(w, h, nil)
@@ -42,11 +48,11 @@ func main() {
 		var p [64]byte
 		_, err := term.ReadContext(context.Background(), p[:])
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
 
 		if p == [64]byte{3} {
-			break
+			return nil
 		}
 
 		if p == [64]byte{' '} {
@@ -55,7 +61,7 @@ func main() {
 
 		screen.Swap()
 		if _, err := screen.WriteTo(term); err != nil {
-			log.Fatalln(err)
+			return err
 		}
 	}
 }

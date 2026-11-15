@@ -13,16 +13,22 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func run() error {
 	fd := int(os.Stdin.Fd())
 	state, err := term.MakeRaw(fd)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer term.Restore(fd, state)
 
 	ctxReader, err := termio.NewReader(fd)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer ctxReader.Close()
 
@@ -48,7 +54,7 @@ func main() {
 		fmt.Printf("%v\r\n", buf)
 
 		if buf == ctrlC {
-			break
+			return nil
 		}
 	}
 }
