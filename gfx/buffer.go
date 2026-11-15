@@ -8,6 +8,8 @@ type Cell struct {
 type Buffer struct {
 	Width, Height int
 	Cells         []Cell
+
+	CursorX, CursorY int
 }
 
 func NewBuffer(w, h int) *Buffer {
@@ -15,9 +17,8 @@ func NewBuffer(w, h int) *Buffer {
 	h = max(0, h)
 
 	return &Buffer{
-		Width:  w,
-		Height: h,
-		Cells:  make([]Cell, w*h),
+		Width: w, Height: h,
+		Cells: make([]Cell, w*h),
 	}
 }
 
@@ -30,4 +31,13 @@ func (b *Buffer) Set(x, y int, r rune, s Style) {
 		return
 	}
 	b.Cells[y*b.Width+x] = Cell{R: r, Style: s}
+}
+
+func (b *Buffer) SetCursor(x, y int) {
+	if x < 0 || x >= b.Width || y < 0 || y > b.Height {
+		b.CursorX, b.CursorY = -1, -1
+		return
+	}
+
+	b.CursorX, b.CursorY = x, y
 }

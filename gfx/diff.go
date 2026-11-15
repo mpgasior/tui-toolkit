@@ -34,6 +34,7 @@ func AppendStyleDiff(dst []byte, prev, next Style) []byte {
 func AppendBufferDiff(dst []byte, prev, next *Buffer) []byte {
 	if prev == nil {
 		dst = ansi.AppendSGRReset(dst)
+		dst = ansi.AppendCursorHide(dst)
 		for y := 0; y < next.Height; y += 1 {
 			rowOffset := y * next.Width
 			dst = ansi.AppendCursorMove(dst, 0, y)
@@ -45,9 +46,12 @@ func AppendBufferDiff(dst []byte, prev, next *Buffer) []byte {
 				dst = utf8.AppendRune(dst, cell.R)
 			}
 		}
+		dst = ansi.AppendCursorMove(dst, next.CursorX, next.CursorY)
+		dst = ansi.AppendCursorShow(dst)
 		return dst
 	}
 
+	dst = ansi.AppendCursorHide(dst)
 	lastX, lastY := -1, -1
 	for y := 0; y < next.Height; y += 1 {
 		rowOffset := y * next.Width
@@ -73,6 +77,9 @@ func AppendBufferDiff(dst []byte, prev, next *Buffer) []byte {
 			lastX, lastY = x, y
 		}
 	}
+
+	dst = ansi.AppendCursorMove(dst, next.CursorX, next.CursorY)
+	dst = ansi.AppendCursorShow(dst)
 
 	return dst
 }

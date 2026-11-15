@@ -27,6 +27,10 @@ func (sf *Surface) Set(x, y int, r rune, s gfx.Style) {
 	sf.buf.Set(x+sf.dx, y+sf.dy, r, s)
 }
 
+func (sf *Surface) SetCursor(x, y int) {
+	sf.buf.SetCursor(x+sf.dx, y+sf.dy)
+}
+
 func (sf *Surface) Inset(top, right, bottom, left int) *Surface {
 	dx, dy := max(0, left), max(0, top)
 	dw, dh := left+right, top+bottom
