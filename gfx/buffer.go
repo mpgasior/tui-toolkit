@@ -17,10 +17,16 @@ func NewBuffer(w, h int) *Buffer {
 	w = max(0, w)
 	h = max(0, h)
 
-	return &Buffer{
+	buf := &Buffer{
 		Width: w, Height: h,
 		Cells: make([]Cell, w*h),
 	}
+
+	for i := range w * h {
+		buf.Cells[i].R = ' '
+	}
+
+	return buf
 }
 
 func (b *Buffer) Size() (w, h int) {

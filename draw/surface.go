@@ -60,6 +60,9 @@ func (sf *Surface) Sub(x, y, w, h int) *Surface {
 		}
 	}
 
+	w = min(w, sf.Width-x)
+	h = min(h, sf.Height-y)
+
 	return &Surface{
 		buf: sf.buf,
 		dx:  x + sf.dx, dy: y + sf.dy,
