@@ -15,7 +15,7 @@ func Render(s *Root, sf *draw.Surface) {
 }
 
 func DispatchKey(s *Root, e *KeyEvent) {
-	for _, cursor := range s.focus.Chain() {
+	for cursor := s.focus.focused; cursor != nil; cursor = cursor.parent {
 		if cursor.keyHandler != nil {
 			cursor.keyHandler(e)
 
