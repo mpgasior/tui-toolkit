@@ -1,102 +1,82 @@
 package hook
 
 import (
-	"maps"
-
-	"github.com/mpgasior/tui-toolkit/draw"
-	"github.com/mpgasior/tui-toolkit/event"
+	"slices"
 )
 
-type KeyHandler = func(e *KeyEvent)
-type MouseHandler = func(e event.Mouse)
-
 type Scope struct {
-	component Component
-	parent    *Scope
-
-	focus *Focus
-
-	keyHandler   KeyHandler
-	mouseHandler MouseHandler
-
-	stateRefs *StateRefs
-
+	parent   *Scope
 	children map[string]*Scope
+	mounted  []string
+
+	focusMgr *FocusManager
+
+	keyHandler KeyHandler
+	stateRefs  *StateRefs
+
+	schedule func()
 }
 
-func NewScope(c Component) *Scope {
+func NewScope(parent *Scope) *Scope {
 	s := &Scope{
-		component: c,
+		parent:    parent,
 		children:  make(map[string]*Scope),
 		stateRefs: &StateRefs{},
+	}
+
+	if parent != nil {
+		s.focusMgr = parent.focusMgr
+		s.schedule = parent.schedule
 	}
 
 	return s
 }
 
-func (s *Scope) Render(sf *draw.Surface) {
+func (s *Scope) Render(comp Component) RenderFunc {
+	s.renderBegin()
+	render := comp(s)
+	s.renderEnd()
+
+	return render
+}
+
+func (s *Scope) renderBegin() {
 	s.stateRefs.Reset()
-	s.component(s, sf)
+	s.mounted = s.mounted[:0]
 }
 
-func (s *Scope) OnKey(fn KeyHandler) {
-	s.keyHandler = fn
-}
-
-func (s *Scope) OnMouse(fn MouseHandler) {
-	s.mouseHandler = fn
-}
-
-func (s *Scope) IsFocusable() bool {
-	return s.keyHandler != nil || s.mouseHandler != nil
-}
-
-func (s *Scope) Focus() {
-	s.focus.SetFocus(s)
-}
-
-func (s *Scope) IsFocused() bool {
-	return s.focus.IsFocused(s)
-}
-
-func (s *Scope) IsInFocusChain() bool {
-	return s.focus.IsInChain(s)
-}
-
-func (s *Scope) Mount(id string, sf *draw.Surface, c Component) *Scope {
-	if scope, ok := s.children[id]; ok {
-		prev := maps.Clone(scope.children)
-		scope.Render(sf)
-		for prevId, prevScope := range prev {
-			if _, ok := scope.children[prevId]; !ok {
-				prevScope.unmount()
-			}
+func (s *Scope) renderEnd() {
+	for k, v := range s.children {
+		if !slices.Contains(s.mounted, k) {
+			v.Unmount()
+			delete(s.children, k)
 		}
+	}
+}
 
-		return scope
+func (s *Scope) Mount(id string, comp Component) RenderFunc {
+	target, ok := s.children[id]
+	if !ok {
+		target = NewScope(s)
+		s.children[id] = target
 	}
 
-	scope := NewScope(c)
-	scope.parent = s
-	scope.focus = s.focus
-	s.children[id] = scope
-	scope.Render(sf)
+	s.mounted = append(s.mounted, id)
 
-	return scope
+	return target.Render(comp)
 }
 
-func (s *Scope) unmount() {
+func (s *Scope) Unmount() {
 	s.keyHandler = nil
-	s.mouseHandler = nil
 	s.stateRefs = nil
 
 	for _, scope := range s.children {
-		scope.unmount()
+		scope.Unmount()
 	}
 	s.children = nil
 
-	if s.focus.IsFocused(s) {
-		s.focus.SetFocus(s.parent)
+	if s.focusMgr.IsFocused(s) {
+		s.focusMgr.SetFocus(s.parent)
 	}
 
 	s.parent = nil

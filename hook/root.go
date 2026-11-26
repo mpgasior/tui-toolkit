@@ -1,21 +1,18 @@
 package hook
 
-import (
-	"github.com/mpgasior/tui-toolkit/draw"
-)
+type ScheduleFunc func()
 
-type Component func(s *Scope, sf *draw.Surface)
+func Root(schedule ScheduleFunc) *Scope {
+	s := NewScope(nil)
 
-type Root struct {
-	*Scope
+	s.schedule = schedule
+	s.focusMgr = &FocusManager{target: s}
+
+	return s
 }
 
-func Render(s *Root, sf *draw.Surface) {
-	s.Render(sf)
-}
-
-func DispatchKey(s *Root, e *KeyEvent) {
-	for cursor := s.focus.focused; cursor != nil; cursor = cursor.parent {
+func DispatchKey(s *Scope, e *KeyEvent) {
+	for cursor := s.focusMgr.target; cursor != nil; cursor = cursor.parent {
 		if cursor.keyHandler != nil {
 			cursor.keyHandler(e)
 
@@ -24,14 +21,4 @@ func DispatchKey(s *Root, e *KeyEvent) {
 			}
 		}
 	}
-}
-
-func MountRoot(c Component) *Root {
-	s := NewScope(c)
-	s.focus = &Focus{focused: s}
-	r := &Root{
-		Scope: s,
-	}
-
-	return r
 }

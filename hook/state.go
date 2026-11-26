@@ -37,6 +37,7 @@ func State[T any](s *Scope, init T) (state T, setState func(SetStateFn[T])) {
 		defer ref.mu.Unlock()
 
 		ref.val = fn(ref.val.(T))
+		s.schedule()
 	}
 
 	return ref.val.(T), set
