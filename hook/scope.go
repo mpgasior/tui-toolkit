@@ -1,7 +1,9 @@
 package hook
 
 import (
+	"context"
 	"slices"
+	"sync"
 )
 
 type Scope struct {
@@ -15,16 +17,24 @@ type Scope struct {
 	stateRefs  *StateRefs
 	effectRefs *EffectRefs
 
+	context context.Context
+	cancel  context.CancelFunc
+	wg      sync.WaitGroup
+
 	schedule func()
 }
 
 func NewScope(parent *Scope) *Scope {
+	ctx, cancel := context.WithCancel(context.Background())
 	s := &Scope{
 		parent:   parent,
 		children: make(map[string]*Scope),
 
 		stateRefs:  &StateRefs{},
 		effectRefs: &EffectRefs{},
+
+		context: ctx,
+		cancel:  cancel,
 	}
 
 	if parent != nil {
@@ -82,6 +92,9 @@ func (s *Scope) Unmount() {
 	if s.focusMgr.IsFocused(s) {
 		s.focusMgr.SetFocus(s.parent)
 	}
+
+	s.cancel()
+	s.wg.Wait()
 
 	s.parent = nil
 }

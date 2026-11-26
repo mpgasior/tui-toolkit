@@ -135,10 +135,7 @@ func counter(down bool, init int) hook.Component {
 		count, setCount := hook.State(s, init)
 
 		hook.Effect(s, func() hook.EffectCleanup {
-			ctx, cancel := context.WithCancel(context.Background())
-			var wg sync.WaitGroup
-
-			wg.Go(func() {
+			return hook.Go(s, func(ctx context.Context) {
 				timer := time.NewTicker(time.Second)
 				defer timer.Stop()
 				for {
@@ -157,10 +154,6 @@ func counter(down bool, init int) hook.Component {
 					}
 				}
 			})
-			return func() {
-				cancel()
-				wg.Wait()
-			}
 		}, down)
 
 		return func(sf *draw.Surface) {
@@ -173,26 +166,18 @@ func counter(down bool, init int) hook.Component {
 func clock(s *hook.Scope) hook.RenderFunc {
 	now, setNow := hook.StateFn(s, time.Now)
 	hook.Effect(s, func() hook.EffectCleanup {
-		timer := time.NewTicker(time.Second)
-		done := make(chan any)
-		var wg sync.WaitGroup
-
-		wg.Go(func() {
+		return hook.Go(s, func(ctx context.Context) {
+			timer := time.NewTicker(time.Second)
+			defer timer.Stop()
 			for {
 				select {
 				case <-timer.C:
 					setNow(func(_ time.Time) time.Time { return time.Now() })
-				case <-done:
+				case <-ctx.Done():
 					return
 				}
 			}
 		})
-
-		return func() {
-			close(done)
-			timer.Stop()
-			wg.Wait()
-		}
 	})
 
 	return func(sf *draw.Surface) {

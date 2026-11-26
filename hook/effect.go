@@ -47,7 +47,7 @@ func (s *EffectRefs) NextRef() *EffectRef {
 	return slot
 }
 
-type EffectCleanup func()
+type EffectCleanup = func()
 type EffectFunc func() EffectCleanup
 
 func Effect(s *Scope, fn EffectFunc, deps ...any) {
