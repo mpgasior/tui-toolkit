@@ -27,7 +27,7 @@ func run() (err error) {
 		return func(s *hook.Scope) hook.RenderFunc {
 			state, setState := hook.State(s, 42)
 
-			incr := func(delta int) hook.SetStateFn[int] {
+			incr := func(delta int) hook.SetStateFunc[int] {
 				return func(i int) int { return i + delta }
 			}
 

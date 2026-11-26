@@ -13,15 +13,18 @@ type Scope struct {
 
 	keyHandler KeyHandler
 	stateRefs  *StateRefs
+	effectRefs *EffectRefs
 
 	schedule func()
 }
 
 func NewScope(parent *Scope) *Scope {
 	s := &Scope{
-		parent:    parent,
-		children:  make(map[string]*Scope),
-		stateRefs: &StateRefs{},
+		parent:   parent,
+		children: make(map[string]*Scope),
+
+		stateRefs:  &StateRefs{},
+		effectRefs: &EffectRefs{},
 	}
 
 	if parent != nil {
@@ -42,6 +45,7 @@ func (s *Scope) Render(comp Component) RenderFunc {
 
 func (s *Scope) renderBegin() {
 	s.stateRefs.Reset()
+	s.effectRefs.Reset()
 	s.mounted = s.mounted[:0]
 }
 
