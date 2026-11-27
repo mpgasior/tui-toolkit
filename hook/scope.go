@@ -14,8 +14,10 @@ type Scope struct {
 	focusMgr *FocusManager
 
 	keyHandler KeyHandler
-	stateRefs  *StateRefs
-	effectRefs *EffectRefs
+
+	providerRefs ProviderRefs
+	stateRefs    *StateRefs
+	effectRefs   *EffectRefs
 
 	context context.Context
 	cancel  context.CancelFunc
@@ -30,8 +32,9 @@ func NewScope(parent *Scope) *Scope {
 		parent:   parent,
 		children: make(map[string]*Scope),
 
-		stateRefs:  &StateRefs{},
-		effectRefs: &EffectRefs{},
+		providerRefs: ProviderRefs{},
+		stateRefs:    &StateRefs{},
+		effectRefs:   &EffectRefs{},
 
 		context: ctx,
 		cancel:  cancel,
@@ -81,6 +84,9 @@ func (s *Scope) Mount(id string, comp Component) RenderFunc {
 }
 
 func (s *Scope) Unmount() {
+	s.cancel()
+	s.wg.Wait()
+
 	s.keyHandler = nil
 	s.stateRefs = nil
 
@@ -92,9 +98,6 @@ func (s *Scope) Unmount() {
 	if s.focusMgr.IsFocused(s) {
 		s.focusMgr.SetFocus(s.parent)
 	}
-
-	s.cancel()
-	s.wg.Wait()
 
 	s.parent = nil
 }
