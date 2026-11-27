@@ -13,8 +13,10 @@ func Root(schedule ScheduleFunc) *Scope {
 
 func DispatchKey(s *Scope, e *KeyEvent) {
 	for cursor := s.focusMgr.target; cursor != nil; cursor = cursor.parent {
-		if cursor.keyHandler != nil {
-			cursor.keyHandler(e)
+		if cursor.keyHandlers != nil {
+			for _, handler := range cursor.keyHandlers {
+				handler(e)
+			}
 
 			if e.stopped {
 				return

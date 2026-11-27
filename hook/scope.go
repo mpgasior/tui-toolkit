@@ -13,7 +13,7 @@ type Scope struct {
 
 	focusMgr *FocusManager
 
-	keyHandler KeyHandler
+	keyHandlers []KeyHandler
 
 	providerRefs ProviderRefs
 	stateRefs    *StateRefs
@@ -60,6 +60,7 @@ func (s *Scope) renderBegin() {
 	s.stateRefs.Reset()
 	s.effectRefs.Reset()
 	s.mounted = s.mounted[:0]
+	s.keyHandlers = s.keyHandlers[:0]
 }
 
 func (s *Scope) renderEnd() {
@@ -87,8 +88,9 @@ func (s *Scope) Unmount() {
 	s.cancel()
 	s.wg.Wait()
 
-	s.keyHandler = nil
+	s.keyHandlers = nil
 	s.stateRefs = nil
+	s.effectRefs = nil
 
 	for _, scope := range s.children {
 		scope.Unmount()
